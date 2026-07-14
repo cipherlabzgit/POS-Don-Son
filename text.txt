@@ -1,0 +1,20 @@
+@"
+tunnel: 0b023111-5952-4113-aa60-76ce93b4c492
+credentials-file: C:\Users\Administrator\.cloudflared\0b023111-5952-4113-aa60-76ce93b4c492.json
+
+ingress:
+  # Main frontend application
+  - hostname: dms.donandson.ddns.net
+    service: http://localhost:3000
+  
+  # Backend API
+  - hostname: api.donandson.ddns.net
+    service: http://localhost:5126
+  
+  # POS application
+  - hostname: pos.donandson.ddns.net
+    service: http://localhost:5174
+  
+  # Catch-all rule (required)
+  - service: http_status:404
+"@ | Out-File -FilePath "C:\cloudflared\config.yml" -Encoding UTF8

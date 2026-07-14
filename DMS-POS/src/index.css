@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+/* ─── Don & Sons brand tokens — aligned with DMS-Frontend globals.css ─── */
+:root {
+  /* Typography — DM Sans for POS (falls back if font CDN unavailable) */
+  --font-pos: 'DM Sans', 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system,
+    BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  /* Brand */
+  --brand-primary:       #c8102e;
+  --brand-primary-light: #e31837;
+  --brand-primary-dark:  #a00d26;
+  --brand-accent:        #ffd100;
+  --brand-accent-light:  #ffdc33;
+  --brand-accent-dark:   #ccaa00;
+
+  /* General UI surfaces */
+  --background:        #ffffff;
+  --foreground:        #171717;
+  --muted:             #f9fafb;
+  --muted-foreground:  #6b7280;
+  --card:              #ffffff;
+  --card-foreground:   #171717;
+  --border:            #e5e7eb;
+  --input:             #e5e7eb;
+  --ring:              #c8102e;
+
+  /* Neutrals */
+  --neutral-50:  #f9fafb;
+  --neutral-100: #f3f4f6;
+  --neutral-200: #e5e7eb;
+  --neutral-300: #d1d5db;
+  --neutral-400: #9ca3af;
+  --neutral-500: #6b7280;
+  --neutral-600: #4b5563;
+  --neutral-700: #374151;
+  --neutral-800: #1f2937;
+  --neutral-900: #111827;
+
+  /* Status */
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-error:   #ef4444;
+  --status-info:    #3b82f6;
+
+  /* POS-specific surfaces */
+  --pos-header-bg:          #c8102e;    /* red header bar */
+  --pos-header-text:        #ffffff;
+  --pos-header-border:      #a00d26;
+  --pos-catalog-surface:    #f3f4f6;   /* light grey catalog panel */
+  --pos-product-tile:       #fffbeb;   /* warm white/cream tile */
+  --pos-product-tile-hover: #fef3c7;
+  --pos-product-tile-border:#fde68a;
+  --pos-sidebar-bg:         #ffffff;
+  --pos-sidebar-border:     #e5e7eb;
+
+  /* Button colors */
+  --btn-primary-bg:         #c8102e;
+  --btn-primary-hover:      #a00d26;
+  --btn-accent-bg:          #ffd100;
+  --btn-accent-hover:       #ccaa00;
+
+  /* Category pill palette — colourful like screenshot */
+  --cat-0:  #ffd100;  /* gold   */
+  --cat-1:  #c8102e;  /* red    */
+  --cat-2:  #16a34a;  /* green  */
+  --cat-3:  #1d4ed8;  /* blue   */
+  --cat-4:  #9333ea;  /* purple */
+  --cat-5:  #ea580c;  /* orange */
+  --cat-6:  #db2777;  /* pink   */
+  --cat-7:  #0891b2;  /* teal   */
+
+  /* Sub-pages (white card, light grey bg) */
+  --subpage-bg:          #f3f4f6;
+  --subpage-card-bg:     #ffffff;
+  --subpage-card-border: #e5e7eb;
+
+  /* Online / offline badges */
+  --badge-online-bg:   #16a34a;
+  --badge-online-text: #ffffff;
+  --badge-offline-bg:  #d97706;
+  --badge-offline-text:#ffffff;
+}
+
+/* ─── Reset / base ─── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-pos);
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+#root { min-height: 100vh; }
+
+/* ─── Branded scrollbar ─── */
+.pos-scroll::-webkit-scrollbar       { width: 6px; height: 6px; }
+.pos-scroll::-webkit-scrollbar-track { background: var(--neutral-100); }
+.pos-scroll::-webkit-scrollbar-thumb { background: var(--neutral-300); border-radius: 3px; }
+.pos-scroll::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
+
+.pos-scroll-light::-webkit-scrollbar       { width: 6px; height: 6px; }
+.pos-scroll-light::-webkit-scrollbar-track { background: var(--neutral-50); }
+.pos-scroll-light::-webkit-scrollbar-thumb { background: var(--neutral-200); border-radius: 3px; }
+.pos-scroll-light::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
+
+/* ─── Typography — titles / brand lines (same family as UI, tighter tracking) ─── */
+.font-pos-title {
+  font-family: var(--font-pos);
+  letter-spacing: -0.03em;
+}
+
+/* ─── Touch targets (WCAG 2.5.5) ─── */
+.pos-tap {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* ─── Product tile press feedback ─── */
+.product-tile {
+  transition: transform 100ms ease, box-shadow 100ms ease;
+  /* Uniform tile footprint; height follows column width */
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  min-height: 140px;
+  max-height: 200px;
+}
+.product-tile:active { transform: scale(0.95); }
+
+/* Responsive product grid: equal cell widths, proper spacing, no overlapping */
+.pos-product-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr));
+  align-content: start;
+  grid-auto-rows: minmax(min-content, max-content);
+}
+
+/* ─── Modal backdrop ─── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+
+/* ─── Numpad key press ─── */
+.numpad-key { transition: transform 80ms ease, filter 80ms ease; }
+.numpad-key:active { transform: scale(0.92); filter: brightness(0.9); }
+
+/* ─── Sub-page layout ─── */
+.subpage-root {
+  min-height: 100vh;
+  background: var(--subpage-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2rem 1rem;
+}

@@ -1,0 +1,36 @@
+# Dependencies and build output (rebuilt inside the container)
+node_modules/
+dist/
+release/
+
+# Electron desktop build artefacts (not used in the web Docker image)
+electron/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Source control
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Logs and TS incremental build cache
+*.log
+*.tsbuildinfo
+
+# Docs / planning content – not needed at build time
+*.md
+
+# Container metadata
+Dockerfile
+.dockerignore
+docker-compose*.yml

@@ -1,0 +1,45 @@
+# Build artefacts
+**/bin/
+**/obj/
+**/bin-checkbuild/
+**/bin-checkbuild2/
+**/out/
+**/publish/
+
+# IDE / Editor
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+**/*.swp
+
+# Source control
+**/.git/
+**/.gitignore
+**/.gitattributes
+**/.github/
+
+# Local secrets and dev-only configuration
+**/appsettings.Development.json
+**/secrets.json
+**/.env
+**/.env.*
+
+# Runtime data we never want to bake into an image
+**/logs/
+**/*.log
+
+# Misc / docs that bloat the image but aren't needed at runtime
+**/*.md
+**/Docs/
+**/Properties/launchSettings.json
+
+# Container metadata
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Cross-project folders that may be present from monorepo checkouts
+DMS-Frontend/
+MigrationTools/

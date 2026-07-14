@@ -1,0 +1,45 @@
+# Dependencies and build output (rebuilt inside the container)
+node_modules/
+.next/
+out/
+build/
+coverage/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Source control
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Logs and TS incremental cache
+*.log
+*.tsbuildinfo
+next-env.d.ts
+lint-output.txt
+
+# Backup and one-off artefacts
+*.bak
+backup.sql
+
+# Docs / planning content – not needed at runtime, bloats build context
+*.md
+
+# Container metadata
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Cross-project folders that may be present from monorepo checkouts
+DMS-Backend/
+MigrationTools/

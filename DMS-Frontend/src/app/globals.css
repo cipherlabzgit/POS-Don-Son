@@ -1,0 +1,263 @@
+@import "tailwindcss";
+
+:root {
+  /* Light Mode Colors */
+  --background: #ffffff;
+  --foreground: #171717;
+  --muted: #F9FAFB;
+  --muted-foreground: #6B7280;
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #C8102E;
+  /* Form fields on light surfaces: clearer edge than --border; neutral focus (not brand red). */
+  --form-field-border: #cbd5e1;
+  --form-focus-ring: #475569;
+
+  /* Don & Sons Brand Colors */
+  --brand-primary: #C8102E;
+  --brand-primary-light: #E31837;
+  --brand-primary-dark: #A00D26;
+  --brand-accent: #FFD100;
+  --brand-accent-light: #FFDC33;
+  --brand-accent-dark: #CCAA00;
+  
+  /* Per-page accent color (can be dynamically changed) */
+  --page-accent-color: var(--brand-primary);
+  
+  /* Neutral colors */
+  --neutral-50: #F9FAFB;
+  --neutral-100: #F3F4F6;
+  --neutral-200: #E5E7EB;
+  --neutral-300: #D1D5DB;
+  --neutral-400: #9CA3AF;
+  --neutral-500: #6B7280;
+  --neutral-600: #4B5563;
+  --neutral-700: #374151;
+  --neutral-800: #1F2937;
+  --neutral-900: #111827;
+  
+  /* Status colors */
+  --status-success: #10B981;
+  --status-warning: #F59E0B;
+  --status-error: #EF4444;
+  --status-info: #3B82F6;
+
+  /* DMS module — theme-aware surfaces (grids, callouts, pills; do not use raw white in DMS tables) */
+  --dms-surface: var(--card);
+  --dms-surface-muted: var(--muted);
+  --dms-amber: #FEF3C4;
+  --dms-amber-fg: #C8102E;
+  --dms-blue: #DBEAFE;
+  --dms-blue-fg: #1E40AF;
+  --dms-amber-tint: #FFFBEB;
+  --dms-green: #F0FDF4;
+  --dms-green-fg: #166534;
+  --dms-success-callout: #F0FDF4;
+  --dms-success-border: #86EFAC;
+  --dms-success-text: #166534;
+  --dms-warn-box: #FEF3C4;
+  --dms-warn-box-border: #FDE68A;
+  --dms-warn-label: #92400E;
+  --dms-warn-accent: #C8102E;
+  --dms-orange: #FFF7ED;
+  --dms-orange-fg: #9A3412;
+  --dms-orange-chip: #FED7AA;
+  --dms-orange-chip-fg: #9A3412;
+  --dms-link: #1E40AF;
+  --dms-notes: #FFFBEB;
+  --dms-notes-border: #FFD100;
+  --dms-notes-fg: #92400E;
+  --dms-notes-title: #78350F;
+  --dms-amber-text: #92400E;
+  --dms-red-text: #DC2626;
+  --dms-pill-off-bg: #ffffff;
+  --dms-pill-off-fg: #111827;
+  --dms-pill-off-border: #E5E7EB;
+  --dms-destructive-soft: #FEF2F2;
+  --dms-info-soft: #EFF6FF;
+  --dms-info-soft-border: #93C5FD;
+  --dms-sky-tint: #F9FAFB;
+  --dms-error-callout: #FEF2F2;
+  --dms-error-border: #FCA5A5;
+  --dms-error-text: #991B1B;
+}
+
+.dark {
+  /* Dark Mode Colors - Light text on dark backgrounds */
+  --background: #0a0a0a;
+  --foreground: #f5f5f5;
+  --muted: #1a1a1a;
+  --muted-foreground: #d4d4d4;
+  --card: #171717;
+  --card-foreground: #f5f5f5;
+  --popover: #1a1a1a;
+  --popover-foreground: #f5f5f5;
+  --border: #404040;
+  --input: #404040;
+  --ring: #E31837;
+  --form-field-border: #525252;
+  --form-focus-ring: #94a3b8;
+
+  /* Adjusted neutral colors for dark mode - lighter shades */
+  --neutral-50: #1a1a1a;
+  --neutral-100: #262626;
+  --neutral-200: #404040;
+  --neutral-300: #525252;
+  --neutral-400: #737373;
+  --neutral-500: #a3a3a3;
+  --neutral-600: #d4d4d4;
+  --neutral-700: #e5e5e5;
+  --neutral-800: #f5f5f5;
+  --neutral-900: #ffffff;
+  
+  /* Status colors remain the same for consistency */
+
+  /* DMS — dark: tinted surfaces so --foreground text stays readable (no light-on-light) */
+  --dms-amber: color-mix(in srgb, #f59e0b 24%, var(--card));
+  --dms-amber-fg: #fb923c;
+  --dms-blue: color-mix(in srgb, #3b82f6 22%, var(--card));
+  --dms-blue-fg: #93c5fd;
+  --dms-amber-tint: color-mix(in srgb, #f59e0b 14%, var(--card));
+  --dms-green: color-mix(in srgb, #22c55e 12%, var(--card));
+  --dms-green-fg: #86efac;
+  --dms-success-callout: color-mix(in srgb, #22c55e 10%, var(--card));
+  --dms-success-border: color-mix(in srgb, #4ade80 32%, var(--border));
+  --dms-success-text: var(--foreground);
+  --dms-warn-box: color-mix(in srgb, #f59e0b 20%, var(--card));
+  --dms-warn-box-border: color-mix(in srgb, #f59e0b 35%, var(--border));
+  --dms-warn-label: var(--foreground);
+  --dms-warn-accent: #fb7185;
+  --dms-orange: color-mix(in srgb, #f97316 16%, var(--card));
+  --dms-orange-fg: #fdba74;
+  --dms-orange-chip: color-mix(in srgb, #f97316 28%, var(--card));
+  --dms-orange-chip-fg: #fed7aa;
+  --dms-link: #93c5fd;
+  --dms-notes: color-mix(in srgb, #f59e0b 12%, var(--card));
+  --dms-notes-border: color-mix(in srgb, #eab308 40%, var(--border));
+  --dms-notes-fg: var(--foreground);
+  --dms-notes-title: var(--foreground);
+  --dms-amber-text: #fcd34d;
+  --dms-red-text: #f87171;
+  --dms-pill-off-bg: var(--card);
+  --dms-pill-off-fg: var(--foreground);
+  --dms-pill-off-border: var(--border);
+  --dms-destructive-soft: color-mix(in srgb, #ef4444 16%, var(--card));
+  --dms-info-soft: color-mix(in srgb, #3b82f6 14%, var(--card));
+  --dms-info-soft-border: color-mix(in srgb, #60a5fa 35%, var(--border));
+  --dms-sky-tint: color-mix(in srgb, #f9fafb 4%, var(--card));
+  --dms-error-callout: color-mix(in srgb, #ef4444 16%, var(--card));
+  --dms-error-border: color-mix(in srgb, #f87171 38%, var(--border));
+  --dms-error-text: #fca5a5;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  
+  /* Brand color utilities */
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-accent: var(--brand-accent);
+  --color-page-accent: var(--page-accent-color);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+@layer base {
+  /*
+    Interactive affordance: many UAs use the default arrow on <button> and similar controls.
+    Keep text fields as the browser default (no pointer) by only listing actionable types/roles.
+  */
+  button:not(:disabled):not([aria-disabled="true"]),
+  [type="button"]:not(:disabled):not([aria-disabled="true"]),
+  [type="submit"]:not(:disabled):not([aria-disabled="true"]),
+  [type="reset"]:not(:disabled):not([aria-disabled="true"]),
+  input[type="file"]:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  select:not(:disabled),
+  summary,
+  label[for],
+  a[href]:not([aria-disabled="true"]),
+  [role="button"]:not([aria-disabled="true"]):not(:disabled),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  button[aria-disabled="true"],
+  [type="button"]:disabled,
+  [type="button"][aria-disabled="true"],
+  [type="submit"]:disabled,
+  [type="submit"][aria-disabled="true"],
+  [type="reset"]:disabled,
+  [type="reset"][aria-disabled="true"],
+  a[href][aria-disabled="true"],
+  [role="button"][aria-disabled="true"],
+  [role="tab"][aria-disabled="true"],
+  [role="menuitem"][aria-disabled="true"],
+  [role="option"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
+/* Smooth transitions for theme changes */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Override transitions for animations and interactive elements */
+*:where([class*="animate-"]),
+input,
+textarea,
+select {
+  transition: none;
+}
+
+/* Custom scrollbar styling for brand consistency */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neutral-400);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-primary);
+}
+
+/* Dark mode scrollbar adjustments */
+.dark ::-webkit-scrollbar-track {
+  background: var(--neutral-800);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--neutral-600);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-primary-light);
+}

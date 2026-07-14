@@ -1,0 +1,10 @@
+export type Screen =
+  | 'pos'
+  | 'stock-bf'
+  | 'transfers'
+  | 'customer'
+  | 'transfer'
+  | 'return'
+  | 'cash'
+  | 'order-request'
+  | 'diagnostics'

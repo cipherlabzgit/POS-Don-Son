@@ -1,0 +1,397 @@
+Attribute VB_Name = "Module7"
+Sub Workbook_Close()
+
+Sheet21.TextBoxWelcomeGreeting.Value = ""
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+If UsernameCheck = "Admin" Then
+        
+    Dim msg As String, Ans As Variant
+    
+    msg = "      *** Do You Want Save & Close 5.00AM Production ***"
+    Ans = MsgBox(msg, vbYesNo + vbDefaultButton1, "Don & Sons (Pvt) Ltd.")
+
+    Select Case Ans
+
+    Case vbYes
+    
+        Sheet21.TextBoxWelcomeGreeting.Value = ""
+    
+        Sheet1.TextBoxGenarated.Value = "Generated"
+    
+'''***********************************************************'''
+'''***********************************************************'''
+'''                                                           '''
+'''   *** PROUDLY DEVELOPED BY VIRAJ LAKSHAN RATHNAYAKE ***   '''
+'''***********************************************************'''
+'''           **   ** ***** ******    *      *****            '''
+'''            ** **   ***  **  **   * *       *              '''
+'''             ***    ***  *****   * * *   *  *              '''
+'''              *    ***** **  ** **   **  ****              '''
+'''         Copyrigt © 2020 Viraj Lakshan Rathnayake ®        '''
+'''                                                           '''
+'''***********************************************************'''
+'''***********************************************************'''
+
+        Sheet1.Select
+        Sheet1.Range("D5").Select
+    
+        Application.Wait (Now + TimeValue("0:00:03"))
+        
+        Sheet21.Select
+    
+        Sheet21.Unprotect Password:="Admin@donandsons.lk54321"
+    
+        Sheet21.LogoutButton.Visible = False
+        Sheet21.LoginButton.Visible = True
+        Sheet21.Range("A1").Value = ""
+        Sheet21.Range("U1").Value = ""
+        Sheet21.Range("A7").Select
+    
+        Sheet21.PlainRollProductionButton.Visible = False
+        
+        'Sheet1 SpotCurrySheetButton & SixAMCurrySheetButton Visible False
+        Sheet1.SpotCurrySheetButton.Visible = False
+        Sheet1.SixAMCurrySheetButton.Visible = False
+        Sheet1.EveningCurfewDeliveryButton.Visible = False
+        Sheet1.WeekdaysEveningButton.Visible = False
+        Sheet1.SaturdayEveningButton.Visible = False
+        Sheet1.SundayEveningButton.Visible = False
+        Sheet1.ApNewYearEveningButton.Visible = False
+        Sheet1.PlainRollGenerateButton.Visible = False
+        
+        Sheet1.HomeButton.Visible = True
+        Sheet1.MorningCurfewButton.Visible = True
+        Sheet1.MorningApNewYearButton.Visible = True
+        Sheet1.MorningPoyaButton.Visible = True
+        Sheet1.MorningSaturdayButton.Visible = True
+        Sheet1.MorningSundayButton.Visible = True
+        Sheet1.MorningWeekdaysButton.Visible = True
+        
+        Sheet1.ShorteatsSectionButton.Visible = False
+        
+        'Lock Order Sheet Cells
+        'Sheet1.Range("D5:E5").Locked = True         'Bread
+        'Sheet1.Range("D6:E6").Locked = True         'Kurakkan Slice Pack
+        'Sheet1.Range("D8:E8").Locked = True         'Sandwich Bread
+        'Sheet1.Range("D9:E9").Locked = True         'Roast Bread Medium
+        'Sheet1.Range("D10:E10").Locked = True       'Sandwich Bread Large
+        Sheet1.Range("E16").Locked = True           'Viyana Roll - Mini Cell
+        Sheet1.Range("E30").Locked = True           'Viyana Roll Mini - Mini Cell
+        'Sheet1.Range("D42").Locked = True           'Kurakkan Plain Bun (35g)
+        'Sheet1.Range("D57").Locked = True           'Thati Paan
+        
+        Call FiveAMCheckBoxes
+        
+        'Protect All Worksheets with Password Added by Viraj Lakshan Rathnayake on 20.03.2019
+        Dim ws As Worksheet
+    
+        For Each ws In ThisWorkbook.Worksheets
+        ws.Protect Password:="Admin@donandsons.lk54321"
+        Next
+    
+            Application.Wait (Now + TimeValue("0:00:02"))
+    
+        Sheet1.Unprotect Password:="Admin@donandsons.lk54321"
+        Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+        Sheet23.Unprotect Password:="Admin@donandsons.lk54321"
+        Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+        Sheet27.Unprotect Password:="Admin@donandsons.lk54321"
+        Sheet28.Unprotect Password:="Admin@donandsons.lk54321"
+    
+        'Locked Fish Chinese Roll Cells on Sheet1("Order")
+        Sheet1.Range("D51").Locked = True
+        Sheet1.Range("E51").Locked = True
+        
+        'Locked Sandwich Bread & Large Cells on Sheet1("Order")
+        'Sheet1.Range("D8:E8").Locked = True
+        'Sheet1.Range("D10:E10").Locked = True
+    
+        Application.Wait (Now + TimeValue("0:00:02"))
+    
+        Sheet1.Protect Password:="Admin@donandsons.lk54321", AllowFormattingCells:=True
+        Sheet2.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+        Sheet4.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+        Sheet23.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+        Sheet24.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+    
+        Sheet27.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+        Sheet28.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+        
+        'xlSheetVeryHiddon of Sheet3, Sheet5, Sheet7, Sheet8, Sheet11, Sheet12, Sheet13, Sheet14, Sheet16, Sheet17 & Sheet19
+        Sheet3.Visible = xlSheetVeryHidden  'Bakery
+        Sheet5.Visible = xlSheetVeryHidden  'Recipe Per Item
+        Sheet7.Visible = xlSheetVeryHidden  'Plain Roll Section
+        Sheet8.Visible = xlSheetVeryHidden  'Size Totals
+        Sheet11.Visible = xlSheetVeryHidden 'Calculation
+        Sheet12.Visible = xlSheetVeryHidden 'Filling Section
+        Sheet13.Visible = xlSheetVeryHidden 'Patties Dough
+        Sheet14.Visible = xlSheetVeryHidden 'Doughs
+        Sheet16.Visible = xlSheetVeryHidden 'Users
+        Sheet17.Visible = xlSheetVeryHidden 'Vegetable Curry Sheet
+        Sheet19.Visible = xlSheetVeryHidden 'Bakery Recipe Per Item
+        Sheet23.Visible = xlSheetVeryHidden 'Curfew Evening Summary
+        Sheet27.Visible = xlSheetVeryHidden 'Dashboard
+        Sheet28.Visible = xlSheetVeryHidden 'Data
+        
+        'Protect Workbook with a Password Added by Viraj Lakshan Rathnayake on 20.03.2019
+        ThisWorkbook.Protect Password:="Admin@donandsons.lk54321"
+        
+        ThisWorkbook.Save
+
+        '***********************************************************************************************
+        '************************************ Finished 5.00AM Saving ***********************************
+        '***********************************************************************************************
+
+
+
+        '***********************************************************************************************
+        '*********************************Generate Curry Sheet Programme Start**************************
+        '***********************************************************************************************
+
+        'Unrotect Workbook with a Password Added by Viraj Lakshan Rathnayake on 20.03.2019
+        ThisWorkbook.Unprotect Password:="Admin@donandsons.lk54321"
+        
+        Sheet1.Unprotect Password:="Admin@donandsons.lk54321"
+
+        Sheet1.Select
+    
+        Sheet1.Range("E5").Select
+    
+        Sheet1.Range("E17").Select
+    
+        Sheet21.Unprotect Password:="Admin@donandsons.lk54321"
+    
+        Sheet21.PlainRollProductionButton.Visible = True
+    
+        Sheet21.Protect Password:="Admin@donandsons.lk54321"
+    
+        'Locked Cells on Sheet1("Order")
+        Sheet1.Range("F5:F74").Locked = True
+        Sheet1.Range("G5:G74").Locked = True
+    
+        Application.Wait (Now + TimeValue("0:00:03"))
+    
+        Sheet1.Range("G44:G53").Locked = False  'Vegetable Cutlet - Egg Chinese Roll
+        Sheet1.Range("G58").Locked = False      'Chicken Pattie
+        Sheet1.Range("G64").Locked = False      'Fish Pastry
+        Sheet1.Range("D51").Locked = False      'Fish Chinese Roll Full
+        Sheet1.Range("E51").Locked = False      'Fish Chinese Roll Mini
+    
+        Sheet1.Shapes("Rectangle 10").Visible = msoTrue
+    
+        'Colour Black in Cells on Sheet1("Order")
+        Sheet1.Range("F5:F74").Interior.ColorIndex = 1
+    
+        'Hide Rows in Sheet1("Order")
+        'Sheet1.Range("6:10").EntireRow.Hidden = True
+    
+        'Sheet1.Rows("18").Hidden = True
+    
+        'Sheet1.Range("20:27").EntireRow.Hidden = True
+        'Sheet1.Range("29:43").EntireRow.Hidden = True
+    
+        'Sheet1.Rows("56:57").EntireRow.Hidden = True
+    
+        'Sheet1.Range("60:62").EntireRow.Hidden = True
+    
+        'Sheet1.Rows("74").Hidden = True
+    
+        'Anytime Curry Sheet Data
+        Sheet1.Range("K11").Value = "Effective Delivery Date :"
+        Sheet1.Range("K12").Value = "Effective Delivery Time :"
+        Sheet1.Range("K13").Value = "Order Bill Number :"
+        Sheet1.Range("K14").Value = "Recipe Reques. Page No. :"
+        Sheet1.Range("O11").Value = Format(Now(), "dd-mmm-yyyy")
+        Sheet1.Range("O11:O14").Interior.Color = RGB(255, 255, 204)
+    
+    
+        'Locked Cells on Sheet1("Order")
+        Sheet1.Range("F5:F43").Locked = True
+        Sheet1.Range("E5:E30").Locked = True
+        Sheet1.Range("F56:F57").Locked = True
+        Sheet1.Range("F60:F62").Locked = True
+        Sheet1.Range("F66:F67").Locked = True
+        Sheet1.Range("D6:F6").Locked = True
+        Sheet1.Range("E7:F7").Locked = True
+        Sheet1.Range("E8:F8").Locked = True
+        Sheet1.Range("E9:F9").Locked = True
+        Sheet1.Range("E10:F10").Locked = True
+        Sheet1.Range("E20:F30").Locked = True
+        Sheet1.Range("D25").Locked = True
+        Sheet1.Range("F29:F43").Locked = True
+        Sheet1.Range("D31:D32").Locked = True
+        Sheet1.Range("E35").Locked = True
+        Sheet1.Range("E40").Locked = True
+        Sheet1.Range("E42:E43").Locked = True
+        'Sheet1.Range("D56:F57").Locked = True
+        Sheet1.Range("E70").Locked = True
+        Sheet1.Range("E74").Locked = True
+        Sheet1.Range("F70:F74").Locked = True
+    
+        'Unlocked Vegetable Bun Mini Cell
+        Sheet1.Range("E11").Locked = False
+    
+        'Unlocked Fish Bun Mini Cell
+        Sheet1.Range("E17").Locked = False
+    
+        'Unlocked Egg Boat Mini Cell
+        Sheet1.Range("E25").Locked = False
+    
+        'Unlocked Prawn Bun Mini Cell
+        Sheet1.Range("E29").Locked = False
+    
+        'Unlocked Cuttlefish Bun Cell
+        Sheet1.Range("D18").Locked = False
+    
+        Call SixAMCheckBoxes
+    
+        'Sheet1 ShorteatsSectionButoon, MainProductionButton & Macro Button("Delivery Summary") Visible False
+        Sheet1.ShorteatsSectionButton.Visible = False
+        Sheet1.MainProductionButton.Visible = False
+        Sheet1.Shapes("Button 5").Visible = msoTrue     'Delivery Summary Button
+        Sheet1.MorningCurfewButton.Visible = False
+        Sheet1.MorningPoyaButton.Visible = False
+        Sheet1.MorningSaturdayButton.Visible = False
+        Sheet1.MorningSundayButton.Visible = False
+        Sheet1.MorningWeekdaysButton.Visible = False
+        Sheet1.MorningApNewYearButton.Visible = False
+    
+        Sheet21.Unprotect Password:="Admin@donandsons.lk54321"
+    
+        'Thick Border Added to Sheet1("Order")
+        Sheet1.Range("B5:E73").BorderAround , xlThick
+    
+        'Sheet1 SpotCurrySheetButton & SixAMCurrySheetButton Visible True
+        Sheet1.SpotCurrySheetButton.Visible = False 'False
+        Sheet1.SixAMCurrySheetButton.Visible = True
+        Sheet1.EveningCurfewDeliveryButton.Visible = True
+        Sheet1.WeekdaysEveningButton.Visible = True
+        Sheet1.SaturdayEveningButton.Visible = True
+        Sheet1.SundayEveningButton.Visible = True
+        Sheet1.ApNewYearEveningButton.Visible = True
+    
+        Sheet1.HomeButton.Visible = True
+    
+        'Display False Workbook Tab & Horizontal Scrol Bar
+        ActiveWindow.DisplayWorkbookTabs = False
+        ActiveWindow.DisplayHorizontalScrollBar = False
+        
+        'Call Protect_All_Sheets
+        Call Protect_All_Sheets
+    
+        Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+        Sheet27.Unprotect Password:="Admin@donandsons.lk54321"
+        Sheet28.Unprotect Password:="Admin@donandsons.lk54321"
+    
+        Sheet1.Protect Password:="Admin@donandsons.lk54321", AllowFormattingCells:=True
+        Sheet2.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True
+    
+        Sheet4.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+        Sheet27.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+        Sheet28.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+        
+        'xlSheetVeryHiddon of Sheet20 & Sheet24
+        Sheet20.Visible = xlSheetVeryHidden
+        Sheet24.Visible = xlSheetVeryHidden
+
+        'Visible Evening Delivery Summary's
+        Sheet23.Visible = xlSheetVisible
+        
+        Sheet21.Select
+        
+        Sheet21.Unprotect Password:="Admin@donandsons.lk54321"
+    
+        Sheet21.Range("B4").Value = "Curry Sheet Programme"
+        Sheet21.Range("A7").Select
+        Sheet21.LoginButton.Visible = False
+    
+        Sheet21.Protect Password:="Admin@donandsons.lk54321"
+    
+        Sheet1.Select
+        Sheet1.Range("D11").Select
+    
+        Sheet1.Range("B5").Interior.Color = xlNone
+        Sheet1.Range("H5").Interior.Color = xlNone
+        
+        'Protect Workbook with a Password Added by Viraj Lakshan Rathnayake on 20.03.2019
+        ThisWorkbook.Protect Password:="Admin@donandsons.lk54321"
+        
+        Sheet21.Select
+                
+        Application.DisplayAlerts = False
+        ActiveWorkbook.SaveAs "\\serverml310\data2\Production\Curry Sheets\Shorteats Section Curry Sheet.XLSM"
+        Application.DisplayAlerts = False
+        ThisWorkbook.Save
+        Application.DisplayAlerts = True
+        
+        Application.Wait (Now + TimeValue("0:00:03"))
+        
+        Call Anytime_Recipe_Generator
+    
+    Case vbNo
+     
+        Application.Quit
+        Application.ActiveWindow.Close SaveChanges:=False
+        ThisWorkbook.Close SaveChanges:=False
+    
+    End Select
+    
+ElseIf UsernameCheck = "Manager" Then
+
+'UnProtect Workbook with a Password
+    ThisWorkbook.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Sheet21.Select
+    
+    Sheet21.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Sheet21.LogoutButton.Visible = False
+    Sheet21.LoginButton.Visible = True
+    Sheet21.Range("A1").Value = ""
+    Sheet21.Range("U1").Value = ""
+    Sheet21.Range("A7").Select
+    
+    Sheet21.Protect Password:="Admin@donandsons.lk54321"
+
+'Display False Workbook Tab & Horizontal Scrol Bar
+        ActiveWindow.DisplayWorkbookTabs = False
+        ActiveWindow.DisplayHorizontalScrollBar = False
+        
+'xlSheetVeryHiddon of Sheet3, Sheet5, Sheet7, Sheet8, Sheet11, Sheet12, Sheet13, Sheet14, Sheet17 & Sheet19
+        Sheet3.Visible = xlSheetVeryHidden  'Bakery
+        Sheet5.Visible = xlSheetVeryHidden  'Recipe Per Item
+        Sheet7.Visible = xlSheetVeryHidden  'Plain Roll Section
+        Sheet8.Visible = xlSheetVeryHidden  'Size Totals
+        Sheet11.Visible = xlSheetVeryHidden 'Calculation
+        Sheet12.Visible = xlSheetVeryHidden 'Filling Section
+        Sheet13.Visible = xlSheetVeryHidden 'Patties Dough
+        Sheet14.Visible = xlSheetVeryHidden 'Doughs
+        Sheet17.Visible = xlSheetVeryHidden 'Vegetable Curry Sheet
+        Sheet19.Visible = xlSheetVeryHidden 'Bakery Recipe Per Item
+        Sheet20.Visible = xlSheetVeryHidden 'Bakery Recipe Calculation
+        Sheet23.Visible = xlSheetVeryHidden 'Curfew Evening Summary
+        Sheet27.Visible = xlSheetVeryHidden 'Dashboard
+        Sheet28.Visible = xlSheetVeryHidden 'Data
+    
+'Protect Workbook with a Password Added by Viraj Lakshan Rathnayake on 20.03.2019
+        ThisWorkbook.Protect Password:="Admin@donandsons.lk54321"
+     
+    Application.Quit
+    Application.ActiveWindow.Close SaveChanges:=False
+    ThisWorkbook.Close SaveChanges:=False
+
+End If
+
+End Sub
+

@@ -1,0 +1,121 @@
+Attribute VB_Name = "Module24"
+Sub Sunday_Evening()
+
+    Sheet1.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    'Locked Plain Roll Cells
+    Sheet1.Range("D11:E11").Locked = True   'Plain Roll/Plain Bun
+    Sheet1.Range("D12:E12").Locked = True   'Seeni Sambol Bun
+    Sheet1.Range("D17:E17").Locked = True   'Fish Bun
+    Sheet1.Range("D18:E18").Locked = True   'Cuttlefish Bun
+    Sheet1.Range("D19:E19").Locked = True   'Chicken Sausage Bun
+    Sheet1.Range("D20:E24").Locked = True   'Egg Bun, Omelette Bun, Egg Burger, Fish Curry Bun & Hot Dog
+    Sheet1.Range("D26:E30").Locked = True   'Honey Sausage Bun, Cheese Chicken Curry Bun, Chicken Bun, Prawn Bun & Soya Bun
+    
+    'Unlocked Plain Roll Cells New Programmed
+    Sheet1.Range("U11:X11").Locked = False   'Plain Roll/Plain Bun
+    Sheet1.Range("U12:X12").Locked = False   'Seeni Sambol Bun
+    Sheet1.Range("U17:X17").Locked = False   'Fish Bun
+    Sheet1.Range("U18:X18").Locked = False   'Cuttlefish Bun
+    Sheet1.Range("U19:X19").Locked = False   'Chicken Sausage Bun
+    Sheet1.Range("U20:X24").Locked = False   'Egg Bun, Omelette Bun, Egg Burger, Fish Curry Bun & Hot Dog
+    Sheet1.Range("U26:X30").Locked = False   'Honey Sausage Bun, Cheese Chicken Curry Bun, Chicken Bun, Prawn Bun & Soya Bun
+    
+    Sheet1.Protect Password:="Admin@donandsons.lk54321"
+
+Sheet1.SummaryPrint5AMButton.Visible = True
+
+Sheet1.EveningCurfewDeliveryButton.Enabled = False
+Sheet1.SaturdayEveningButton.Enabled = False
+Sheet1.SundayEveningButton.Enabled = False
+Sheet1.ApNewYearEveningButton.Enabled = False
+Sheet1.WeekdaysEveningButton.Enabled = False
+
+Sheet1.TextBoxProductionActivated.Value = "Activated"
+
+Dim CheckDate As String
+CheckDate = Sheet2.Range("B1").Text
+
+Dim Sunday As String
+Sunday = "Sunday"
+
+Dim Monday As String
+Monday = "Monday"
+
+Dim Tuesday As String
+Tuesday = "Tuesday"
+
+Dim Wednesday As String
+Wednesday = "Wednesday"
+
+Dim Thursday As String
+Thursday = "Thursday"
+
+Dim Friday As String
+Friday = "Friday"
+
+Dim Saturday As String
+Saturday = "Saturday"
+
+'If CheckDate = Sunday Or CheckDate = Monday Or CheckDate = Tuesday Or CheckDate = Wednesday Or CheckDate = Thursday Or CheckDate = Friday Or CheckDate = Saturday Then
+If CheckDate = "" Then
+
+    Sheet1.Select
+    
+    Sheet1.Range("D5").Select
+    
+    Sheet1.Shapes("32-Point Star 4").Visible = msoTrue
+    
+    Sheet1.Shapes("32-Point Star 4").TextEffect.Text = CheckDate
+
+    Dim msg As String, Ans As Variant
+    
+    msg = "              Tomarrow is " & CheckDate & vbNewLine & vbNewLine & _
+          "Remove Seeni Sambol Bun,  Chicken Sausage Roll," & vbNewLine & _
+          "          Cheese Chicken Curry Roll &      " & vbNewLine & _
+          "              Chicken Bun Data???"
+          
+    Ans = MsgBox(msg, vbYesNo + vbExclamation, "                                      *** Don & Sons (Pvt) Ltd. ***")
+
+    Select Case Ans
+
+    Case vbYes
+    
+        Sheet23.Unprotect Password:="Admin@donandsons.lk54321"
+        
+        'Clear (Sambol Bread Small / Chicken Sausage Roll / Cheese Chicken Curry Roll & Chicken Bun) 1.30PM Values
+        Sheet23.Range("BP14:CE14").Value = 0    'Seeni Sambol Bun
+        Sheet23.Range("BP21:CE21").Value = 0    'Chicken Sausage Bun
+        Sheet23.Range("BP29:CE29").Value = 0    'Cheese Chicken Curry Bun
+        Sheet23.Range("BP30:CE30").Value = 0    'Chicken Bun
+        
+        Application.Wait (Now + TimeValue("0:00:03"))
+        
+        Sheet1.Shapes("32-Point Star 4").Visible = msoFalse
+        
+        MsgBox "           Successfully Removed" & vbNewLine & vbNewLine & _
+               " Seeni Sambol Bun, Chicken Sausage Roll" & vbNewLine & vbNewLine & _
+               "        Cheese Chicken Curry Roll &" & vbNewLine & vbNewLine & _
+               "              Chicken Bun Data", vbInformation + vbOKOnly, "*** Don & Sons (Pvt) Ltd. ***"
+        
+        Call Sunday6AMProduction
+    
+    Case vbNo
+    
+        Application.Wait (Now + TimeValue("0:00:03"))
+    
+        Sheet1.Shapes("32-Point Star 4").Visible = msoFalse
+    
+        Call Sunday6AMProduction
+    
+    End Select
+
+Else
+
+    'Call Sunday6AMProduction
+
+End If
+
+Call Sunday6AMProduction
+
+End Sub

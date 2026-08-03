@@ -1,0 +1,161 @@
+Attribute VB_Name = "Module21"
+Sub Evening_Curfew()
+
+    Sheet1.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    'Locked Plain Roll Cells
+    Sheet1.Range("D11:E11").Locked = True   'Plain Roll/Plain Bun
+    Sheet1.Range("D12:E12").Locked = True   'Seeni Sambol Bun
+    Sheet1.Range("D17:E17").Locked = True   'Fish Bun
+    Sheet1.Range("D18:E18").Locked = True   'Cuttlefish Bun
+    Sheet1.Range("D19:E19").Locked = True   'Chicken Sausage Bun
+    Sheet1.Range("D20:E24").Locked = True   'Egg Bun, Omelette Bun, Egg Burger, Fish Curry Bun & Hot Dog
+    Sheet1.Range("D26:E30").Locked = True   'Honey Sausage Bun, Cheese Chicken Curry Bun, Chicken Bun, Prawn Bun & Soya Bun
+    
+    'Unlocked Plain Roll Cells New Programmed
+    Sheet1.Range("U11:X11").Locked = False   'Plain Roll/Plain Bun
+    Sheet1.Range("U12:X12").Locked = False   'Seeni Sambol Bun
+    Sheet1.Range("U17:X17").Locked = False   'Fish Bun
+    Sheet1.Range("U18:X18").Locked = False   'Cuttlefish Bun
+    Sheet1.Range("U19:X19").Locked = False   'Chicken Sausage Bun
+    Sheet1.Range("U20:X24").Locked = False   'Egg Bun, Omelette Bun, Egg Burger, Fish Curry Bun & Hot Dog
+    Sheet1.Range("U26:X30").Locked = False   'Honey Sausage Bun, Cheese Chicken Curry Bun, Chicken Bun, Prawn Bun & Soya Bun
+    
+    Sheet1.Protect Password:="Admin@donandsons.lk54321"
+
+'Call Extra_Shorteats_Add
+
+Sheet1.SummaryPrint5AMButton.Visible = True
+
+Sheet1.EveningCurfewDeliveryButton.Enabled = False
+Sheet1.SaturdayEveningButton.Enabled = False
+Sheet1.SundayEveningButton.Enabled = False
+Sheet1.ApNewYearEveningButton.Enabled = False
+Sheet1.WeekdaysEveningButton.Enabled = False
+
+Sheet1.TextBoxProductionActivated.Value = "Activated"
+
+Dim CheckDate As String
+CheckDate = Sheet2.Range("B1").Text
+
+Dim Sunday As String
+Sunday = "Sunday"
+
+Dim Monday As String
+Monday = "Monday"
+
+Dim Tuesday As String
+Tuesday = "Tuesday"
+
+Dim Wednesday As String
+Wednesday = "Wednesday"
+
+Dim Thursday As String
+Thursday = "Thursday"
+
+Dim Friday As String
+Friday = "Friday"
+
+Dim Saturday As String
+Saturday = "Saturday"
+
+Sheet23.Select
+
+If CheckDate = Monday Or CheckDate = Tuesday Then
+
+    Sheet23.Unprotect Password:="Admin@donandsons.lk54321"
+        
+    'Clear Items On 2.30PM Values
+    'Sheet23.Range("AA20:AO20").Value = 0 'Cuttlefish Bun
+    'Sheet23.Range("AA24:AO24").Value = 0 'Egg Burger
+    Sheet23.Range("AE73:AO73").Value = 0 'Vegetable Rotty   From SGK to Dalugama
+    
+    MsgBox "    Egg Burger, Cuttlefish Bun & Vegetable Rotty" & vbNewLine & vbNewLine & _
+       " Removed At 2.30PM Delivery For Admin Request", vbInformation + vbOKOnly, _
+       "                      *** 6.00AM Production Programme ***"
+           
+
+End If
+
+
+'Copy & Paste 10.30AM & 1.30PM Delivery Data
+
+    Sheet23.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Sheet23.Range("E7").Select
+
+    Sheet23.Range("E7:S76").Copy '2.30PM Monday To Wednesday Delivery
+    
+    Sheet23.Range("AA7").PasteSpecial xlPasteValues '2.30PM Weekdays Delivery
+    
+    Application.CutCopyMode = False
+    
+    Application.Wait (Now + TimeValue("0:00:03"))
+    
+    Sheet23.Range("E85").Select
+    
+    Sheet23.Range("E85:S155").Copy '2.30PM Monday To Wednesday Delivery
+    
+    Sheet23.Range("AA85").PasteSpecial xlPasteValues '2.30PM Weekdays Delivery
+    
+    Application.CutCopyMode = False
+
+
+'If CheckDate = Monday Or CheckDate = Tuesday Or CheckDate = Wednesday Then
+
+    'Sheet1.Select
+    
+    'Sheet1.Range("D5").Select
+    
+    'Sheet1.Shapes("32-Point Star 4").Visible = msoTrue
+    
+    'Sheet1.Shapes("32-Point Star 4").TextEffect.Text = CheckDate
+
+    'Dim msg As String, Ans As Variant
+    
+    'msg = "Tomarrow is " & CheckDate & vbNewLine & vbNewLine & _
+          "Remove Fish Bun, Egg Cutlet" & vbNewLine & vbNewLine & _
+          "            From 2.30PM Delivery???"
+          
+    'Ans = MsgBox(msg, vbYesNo + vbExclamation, "             *** Don & Sons (Pvt) Ltd. ***")
+
+    'Select Case Ans
+
+    'Case vbYes
+    
+        'Sheet23.Unprotect Password:="Admin@donandsons.lk54321"
+        
+            'Clear Items On 2.30PM Values
+            'Sheet23.Range("AA48:AM48").Value = 0 'Egg Cutlet    'Without Dalugama
+
+        
+        'Application.Wait (Now + TimeValue("0:00:03"))
+        
+        'Sheet1.Shapes("32-Point Star 4").Visible = msoFalse
+        
+        'MsgBox "    Successfully Removed" & vbNewLine & vbNewLine & _
+               "        Fish Bun, Egg Cutlet" & vbNewLine & vbNewLine & _
+               "             From 2.30PM Delivery", vbInformation + vbOKOnly, _
+               "           *** Don & Sons (Pvt) Ltd. ***"
+        
+        'Application.Wait (Now + TimeValue("0:00:03"))
+        
+        'Call Weekdays6AMProduction
+    
+    'Case vbNo
+    
+        'Application.Wait (Now + TimeValue("0:00:03"))
+    
+        'Sheet1.Shapes("32-Point Star 4").Visible = msoFalse
+    
+        'Call Weekdays6AMProduction
+    
+    'End Select
+
+'Else
+
+    Call Weekdays6AMProduction
+
+'End If
+
+End Sub

@@ -1,0 +1,45 @@
+Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Sub Workbook_Open()
+
+
+'Find This Workbook Name
+Sheet2.Range("Y1").Value = Dir(ThisWorkbook.FullName)
+
+
+Sheet21.TextBoxWelcomeGreeting.Value = ""
+
+Dim GreetingText As String
+
+ Select Case Time
+ Case Is < TimeValue("12:00")
+ GreetingText = "*Good Morning"
+ 
+ Case Is < TimeValue("16:00")
+ GreetingText = "*Good Afternoon"
+ 
+ Case Else
+ GreetingText = "*Good Evening"
+
+End Select
+ 
+ Sheet21.TextBoxWelcomeGreeting.Value = GreetingText & " " & Environ("username") & "*"
+
+Sheet1.TextBoxGenarated.Visible = False
+
+'Display False Page Breaks of Sheet1 ("Order")
+    Sheet1.DisplayPageBreaks = False
+    
+'Display False Page Breaks of Sheet21 ("Home")
+    Sheet21.DisplayPageBreaks = False
+
+'Open as Sheet21 ("Home")
+    Sheet21.Select
+End Sub
+

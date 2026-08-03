@@ -1,0 +1,16 @@
+Attribute VB_Name = "Sheet4"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Attribute VB_Control = "CheckBoxBakery, 4, 0, MSForms, CheckBox"
+Attribute VB_Control = "CheckBoxRotty, 3, 1, MSForms, CheckBox"
+Attribute VB_Control = "CheckBoxShorteats, 2, 2, MSForms, CheckBox"
+Attribute VB_Control = "CheckBoxBakery4, 5, 3, MSForms, CheckBox"
+Attribute VB_Control = "CheckBoxBakery2, 6, 4, MSForms, CheckBox"
+Attribute VB_Control = "CheckBoxBakery3, 7, 5, MSForms, CheckBox"
+Attribute VB_Control = "CheckBoxShorteats2, 8, 6, MSForms, CheckBox"
+Attribute VB_Control = "CheckBoxBakery6, 9, 7, MSForms, CheckBox"

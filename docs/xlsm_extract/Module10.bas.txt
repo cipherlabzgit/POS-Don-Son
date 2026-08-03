@@ -1,0 +1,152 @@
+Attribute VB_Name = "Module10"
+Sub Sunday_5AM()
+
+'***********************************************************************************************************
+'********************************************** Sunday 5.00AM **********************************************
+'***********************************************************************************************************
+
+Dim TomarrowDay As String
+TomarrowDay = Sheet2.Range("B1").Text
+
+Dim Weekday1 As String
+Weekday1 = "Monday"
+
+Dim Weekday2 As String
+Weekday2 = "Tuesday"
+
+Dim Weekday3 As String
+Weekday3 = "Wednesday"
+
+Dim Weekday4 As String
+Weekday4 = "Thursday"
+
+Dim Weekday5 As String
+Weekday5 = "Friday"
+
+Dim Saturday As String
+Saturday = "Saturday"
+
+Dim Sunday As String
+Sunday = "Sunday"
+
+    Sheet2.Select
+    
+    Sheet2.Range("W1").Select
+
+    Sheet2.Shapes("Oval Callout 3").Visible = msoTrue
+    
+    If TomarrowDay = Weekday1 Or TomarrowDay = Weekday2 Or TomarrowDay = Weekday3 Or TomarrowDay = Weekday4 Or TomarrowDay = Weekday5 Then
+    
+        Sheet2.Shapes("Oval Callout 3").Fill.ForeColor.RGB = RGB(84, 130, 53)
+
+        Sheet2.Shapes("Oval Callout 3").TextEffect.Text = "Tomorrow is Weekday"
+        
+    ElseIf TomarrowDay = Saturday Then
+    
+        Sheet2.Shapes("Oval Callout 3").Fill.ForeColor.RGB = RGB(255, 0, 102)
+    
+        Sheet2.Shapes("Oval Callout 3").TextEffect.Text = "Tomorrow is Saturday"
+        
+    ElseIf TomarrowDay = Sunday Then
+    
+        Sheet2.Shapes("Oval Callout 3").Fill.ForeColor.RGB = RGB(0, 255, 0)
+    
+        Sheet2.Shapes("Oval Callout 3").TextEffect.Text = "Tomorrow is Sunday"
+        
+    End If
+    
+    CarryOn = MsgBox("Do You Want to Generate???", vbInformation + vbYesNo, "*** 5.00AM Production Programme ***")
+    
+    Application.Wait (Now + TimeValue("00:00:03"))
+    
+     If CarryOn = vbYes Then
+     
+    Sheet2.Shapes("Oval Callout 3").Visible = msoFalse
+     
+        Call Production_Plan
+     
+     ElseIf CarryOn = vbNo Then
+     
+    Sheet2.Shapes("Oval Callout 3").Visible = msoFalse
+     
+        'Back To Order
+        Sheet1.Select
+     
+     End If
+
+End Sub
+
+Sub Sunday_11_30AM()
+
+'**********************************************************************************************************
+'********************************************* Sunday 11.30AM *********************************************
+'**********************************************************************************************************
+
+Dim TomarrowDay As String
+TomarrowDay = Sheet2.Range("B1").Text
+
+Dim Weekday1 As String
+Weekday1 = "Monday"
+
+Dim Weekday2 As String
+Weekday2 = "Tuesday"
+
+Dim Weekday3 As String
+Weekday3 = "Wednesday"
+
+Dim Weekday4 As String
+Weekday4 = "Thursday"
+
+Dim Weekday5 As String
+Weekday5 = "Friday"
+
+Dim Saturday As String
+Saturday = "Saturday"
+
+Dim Sunday As String
+Sunday = "Sunday"
+
+    Sheet2.Select
+    
+    Sheet2.Range("W1").Select
+
+    Sheet2.Shapes("Oval Callout 3").Visible = msoTrue
+    
+    If TomarrowDay = Weekday1 Or TomarrowDay = Weekday2 Or TomarrowDay = Weekday3 Or TomarrowDay = Weekday4 Or TomarrowDay = Weekday5 Then
+    
+        Sheet2.Shapes("Oval Callout 3").Fill.ForeColor.RGB = RGB(84, 130, 53)
+
+        Sheet2.Shapes("Oval Callout 3").TextEffect.Text = "Tomorrow is Weekday"
+        
+    ElseIf TomarrowDay = Saturday Then
+    
+        Sheet2.Shapes("Oval Callout 3").Fill.ForeColor.RGB = RGB(255, 0, 102)
+    
+        Sheet2.Shapes("Oval Callout 3").TextEffect.Text = "Tomorrow is Saturday"
+        
+    ElseIf TomarrowDay = Sunday Then
+    
+        Sheet2.Shapes("Oval Callout 3").Fill.ForeColor.RGB = RGB(0, 255, 0)
+    
+        Sheet2.Shapes("Oval Callout 3").TextEffect.Text = "Tomorrow is Sunday"
+        
+    End If
+    
+    CarryOn = MsgBox("Do You Want to Generate???", vbInformation + vbYesNo, "*** 5.00AM Production Programme ***")
+    
+    Application.Wait (Now + TimeValue("00:00:03"))
+    
+     If CarryOn = vbYes Then
+     
+        Call Shorteats_Curry
+     
+     ElseIf CarryOn = vbNo Then
+     
+        'Back To Order
+        Sheet1.Select
+     
+     End If
+    
+    Sheet2.Shapes("Oval Callout 3").Visible = msoFalse
+
+End Sub

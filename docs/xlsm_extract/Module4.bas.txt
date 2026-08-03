@@ -1,0 +1,20 @@
+Attribute VB_Name = "Module4"
+Sub Click_to_Home()
+Attribute Click_to_Home.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Click_to_Home Macro
+'
+
+    Sheets("Order").Select
+End Sub
+
+Sub Protect_All_Sheets()
+
+'Protect All Worksheets with Password Added by Viraj Lakshan Rathnayake on 20.03.2019
+    Dim ws As Worksheet
+    
+    For Each ws In ThisWorkbook.Worksheets
+        ws.Protect Password:="Admin@donandsons.lk54321"
+    Next
+
+End Sub

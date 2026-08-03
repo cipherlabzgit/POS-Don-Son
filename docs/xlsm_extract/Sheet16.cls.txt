@@ -1,0 +1,40 @@
+Attribute VB_Name = "Sheet16"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Attribute VB_Control = "AddNewButton, 2, 0, MSForms, CommandButton"
+Private Sub Worksheet_Change(ByVal Target As Range)
+Dim cell As Range
+
+    With Intersect(ActiveSheet.Columns("B"), ActiveSheet.UsedRange)
+        For Each cell In .Cells
+            If WorksheetFunction.CountIf(.Resize(cell.Row - .Rows(1).Row + 1), cell.Value) > 1 Then MsgBox "              ***Duplicate Username Found***" & vbNewLine & vbNewLine & _
+            "                         '" & cell.Value & "' in Cell " & cell.Address & vbNewLine & vbNewLine & "Duplicate Values has been Automatically Deleted ", vbCritical + vbOKOnly, "***EPF Payroll Programme***"
+        Next cell
+    End With
+
+ActiveSheet.ListObjects("Table1").Range.RemoveDuplicates Columns:=1, Header:=xlYes
+
+End Sub
+
+Private Sub AddNewButton_Click()
+
+Set myNewRow = Sheet16.ListObjects(1).ListRows.Add
+        
+End Sub
+
+Private Sub Worksheet_Activate()
+
+Application.DisplayFormulaBar = False
+
+End Sub
+
+Private Sub Worksheet_Deactivate()
+
+Application.DisplayFormulaBar = True
+
+End Sub

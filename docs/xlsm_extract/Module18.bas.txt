@@ -1,0 +1,27 @@
+Attribute VB_Name = "Module18"
+Sub Save_Block()
+Attribute Save_Block.VB_ProcData.VB_Invoke_Func = "s\n14"
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 1, False)
+On Error GoTo 0
+
+If UsernameCheck = "Viraj" Then
+    
+    ThisWorkbook.Save
+    
+Else
+
+    MsgBox "    Please Use The Logout Button To Save Automatically" & vbNewLine & vbNewLine & _
+    "System Administrator Blocked To Saving Without Logout", vbCritical + vbOKOnly, "                              *** Powered By Viraj Rathnayake ***"
+    
+End If
+
+End Sub

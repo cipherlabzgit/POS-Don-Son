@@ -1,0 +1,19 @@
+Attribute VB_Name = "Module2"
+Sub Click_to_Delivery_Summary()
+Attribute Click_to_Delivery_Summary.VB_ProcData.VB_Invoke_Func = " \n14"
+'
+' Macro Added by Viraj Lakshan Rathnayake on 07.03.2019
+'
+
+    Sheets("Delivery Summary").Select
+End Sub
+
+Sub Test()
+
+'Visible Sandwich Bread Fixed 5.00AM - 45Nos ONLY
+        Sheet6.Shapes("Picture 16").Visible = msoTrue
+        
+        Sheet6.Range("F89").Value = "Sandwich Bread (45 Nos) - (Fixed)"     'Sandwich Bread
+
+End Sub
+

@@ -1,0 +1,55 @@
+Attribute VB_Name = "Module12"
+Sub Shorteats_Curry()
+
+'Print 5.00AM Curry Sheet Button
+
+    'Print 5.00AM Shorteats Section Production Curry Sheet
+    Sheet4.PageSetup.PaperSize = xlPaperA3
+    Sheet4.PageSetup.Orientation = xlLandscape
+    Sheet4.PageSetup.FitToPagesTall = 1
+    Sheet4.PageSetup.FitToPagesWide = 1
+    Sheet4.PageSetup.PrintArea = "$B$2:$Y$56"
+    Sheet4.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+    Sheet4.PrintOut
+    
+    'Print 5.00AM Shorteats Section Production Goods Issue Note
+    Sheet6.PageSetup.PaperSize = xlPaperA4
+    Sheet6.PageSetup.Orientation = xlPortrait
+    Sheet6.PageSetup.FitToPagesTall = 1
+    Sheet6.PageSetup.FitToPagesWide = 1
+    Sheet6.PageSetup.PrintArea = "$B$96:$I$139"
+    Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+    Sheet6.PrintOut
+    
+    If Sheet2.Range("X73").Value >= 1 Or Sheet2.Range("X74").Value >= 1 Or Sheet2.Range("X75").Value >= 1 Then
+    
+        'Print Rotty Section production Goods Issue Note
+        Sheet6.PageSetup.PaperSize = xlPaperA4
+        Sheet6.PageSetup.Orientation = xlPortrait
+        Sheet6.PageSetup.FitToPagesTall = 1
+        Sheet6.PageSetup.FitToPagesWide = 1
+        Sheet6.PageSetup.PrintArea = "$B$141:$I$160"
+        Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+        'Sheet6.PrintOut
+    
+    End If
+    
+    'Print 5.00AM Shorteats Section Production Recipy for Curry Items
+    Sheet18.PageSetup.PaperSize = xlPaperA4
+    Sheet18.PageSetup.Orientation = xlLandscape
+    Sheet18.PageSetup.FitToPagesTall = 1
+    Sheet18.PageSetup.FitToPagesWide = 1
+    Sheet18.PageSetup.PrintArea = "$B$2:$X$47, $Z$2:$AV$47, $AX$2:$BT$47, $BV$2:$CJ$47"
+    Sheet18.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+    'Sheet18.PrintOut
+        
+    Sheet1.Select
+    
+    'MsgBox "                *** Successfully Printed ***" & vbNewLine & vbNewLine & "This Programme is Automatically Shutting Down" _
+    , vbOKOnly + vbInformation, "*** Powered by Viraj Lakshan Rathnayake ***"
+    
+    'Application.Quit
+    'Application.ActiveWindow.Close SaveChanges:=False
+    'ThisWorkbook.Close SaveChanges:=False
+
+End Sub

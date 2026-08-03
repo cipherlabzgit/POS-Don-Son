@@ -1,0 +1,36 @@
+Attribute VB_Name = "Sheet5"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Attribute VB_Control = "CommandButton1, 1, 0, MSForms, CommandButton"
+Private Sub CommandButton1_Click()
+
+    Sheet5.Range("R49").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+
+    Sheet5.PageSetup.PaperSize = xlPaperA4
+    Sheet5.PageSetup.Orientation = xlLandscape
+    Sheet5.PageSetup.FitToPagesTall = 1
+    Sheet5.PageSetup.FitToPagesWide = 1
+    Sheet5.PageSetup.PrintArea = "$B$2:$AA$49, $B$51:$AA$103"
+    Application.Dialogs(xlDialogPrint).show
+    
+    'Set objShell = CreateObject("Wscript.Shell")
+    
+    'intMessage = MsgBox("   Please use *** HP Color LaserJet Pro M252 PCL 6 *** Printer to Print This File" & vbCr _
+        & vbCr, _
+        vbOKCancel, "                                ***Admin @ Viraj Lakshan Rathnayake***")
+        'If intMessage = vbOK Then
+            'objShell.Run ("http://h10032.www1.hp.com/ctg/Manual/c04475955")
+            'Application.Wait (Now + TimeValue("0:00:05"))
+            'Application.Dialogs(xlDialogPrint).show
+        'Else
+            'objShell.Run ("http://172.16.52.228/")
+            'MsgBox Prompt:="System is Working..."
+           'Application.Wait (Now + TimeValue("0:00:05"))
+        'End If
+    
+End Sub

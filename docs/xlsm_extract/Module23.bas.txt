@@ -1,0 +1,1643 @@
+Attribute VB_Name = "Module23"
+Sub Saturday_Evening()
+
+    Sheet1.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    'Locked Plain Roll Cells
+    Sheet1.Range("D11:E11").Locked = True   'Plain Roll/Plain Bun
+    Sheet1.Range("D12:E12").Locked = True   'Seeni Sambol Bun
+    Sheet1.Range("D17:E17").Locked = True   'Fish Bun
+    Sheet1.Range("D18:E18").Locked = True   'Cuttlefish Bun
+    Sheet1.Range("D19:E19").Locked = True   'Chicken Sausage Bun
+    Sheet1.Range("D20:E24").Locked = True   'Egg Bun, Omelette Bun, Egg Burger, Fish Curry Bun & Hot Dog
+    Sheet1.Range("D26:E30").Locked = True   'Honey Sausage Bun, Cheese Chicken Curry Bun, Chicken Bun, Prawn Bun & Soya Bun
+    
+    'Unlocked Plain Roll Cells New Programmed
+    Sheet1.Range("U11:X11").Locked = False   'Plain Roll/Plain Bun
+    Sheet1.Range("U12:X12").Locked = False   'Seeni Sambol Bun
+    Sheet1.Range("U17:X17").Locked = False   'Fish Bun
+    Sheet1.Range("U18:X18").Locked = False   'Cuttlefish Bun
+    Sheet1.Range("U19:X19").Locked = False   'Chicken Sausage Bun
+    Sheet1.Range("U20:X24").Locked = False   'Egg Bun, Omelette Bun, Egg Burger, Fish Curry Bun & Hot Dog
+    Sheet1.Range("U26:X30").Locked = False   'Honey Sausage Bun, Cheese Chicken Curry Bun, Chicken Bun, Prawn Bun & Soya Bun
+    
+    Sheet1.Protect Password:="Admin@donandsons.lk54321"
+
+'Call Extra_Shorteats_Add
+
+Sheet1.SummaryPrint5AMButton.Visible = True
+
+Sheet1.EveningCurfewDeliveryButton.Enabled = False
+Sheet1.SaturdayEveningButton.Enabled = False
+Sheet1.SundayEveningButton.Enabled = False
+Sheet1.ApNewYearEveningButton.Enabled = False
+Sheet1.WeekdaysEveningButton.Enabled = False
+
+Sheet1.TextBoxProductionActivated.Value = "Activated"
+    
+        Application.Wait (Now + TimeValue("0:00:03"))
+    
+        Sheet1.Shapes("32-Point Star 4").Visible = msoFalse
+    
+        'Copy & Paste 10.30AM & 1.30PM Delivery Data
+
+        Sheet2.Unprotect Password:="Admin@donandsons.lk54321"
+
+        Sheet23.Range("AV164:BJ233").Copy '10.30AM + 1.30PM Delivery
+    
+        Sheet2.Range("E7").PasteSpecial xlPasteValues 'Delivery Summary
+    
+        Application.CutCopyMode = False
+    
+        Sheet2.Range("B3").Value = "Saturday"
+    
+        Sheet2.Range("F1").Value = "6.00AM Production Activated"
+    
+        Sheet2.Protect Password:="Admin@donandsons.lk54321"
+        
+        Sheet1.Select
+    
+        Sheet1.Range("D5").Select
+    
+        Sheet1.Shapes("Rounded Rectangular Callout 1").Visible = msoTrue
+    
+        MsgBox "Saturday 6.00AM Production Ready to Launch", vbInformation + vbOKOnly, "Production Programme"
+    
+        Application.Wait (Now + TimeValue("0:00:03"))
+    
+        Sheet1.Shapes("Rounded Rectangular Callout 1").Visible = msoFalse
+
+
+
+    If Sheet2.Range("D77").Value <= 0 Then
+    
+        Sheet1.CheckBox.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox.Value = True
+        Sheet1.CheckBox.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("E77").Value <= 0 Then
+    
+        Sheet1.CheckBox0.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox0.Value = True
+        Sheet1.CheckBox0.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("F77").Value <= 0 Then
+    
+        Sheet1.CheckBox1.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox1.Value = True
+        Sheet1.CheckBox1.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("G77").Value <= 0 Then
+    
+        Sheet1.CheckBox2.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox2.Value = True
+        Sheet1.CheckBox2.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("H77").Value <= 0 Then
+    
+        Sheet1.CheckBox3.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox3.Value = True
+        Sheet1.CheckBox3.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("I77").Value <= 0 Then
+    
+        Sheet1.CheckBox4.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox4.Value = True
+        Sheet1.CheckBox4.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("J77").Value <= 0 Then
+    
+        Sheet1.CheckBox5.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox5.Value = True
+        Sheet1.CheckBox5.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("K77").Value <= 0 Then
+    
+        Sheet1.CheckBox6.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox6.Value = True
+        Sheet1.CheckBox6.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("L77").Value <= 0 Then
+    
+        Sheet1.CheckBox7.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox7.Value = True
+        Sheet1.CheckBox7.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("M77").Value <= 0 Then
+    
+        Sheet1.CheckBox8.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox8.Value = True
+        Sheet1.CheckBox8.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("N77").Value <= 0 Then
+    
+        Sheet1.CheckBox9.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox9.Value = True
+        Sheet1.CheckBox9.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("O77").Value <= 0 Then
+    
+        Sheet1.CheckBox10.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox10.Value = True
+        Sheet1.CheckBox10.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("P77").Value <= 0 Then
+    
+        Sheet1.CheckBox11.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox11.Value = True
+        Sheet1.CheckBox11.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("Q77").Value <= 0 Then
+    
+        Sheet1.CheckBox12.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox12.Value = True
+        Sheet1.CheckBox12.Enabled = True
+        
+    End If
+    
+    If Sheet2.Range("R77").Value <= 0 Then
+    
+        Sheet1.CheckBox13.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBox13.Value = True
+        Sheet1.CheckBox13.Enabled = True
+        
+    End If
+    
+'******************************************''
+'************** Item Check Box **************
+'******************************************''
+
+    If Sheet2.Range("AA7").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem1.Enabled = False
+        Sheet1.CheckBox1030AM1.Enabled = False
+        Sheet1.CheckBox0130AM1.Enabled = False
+    
+    Else
+        
+        Sheet1.CheckBoxAllItem1.Enabled = True
+        Sheet1.CheckBoxAllItem1.Value = True
+        
+        Sheet1.CheckBox1030AM1.Enabled = True
+        Sheet1.CheckBox1030AM1.Value = True
+        
+        Sheet1.CheckBox0130AM1.Enabled = True
+        Sheet1.CheckBox0130AM1.Value = True
+        
+    End If
+    
+    
+    If Sheet2.Range("AA8").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem2.Enabled = False
+        Sheet1.CheckBox1030AM2.Enabled = False
+        Sheet1.CheckBox0130AM2.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem2.Value = True
+        Sheet1.CheckBoxAllItem2.Enabled = True
+        
+        Sheet1.CheckBox1030AM2.Enabled = True
+        Sheet1.CheckBox1030AM2.Value = True
+        
+        Sheet1.CheckBox0130AM2.Enabled = True
+        Sheet1.CheckBox0130AM2.Value = True
+        
+        
+    End If
+        
+    
+    If Sheet2.Range("AA9").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem3.Enabled = False
+        Sheet1.CheckBox1030AM3.Enabled = False
+        Sheet1.CheckBox0130AM3.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem3.Value = True
+        Sheet1.CheckBoxAllItem3.Enabled = True
+        
+        Sheet1.CheckBox1030AM3.Enabled = True
+        Sheet1.CheckBox1030AM3.Value = True
+        
+        Sheet1.CheckBox0130AM3.Enabled = True
+        Sheet1.CheckBox0130AM3.Value = True
+        
+    End If
+    
+        
+    
+    If Sheet2.Range("AA10").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem4.Enabled = False
+        Sheet1.CheckBox1030AM4.Enabled = False
+        Sheet1.CheckBox0130AM4.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem4.Value = True
+        Sheet1.CheckBoxAllItem4.Enabled = True
+        
+        Sheet1.CheckBox1030AM4.Enabled = True
+        Sheet1.CheckBox1030AM4.Value = True
+        
+        Sheet1.CheckBox0130AM4.Enabled = True
+        Sheet1.CheckBox0130AM4.Value = True
+        
+    End If
+    
+    
+    If Sheet2.Range("AA11").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem5.Enabled = False
+        Sheet1.CheckBox1030AM5.Enabled = False
+        Sheet1.CheckBox0130AM5.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem5.Value = True
+        Sheet1.CheckBoxAllItem5.Enabled = True
+        
+        Sheet1.CheckBox1030AM5.Enabled = True
+        Sheet1.CheckBox1030AM5.Value = True
+        
+        Sheet1.CheckBox0130AM5.Enabled = True
+        Sheet1.CheckBox0130AM5.Value = True
+        
+    End If
+        
+    
+    If Sheet2.Range("AA12").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem6.Enabled = False
+        Sheet1.CheckBox1030AM6.Enabled = False
+        Sheet1.CheckBox0130AM6.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem6.Value = True
+        Sheet1.CheckBoxAllItem6.Enabled = True
+        
+        Sheet1.CheckBox1030AM6.Enabled = True
+        Sheet1.CheckBox1030AM6.Value = True
+        
+        Sheet1.CheckBox0130AM6.Enabled = True
+        Sheet1.CheckBox0130AM6.Value = True
+        
+    End If
+            
+    
+    If Sheet2.Range("AA13").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem7.Enabled = False
+        Sheet1.CheckBox1030AM7.Enabled = False
+        Sheet1.CheckBox0130AM7.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem7.Value = True
+        Sheet1.CheckBoxAllItem7.Enabled = True
+        
+        Sheet1.CheckBox1030AM7.Enabled = True
+        Sheet1.CheckBox1030AM7.Value = True
+        
+        Sheet1.CheckBox0130AM7.Enabled = True
+        Sheet1.CheckBox0130AM7.Value = True
+        
+    End If
+                
+    
+    If Sheet2.Range("AA14").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem8.Enabled = False
+        Sheet1.CheckBox1030AM8.Enabled = False
+        Sheet1.CheckBox0130AM8.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem8.Value = True
+        Sheet1.CheckBoxAllItem8.Enabled = True
+        
+        Sheet1.CheckBox1030AM8.Enabled = True
+        Sheet1.CheckBox1030AM8.Value = True
+        
+        Sheet1.CheckBox0130AM8.Enabled = True
+        Sheet1.CheckBox0130AM8.Value = True
+        
+    End If
+                    
+    
+    If Sheet2.Range("AA15").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem9.Enabled = False
+        Sheet1.CheckBox1030AM9.Enabled = False
+        Sheet1.CheckBox0130AM9.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem9.Value = True
+        Sheet1.CheckBoxAllItem9.Enabled = True
+        
+        Sheet1.CheckBox1030AM9.Enabled = True
+        Sheet1.CheckBox1030AM9.Value = True
+        
+        Sheet1.CheckBox0130AM9.Enabled = True
+        Sheet1.CheckBox0130AM9.Value = True
+        
+    End If
+                        
+    
+    If Sheet2.Range("AA16").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem10.Enabled = False
+        Sheet1.CheckBox1030AM10.Enabled = False
+        Sheet1.CheckBox0130AM10.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem10.Value = True
+        Sheet1.CheckBoxAllItem10.Enabled = True
+        
+        Sheet1.CheckBox1030AM10.Enabled = True
+        Sheet1.CheckBox1030AM10.Value = True
+        
+        Sheet1.CheckBox0130AM10.Enabled = True
+        Sheet1.CheckBox0130AM10.Value = True
+        
+    End If
+    
+                        
+    
+    If Sheet2.Range("AA17").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem11.Enabled = False
+        Sheet1.CheckBox1030AM11.Enabled = False
+        Sheet1.CheckBox0130AM11.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem11.Value = True
+        Sheet1.CheckBoxAllItem11.Enabled = True
+        
+        Sheet1.CheckBox1030AM11.Enabled = True
+        Sheet1.CheckBox1030AM11.Value = True
+        
+        Sheet1.CheckBox0130AM11.Enabled = True
+        Sheet1.CheckBox0130AM11.Value = True
+        
+    End If
+    
+    
+    If Sheet2.Range("AA18").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem12.Enabled = False
+        Sheet1.CheckBox1030AM12.Enabled = False
+        Sheet1.CheckBox0130AM12.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem12.Value = True
+        Sheet1.CheckBoxAllItem12.Enabled = True
+        
+        Sheet1.CheckBox1030AM12.Enabled = True
+        Sheet1.CheckBox1030AM12.Value = True
+        
+        Sheet1.CheckBox0130AM12.Enabled = True
+        Sheet1.CheckBox0130AM12.Value = True
+        
+    End If
+    
+    
+    If Sheet2.Range("AA19").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem13.Enabled = False
+        Sheet1.CheckBox1030AM13.Enabled = False
+        Sheet1.CheckBox0130AM13.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem13.Value = True
+        Sheet1.CheckBoxAllItem13.Enabled = True
+        
+        Sheet1.CheckBox1030AM13.Enabled = True
+        Sheet1.CheckBox1030AM13.Value = True
+        
+        Sheet1.CheckBox0130AM13.Enabled = True
+        Sheet1.CheckBox0130AM13.Value = True
+        
+    End If
+        
+    
+    If Sheet2.Range("AA20").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem14.Enabled = False
+        Sheet1.CheckBox1030AM14.Enabled = False
+        Sheet1.CheckBox0130AM14.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem14.Value = True
+        Sheet1.CheckBoxAllItem14.Enabled = True
+        
+        Sheet1.CheckBox1030AM14.Enabled = True
+        Sheet1.CheckBox1030AM14.Value = True
+        
+        Sheet1.CheckBox0130AM14.Enabled = True
+        Sheet1.CheckBox0130AM14.Value = True
+        
+    End If
+            
+    
+    If Sheet2.Range("AA21").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem15.Enabled = False
+        Sheet1.CheckBox1030AM15.Enabled = False
+        Sheet1.CheckBox0130AM15.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem15.Value = True
+        Sheet1.CheckBoxAllItem15.Enabled = True
+        
+        Sheet1.CheckBox1030AM15.Enabled = True
+        Sheet1.CheckBox1030AM15.Value = True
+        
+        Sheet1.CheckBox0130AM15.Enabled = True
+        Sheet1.CheckBox0130AM15.Value = True
+        
+    End If
+                
+    
+    If Sheet2.Range("AA22").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem16.Enabled = False
+        Sheet1.CheckBox1030AM16.Enabled = False
+        Sheet1.CheckBox0130AM16.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem16.Value = True
+        Sheet1.CheckBoxAllItem16.Enabled = True
+        
+        Sheet1.CheckBox1030AM16.Enabled = True
+        Sheet1.CheckBox1030AM16.Value = True
+        
+        Sheet1.CheckBox0130AM16.Enabled = True
+        Sheet1.CheckBox0130AM16.Value = True
+        
+    End If
+                    
+    
+    If Sheet2.Range("AA23").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem17.Enabled = False
+        Sheet1.CheckBox1030AM17.Enabled = False
+        Sheet1.CheckBox0130AM17.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem17.Value = True
+        Sheet1.CheckBoxAllItem17.Enabled = True
+        
+        Sheet1.CheckBox1030AM17.Enabled = True
+        Sheet1.CheckBox1030AM17.Value = True
+        
+        Sheet1.CheckBox0130AM17.Enabled = True
+        Sheet1.CheckBox0130AM17.Value = True
+        
+    End If
+                        
+    
+    If Sheet2.Range("AA24").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem18.Enabled = False
+        Sheet1.CheckBox1030AM18.Enabled = False
+        Sheet1.CheckBox0130AM18.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem18.Value = True
+        Sheet1.CheckBoxAllItem18.Enabled = True
+        
+        Sheet1.CheckBox1030AM18.Enabled = True
+        Sheet1.CheckBox1030AM18.Value = True
+        
+        Sheet1.CheckBox0130AM18.Enabled = True
+        Sheet1.CheckBox0130AM18.Value = True
+        
+    End If
+                            
+    
+    If Sheet2.Range("AA25").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem19.Enabled = False
+        Sheet1.CheckBox1030AM19.Enabled = False
+        Sheet1.CheckBox0130AM19.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem19.Value = True
+        Sheet1.CheckBoxAllItem19.Enabled = True
+        
+        Sheet1.CheckBox1030AM19.Enabled = True
+        Sheet1.CheckBox1030AM19.Value = True
+        
+        Sheet1.CheckBox0130AM19.Enabled = True
+        Sheet1.CheckBox0130AM19.Value = True
+        
+    End If
+                                
+    
+    If Sheet2.Range("AA26").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem20.Enabled = False
+        Sheet1.CheckBox1030AM20.Enabled = False
+        Sheet1.CheckBox0130AM20.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem20.Value = True
+        Sheet1.CheckBoxAllItem20.Enabled = True
+        
+        Sheet1.CheckBox1030AM20.Enabled = True
+        Sheet1.CheckBox1030AM20.Value = True
+        
+        Sheet1.CheckBox0130AM20.Enabled = True
+        Sheet1.CheckBox0130AM20.Value = True
+        
+    End If
+                                    
+    
+    If Sheet2.Range("AA27").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem21.Enabled = False
+        Sheet1.CheckBox1030AM21.Enabled = False
+        Sheet1.CheckBox0130AM21.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem21.Value = True
+        Sheet1.CheckBoxAllItem21.Enabled = True
+        
+        Sheet1.CheckBox1030AM21.Enabled = True
+        Sheet1.CheckBox1030AM21.Value = True
+        
+        Sheet1.CheckBox0130AM21.Enabled = True
+        Sheet1.CheckBox0130AM21.Value = True
+        
+    End If
+                                        
+    
+    If Sheet2.Range("AA28").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem22.Enabled = False
+        Sheet1.CheckBox1030AM22.Enabled = False
+        Sheet1.CheckBox0130AM22.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem22.Value = True
+        Sheet1.CheckBoxAllItem22.Enabled = True
+        
+        Sheet1.CheckBox1030AM22.Enabled = True
+        Sheet1.CheckBox1030AM22.Value = True
+        
+        Sheet1.CheckBox0130AM22.Enabled = True
+        Sheet1.CheckBox0130AM22.Value = True
+        
+    End If
+                                            
+    
+    If Sheet2.Range("AA29").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem23.Enabled = False
+        Sheet1.CheckBox1030AM23.Enabled = False
+        Sheet1.CheckBox0130AM23.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem23.Value = True
+        Sheet1.CheckBoxAllItem23.Enabled = True
+        
+        Sheet1.CheckBox1030AM23.Enabled = True
+        Sheet1.CheckBox1030AM23.Value = True
+        
+        Sheet1.CheckBox0130AM23.Enabled = True
+        Sheet1.CheckBox0130AM23.Value = True
+        
+    End If
+                                                
+    
+    If Sheet2.Range("AA30").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem24.Enabled = False
+        Sheet1.CheckBox1030AM24.Enabled = False
+        Sheet1.CheckBox0130AM24.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem24.Value = True
+        Sheet1.CheckBoxAllItem24.Enabled = True
+        
+        Sheet1.CheckBox1030AM24.Enabled = True
+        Sheet1.CheckBox1030AM24.Value = True
+        
+        Sheet1.CheckBox0130AM24.Enabled = True
+        Sheet1.CheckBox0130AM24.Value = True
+        
+    End If
+                                                    
+    
+    If Sheet2.Range("AA31").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem25.Enabled = False
+        Sheet1.CheckBox1030AM25.Enabled = False
+        Sheet1.CheckBox0130AM25.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem25.Value = True
+        Sheet1.CheckBoxAllItem25.Enabled = True
+        
+        Sheet1.CheckBox1030AM25.Enabled = True
+        Sheet1.CheckBox1030AM25.Value = True
+        
+        Sheet1.CheckBox0130AM25.Enabled = True
+        Sheet1.CheckBox0130AM25.Value = True
+        
+    End If
+                                                        
+    
+    If Sheet2.Range("AA32").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem26.Enabled = False
+        Sheet1.CheckBox1030AM26.Enabled = False
+        Sheet1.CheckBox0130AM26.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem26.Value = True
+        Sheet1.CheckBoxAllItem26.Enabled = True
+        
+        Sheet1.CheckBox1030AM26.Enabled = True
+        Sheet1.CheckBox1030AM26.Value = True
+        
+        Sheet1.CheckBox0130AM26.Enabled = True
+        Sheet1.CheckBox0130AM26.Value = True
+        
+    End If
+                                                            
+    
+    If Sheet2.Range("AA33").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem27.Enabled = False
+        Sheet1.CheckBox1030AM27.Enabled = False
+        Sheet1.CheckBox0130AM27.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem27.Value = True
+        Sheet1.CheckBoxAllItem27.Enabled = True
+        
+        Sheet1.CheckBox1030AM27.Enabled = True
+        Sheet1.CheckBox1030AM27.Value = True
+        
+        Sheet1.CheckBox0130AM27.Enabled = True
+        Sheet1.CheckBox0130AM27.Value = True
+        
+    End If
+                                                                
+    
+    If Sheet2.Range("AA34").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem28.Enabled = False
+        Sheet1.CheckBox1030AM28.Enabled = False
+        Sheet1.CheckBox0130AM28.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem28.Value = True
+        Sheet1.CheckBoxAllItem28.Enabled = True
+        
+        Sheet1.CheckBox1030AM28.Enabled = True
+        Sheet1.CheckBox1030AM28.Value = True
+        
+        Sheet1.CheckBox0130AM28.Enabled = True
+        Sheet1.CheckBox0130AM28.Value = True
+        
+    End If
+                                                                    
+    
+    If Sheet2.Range("AA35").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem29.Enabled = False
+        Sheet1.CheckBox1030AM29.Enabled = False
+        Sheet1.CheckBox0130AM29.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem29.Value = True
+        Sheet1.CheckBoxAllItem29.Enabled = True
+        
+        Sheet1.CheckBox1030AM29.Enabled = True
+        Sheet1.CheckBox1030AM29.Value = True
+        
+        Sheet1.CheckBox0130AM29.Enabled = True
+        Sheet1.CheckBox0130AM29.Value = True
+        
+    End If
+                                                                        
+    
+    If Sheet2.Range("AA36").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem30.Enabled = False
+        Sheet1.CheckBox1030AM30.Enabled = False
+        Sheet1.CheckBox0130AM30.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem30.Value = True
+        Sheet1.CheckBoxAllItem30.Enabled = True
+        
+        Sheet1.CheckBox1030AM30.Enabled = True
+        Sheet1.CheckBox1030AM30.Value = True
+        
+        Sheet1.CheckBox0130AM30.Enabled = True
+        Sheet1.CheckBox0130AM30.Value = True
+        
+    End If
+                                                                            
+    
+    If Sheet2.Range("AA37").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem31.Enabled = False
+        Sheet1.CheckBox1030AM31.Enabled = False
+        Sheet1.CheckBox0130AM31.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem31.Value = True
+        Sheet1.CheckBoxAllItem31.Enabled = True
+        
+        Sheet1.CheckBox1030AM31.Enabled = True
+        Sheet1.CheckBox1030AM31.Value = True
+        
+        Sheet1.CheckBox0130AM31.Enabled = True
+        Sheet1.CheckBox0130AM31.Value = True
+        
+    End If
+                                                                                
+    
+    If Sheet2.Range("AA38").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem32.Enabled = False
+        Sheet1.CheckBox1030AM32.Enabled = False
+        Sheet1.CheckBox0130AM32.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem32.Value = True
+        Sheet1.CheckBoxAllItem32.Enabled = True
+        
+        Sheet1.CheckBox1030AM32.Enabled = True
+        Sheet1.CheckBox1030AM32.Value = True
+        
+        Sheet1.CheckBox0130AM32.Enabled = True
+        Sheet1.CheckBox0130AM32.Value = True
+        
+    End If
+                                                                                    
+    
+    If Sheet2.Range("AA39").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem33.Enabled = False
+        Sheet1.CheckBox1030AM33.Enabled = False
+        Sheet1.CheckBox0130AM33.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem33.Value = True
+        Sheet1.CheckBoxAllItem33.Enabled = True
+        
+        Sheet1.CheckBox1030AM33.Enabled = True
+        Sheet1.CheckBox1030AM33.Value = True
+        
+        Sheet1.CheckBox0130AM33.Enabled = True
+        Sheet1.CheckBox0130AM33.Value = True
+        
+    End If
+                                                                                        
+    
+    If Sheet2.Range("AA40").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem34.Enabled = False
+        Sheet1.CheckBox1030AM34.Enabled = False
+        Sheet1.CheckBox0130AM34.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem34.Value = True
+        Sheet1.CheckBoxAllItem34.Enabled = True
+        
+        Sheet1.CheckBox1030AM34.Enabled = True
+        Sheet1.CheckBox1030AM34.Value = True
+        
+        Sheet1.CheckBox0130AM34.Enabled = True
+        Sheet1.CheckBox0130AM34.Value = True
+        
+    End If
+                                                                                            
+    
+    If Sheet2.Range("AA41").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem35.Enabled = False
+        Sheet1.CheckBox1030AM35.Enabled = False
+        Sheet1.CheckBox0130AM35.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem35.Value = True
+        Sheet1.CheckBoxAllItem35.Enabled = True
+        
+        Sheet1.CheckBox1030AM35.Enabled = True
+        Sheet1.CheckBox1030AM35.Value = True
+        
+        Sheet1.CheckBox0130AM35.Enabled = True
+        Sheet1.CheckBox0130AM35.Value = True
+        
+    End If
+                                                                                                
+    
+    If Sheet2.Range("AA42").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem36.Enabled = False
+        Sheet1.CheckBox1030AM36.Enabled = False
+        Sheet1.CheckBox0130AM36.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem36.Value = True
+        Sheet1.CheckBoxAllItem36.Enabled = True
+        
+        Sheet1.CheckBox1030AM36.Enabled = True
+        Sheet1.CheckBox1030AM36.Value = True
+        
+        Sheet1.CheckBox0130AM36.Enabled = True
+        Sheet1.CheckBox0130AM36.Value = True
+        
+    End If
+                                                                                                    
+    
+    If Sheet2.Range("AA43").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem37.Enabled = False
+        Sheet1.CheckBox1030AM37.Enabled = False
+        Sheet1.CheckBox0130AM37.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem37.Value = True
+        Sheet1.CheckBoxAllItem37.Enabled = True
+        
+        Sheet1.CheckBox1030AM37.Enabled = True
+        Sheet1.CheckBox1030AM37.Value = True
+        
+        Sheet1.CheckBox0130AM37.Enabled = True
+        Sheet1.CheckBox0130AM37.Value = True
+        
+    End If
+                                                                                                        
+    
+    If Sheet2.Range("AA44").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem38.Enabled = False
+        Sheet1.CheckBox1030AM38.Enabled = False
+        Sheet1.CheckBox0130AM38.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem38.Value = True
+        Sheet1.CheckBoxAllItem38.Enabled = True
+        
+        Sheet1.CheckBox1030AM38.Enabled = True
+        Sheet1.CheckBox1030AM38.Value = True
+        
+        Sheet1.CheckBox0130AM38.Enabled = True
+        Sheet1.CheckBox0130AM38.Value = True
+        
+    End If
+                                                                                                            
+    
+    If Sheet2.Range("AA45").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem39.Enabled = False
+        Sheet1.CheckBox1030AM39.Enabled = False
+        Sheet1.CheckBox0130AM39.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem39.Value = True
+        Sheet1.CheckBoxAllItem39.Enabled = True
+        
+        Sheet1.CheckBox1030AM39.Enabled = True
+        Sheet1.CheckBox1030AM39.Value = True
+        
+        Sheet1.CheckBox0130AM39.Enabled = True
+        Sheet1.CheckBox0130AM39.Value = True
+        
+    End If
+                                                                                                                
+    
+    If Sheet2.Range("AA46").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem40.Enabled = False
+        Sheet1.CheckBox1030AM40.Enabled = False
+        Sheet1.CheckBox0130AM40.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem40.Value = True
+        Sheet1.CheckBoxAllItem40.Enabled = True
+        
+        Sheet1.CheckBox1030AM40.Enabled = True
+        Sheet1.CheckBox1030AM40.Value = True
+        
+        Sheet1.CheckBox0130AM40.Enabled = True
+        Sheet1.CheckBox0130AM40.Value = True
+        
+    End If
+                                                                                                                    
+    
+    If Sheet2.Range("AA47").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem41.Enabled = False
+        Sheet1.CheckBox1030AM41.Enabled = False
+        Sheet1.CheckBox0130AM41.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem41.Value = True
+        Sheet1.CheckBoxAllItem41.Enabled = True
+        
+        Sheet1.CheckBox1030AM41.Enabled = True
+        Sheet1.CheckBox1030AM41.Value = True
+        
+        Sheet1.CheckBox0130AM41.Enabled = True
+        Sheet1.CheckBox0130AM41.Value = True
+        
+    End If
+                                                                                                                        
+    
+    If Sheet2.Range("AA48").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem42.Enabled = False
+        Sheet1.CheckBox1030AM42.Enabled = False
+        Sheet1.CheckBox0130AM42.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem42.Value = True
+        Sheet1.CheckBoxAllItem42.Enabled = True
+        
+        Sheet1.CheckBox1030AM42.Enabled = True
+        Sheet1.CheckBox1030AM42.Value = True
+        
+        Sheet1.CheckBox0130AM42.Enabled = True
+        Sheet1.CheckBox0130AM42.Value = True
+        
+    End If
+                                                                                                                            
+    
+    If Sheet2.Range("AA49").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem43.Enabled = False
+        Sheet1.CheckBox1030AM43.Enabled = False
+        Sheet1.CheckBox0130AM43.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem43.Value = True
+        Sheet1.CheckBoxAllItem43.Enabled = True
+        
+        Sheet1.CheckBox1030AM43.Enabled = True
+        Sheet1.CheckBox1030AM43.Value = True
+        
+        Sheet1.CheckBox0130AM43.Enabled = True
+        Sheet1.CheckBox0130AM43.Value = True
+        
+    End If
+                                                                                                                                
+    
+    If Sheet2.Range("AA50").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem44.Enabled = False
+        Sheet1.CheckBox1030AM44.Enabled = False
+        Sheet1.CheckBox0130AM44.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem44.Value = True
+        Sheet1.CheckBoxAllItem44.Enabled = True
+        
+        Sheet1.CheckBox1030AM44.Enabled = True
+        Sheet1.CheckBox1030AM44.Value = True
+        
+        Sheet1.CheckBox0130AM44.Enabled = True
+        Sheet1.CheckBox0130AM44.Value = True
+        
+    End If
+                                                                                                                                    
+    
+    If Sheet2.Range("AA51").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem45.Enabled = False
+        Sheet1.CheckBox1030AM45.Enabled = False
+        Sheet1.CheckBox0130AM45.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem45.Value = True
+        Sheet1.CheckBoxAllItem45.Enabled = True
+        
+        Sheet1.CheckBox1030AM45.Enabled = True
+        Sheet1.CheckBox1030AM45.Value = True
+        
+        Sheet1.CheckBox0130AM45.Enabled = True
+        Sheet1.CheckBox0130AM45.Value = True
+        
+    End If
+                                                                                                                                        
+    
+    If Sheet2.Range("AA52").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem46.Enabled = False
+        Sheet1.CheckBox1030AM46.Enabled = False
+        Sheet1.CheckBox0130AM46.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem46.Value = True
+        Sheet1.CheckBoxAllItem46.Enabled = True
+        
+        Sheet1.CheckBox1030AM46.Enabled = True
+        Sheet1.CheckBox1030AM46.Value = True
+        
+        Sheet1.CheckBox0130AM46.Enabled = True
+        Sheet1.CheckBox0130AM46.Value = True
+        
+    End If
+                                                                                                                                            
+    
+    If Sheet2.Range("AA53").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem47.Enabled = False
+        Sheet1.CheckBox1030AM47.Enabled = False
+        Sheet1.CheckBox0130AM47.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem47.Value = True
+        Sheet1.CheckBoxAllItem47.Enabled = True
+        
+        Sheet1.CheckBox1030AM47.Enabled = True
+        Sheet1.CheckBox1030AM47.Value = True
+        
+        Sheet1.CheckBox0130AM47.Enabled = True
+        Sheet1.CheckBox0130AM47.Value = True
+        
+    End If
+                                                                                                                                                
+    
+    If Sheet2.Range("AA54").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem48.Enabled = False
+        Sheet1.CheckBox1030AM48.Enabled = False
+        Sheet1.CheckBox0130AM48.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem48.Value = True
+        Sheet1.CheckBoxAllItem48.Enabled = True
+        
+        Sheet1.CheckBox1030AM48.Enabled = True
+        Sheet1.CheckBox1030AM48.Value = True
+        
+        Sheet1.CheckBox0130AM48.Enabled = True
+        Sheet1.CheckBox0130AM48.Value = True
+        
+    End If
+                                                                                                                                                    
+    
+    If Sheet2.Range("AA55").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem49.Enabled = False
+        Sheet1.CheckBox1030AM49.Enabled = False
+        Sheet1.CheckBox0130AM49.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem49.Value = True
+        Sheet1.CheckBoxAllItem49.Enabled = True
+        
+        Sheet1.CheckBox1030AM49.Enabled = True
+        Sheet1.CheckBox1030AM49.Value = True
+        
+        Sheet1.CheckBox0130AM49.Enabled = True
+        Sheet1.CheckBox0130AM49.Value = True
+        
+    End If
+                                                                                                                                                        
+    
+    If Sheet2.Range("AA56").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem50.Enabled = False
+        Sheet1.CheckBox1030AM50.Enabled = False
+        Sheet1.CheckBox0130AM50.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem50.Value = True
+        Sheet1.CheckBoxAllItem50.Enabled = True
+        
+        Sheet1.CheckBox1030AM50.Enabled = True
+        Sheet1.CheckBox1030AM50.Value = True
+        
+        Sheet1.CheckBox0130AM50.Enabled = True
+        Sheet1.CheckBox0130AM50.Value = True
+        
+    End If
+                                                                                                                                                            
+    
+    If Sheet2.Range("AA57").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem51.Enabled = False
+        Sheet1.CheckBox1030AM51.Enabled = False
+        Sheet1.CheckBox0130AM51.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem51.Value = True
+        Sheet1.CheckBoxAllItem51.Enabled = True
+        
+        Sheet1.CheckBox1030AM51.Enabled = True
+        Sheet1.CheckBox1030AM51.Value = True
+        
+        Sheet1.CheckBox0130AM51.Enabled = True
+        Sheet1.CheckBox0130AM51.Value = True
+        
+    End If
+                                                                                                                                                                
+    
+    If Sheet2.Range("AA58").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem52.Enabled = False
+        Sheet1.CheckBox1030AM52.Enabled = False
+        Sheet1.CheckBox0130AM52.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem52.Value = True
+        Sheet1.CheckBoxAllItem52.Enabled = True
+        
+        Sheet1.CheckBox1030AM52.Enabled = True
+        Sheet1.CheckBox1030AM52.Value = True
+        
+        Sheet1.CheckBox0130AM52.Enabled = True
+        Sheet1.CheckBox0130AM52.Value = True
+        
+    End If
+                                                                                                                                                                
+    
+    If Sheet2.Range("AA59").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem53.Enabled = False
+        Sheet1.CheckBox1030AM53.Enabled = False
+        Sheet1.CheckBox0130AM53.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem53.Value = True
+        Sheet1.CheckBoxAllItem53.Enabled = True
+        
+        Sheet1.CheckBox1030AM53.Enabled = True
+        Sheet1.CheckBox1030AM53.Value = True
+        
+        Sheet1.CheckBox0130AM53.Enabled = True
+        Sheet1.CheckBox0130AM53.Value = True
+        
+    End If
+                                                                                                                                                                    
+    
+    If Sheet2.Range("AA60").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem54.Enabled = False
+        Sheet1.CheckBox1030AM54.Enabled = False
+        Sheet1.CheckBox0130AM54.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem54.Value = True
+        Sheet1.CheckBoxAllItem54.Enabled = True
+        
+        Sheet1.CheckBox1030AM54.Enabled = True
+        Sheet1.CheckBox1030AM54.Value = True
+        
+        Sheet1.CheckBox0130AM54.Enabled = True
+        Sheet1.CheckBox0130AM54.Value = True
+        
+    End If
+                                                                                                                                                                        
+    
+    If Sheet2.Range("AA61").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem55.Enabled = False
+        Sheet1.CheckBox1030AM55.Enabled = False
+        Sheet1.CheckBox0130AM55.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem55.Value = True
+        Sheet1.CheckBoxAllItem55.Enabled = True
+        
+        Sheet1.CheckBox1030AM55.Enabled = True
+        Sheet1.CheckBox1030AM55.Value = True
+        
+        Sheet1.CheckBox0130AM55.Enabled = True
+        Sheet1.CheckBox0130AM55.Value = True
+        
+    End If
+    
+    
+    If Sheet2.Range("AA62").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem56.Enabled = False
+        Sheet1.CheckBox1030AM56.Enabled = False
+        Sheet1.CheckBox0130AM56.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem56.Value = True
+        Sheet1.CheckBoxAllItem56.Enabled = True
+        
+        Sheet1.CheckBox1030AM56.Enabled = True
+        Sheet1.CheckBox1030AM56.Value = True
+        
+        Sheet1.CheckBox0130AM56.Enabled = True
+        Sheet1.CheckBox0130AM56.Value = True
+        
+    End If
+    
+    
+    If Sheet2.Range("AA63").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem57.Enabled = False
+        Sheet1.CheckBox1030AM57.Enabled = False
+        Sheet1.CheckBox0130AM57.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem57.Value = True
+        Sheet1.CheckBoxAllItem57.Enabled = True
+        
+        Sheet1.CheckBox1030AM57.Enabled = True
+        Sheet1.CheckBox1030AM57.Value = True
+        
+        Sheet1.CheckBox0130AM57.Enabled = True
+        Sheet1.CheckBox0130AM57.Value = True
+        
+    End If
+        
+    
+    If Sheet2.Range("AA64").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem58.Enabled = False
+        Sheet1.CheckBox1030AM58.Enabled = False
+        Sheet1.CheckBox0130AM58.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem58.Value = True
+        Sheet1.CheckBoxAllItem58.Enabled = True
+        
+        Sheet1.CheckBox1030AM58.Enabled = True
+        Sheet1.CheckBox1030AM58.Value = True
+        
+        Sheet1.CheckBox0130AM58.Enabled = True
+        Sheet1.CheckBox0130AM58.Value = True
+        
+    End If
+            
+    
+    If Sheet2.Range("AA65").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem59.Enabled = False
+        Sheet1.CheckBox1030AM59.Enabled = False
+        Sheet1.CheckBox0130AM59.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem59.Value = True
+        Sheet1.CheckBoxAllItem59.Enabled = True
+        
+        Sheet1.CheckBox1030AM59.Enabled = True
+        Sheet1.CheckBox1030AM59.Value = True
+        
+        Sheet1.CheckBox0130AM59.Enabled = True
+        Sheet1.CheckBox0130AM59.Value = True
+        
+    End If
+                
+    
+    If Sheet2.Range("AA66").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem60.Enabled = False
+        Sheet1.CheckBox1030AM60.Enabled = False
+        Sheet1.CheckBox0130AM60.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem60.Value = True
+        Sheet1.CheckBoxAllItem60.Enabled = True
+        
+        Sheet1.CheckBox1030AM60.Enabled = True
+        Sheet1.CheckBox1030AM60.Value = True
+        
+        Sheet1.CheckBox0130AM60.Enabled = True
+        Sheet1.CheckBox0130AM60.Value = True
+        
+    End If
+                    
+    
+    If Sheet2.Range("AA67").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem61.Enabled = False
+        Sheet1.CheckBox1030AM61.Enabled = False
+        Sheet1.CheckBox0130AM61.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem61.Value = True
+        Sheet1.CheckBoxAllItem61.Enabled = True
+        
+        Sheet1.CheckBox1030AM61.Enabled = True
+        Sheet1.CheckBox1030AM61.Value = True
+        
+        Sheet1.CheckBox0130AM61.Enabled = True
+        Sheet1.CheckBox0130AM61.Value = True
+        
+    End If
+                        
+    
+    If Sheet2.Range("AA68").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem62.Enabled = False
+        Sheet1.CheckBox1030AM62.Enabled = False
+        Sheet1.CheckBox0130AM62.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem62.Value = True
+        Sheet1.CheckBoxAllItem62.Enabled = True
+        
+        Sheet1.CheckBox1030AM62.Enabled = True
+        Sheet1.CheckBox1030AM62.Value = True
+        
+        Sheet1.CheckBox0130AM62.Enabled = True
+        Sheet1.CheckBox0130AM62.Value = True
+        
+    End If
+                            
+    
+    If Sheet2.Range("AA69").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem63.Enabled = False
+        Sheet1.CheckBox1030AM63.Enabled = False
+        Sheet1.CheckBox0130AM63.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem63.Value = True
+        Sheet1.CheckBoxAllItem63.Enabled = True
+        
+        Sheet1.CheckBox1030AM63.Enabled = True
+        Sheet1.CheckBox1030AM63.Value = True
+        
+        Sheet1.CheckBox0130AM63.Enabled = True
+        Sheet1.CheckBox0130AM63.Value = True
+        
+    End If
+                                
+    
+    If Sheet2.Range("AA70").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem64.Enabled = False
+        Sheet1.CheckBox1030AM64.Enabled = False
+        Sheet1.CheckBox0130AM64.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem64.Value = True
+        Sheet1.CheckBoxAllItem64.Enabled = True
+        
+        Sheet1.CheckBox1030AM64.Enabled = True
+        Sheet1.CheckBox1030AM64.Value = True
+        
+        Sheet1.CheckBox0130AM64.Enabled = True
+        Sheet1.CheckBox0130AM64.Value = True
+        
+    End If
+                                    
+    
+    If Sheet2.Range("AA71").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem65.Enabled = False
+        Sheet1.CheckBox1030AM65.Enabled = False
+        Sheet1.CheckBox0130AM65.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem65.Value = True
+        Sheet1.CheckBoxAllItem65.Enabled = True
+        
+        Sheet1.CheckBox1030AM65.Enabled = True
+        Sheet1.CheckBox1030AM65.Value = True
+        
+        Sheet1.CheckBox0130AM65.Enabled = True
+        Sheet1.CheckBox0130AM65.Value = True
+        
+    End If
+                                        
+    
+    If Sheet2.Range("AA72").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem66.Enabled = False
+        Sheet1.CheckBox1030AM66.Enabled = False
+        Sheet1.CheckBox0130AM66.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem66.Value = True
+        Sheet1.CheckBoxAllItem66.Enabled = True
+        
+        Sheet1.CheckBox1030AM66.Enabled = True
+        Sheet1.CheckBox1030AM66.Value = True
+        
+        Sheet1.CheckBox0130AM66.Enabled = True
+        Sheet1.CheckBox0130AM66.Value = True
+        
+    End If
+                                            
+    
+    If Sheet2.Range("AA73").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem67.Enabled = False
+        Sheet1.CheckBox1030AM67.Enabled = False
+        Sheet1.CheckBox0130AM67.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem67.Value = True
+        Sheet1.CheckBoxAllItem67.Enabled = True
+        
+        Sheet1.CheckBox1030AM67.Enabled = True
+        Sheet1.CheckBox1030AM67.Value = True
+        
+        Sheet1.CheckBox0130AM67.Enabled = True
+        Sheet1.CheckBox0130AM67.Value = True
+        
+    End If
+                                                
+    
+    If Sheet2.Range("AA74").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem68.Enabled = False
+        Sheet1.CheckBox1030AM68.Enabled = False
+        Sheet1.CheckBox0130AM68.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem68.Value = True
+        Sheet1.CheckBoxAllItem68.Enabled = True
+        
+        Sheet1.CheckBox1030AM68.Enabled = True
+        Sheet1.CheckBox1030AM68.Value = True
+        
+        Sheet1.CheckBox0130AM68.Enabled = True
+        Sheet1.CheckBox0130AM68.Value = True
+        
+    End If
+                                                    
+    
+    If Sheet2.Range("AA75").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem69.Enabled = False
+        Sheet1.CheckBox1030AM69.Enabled = False
+        Sheet1.CheckBox0130AM69.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem69.Value = True
+        Sheet1.CheckBoxAllItem69.Enabled = True
+        
+        Sheet1.CheckBox1030AM69.Enabled = True
+        Sheet1.CheckBox1030AM69.Value = True
+        
+        Sheet1.CheckBox0130AM69.Enabled = True
+        Sheet1.CheckBox0130AM69.Value = True
+        
+    End If
+                                                        
+    
+    If Sheet2.Range("AA76").Value <= 0 Then
+    
+        Sheet1.CheckBoxAllItem70.Enabled = False
+        Sheet1.CheckBox1030AM70.Enabled = False
+        Sheet1.CheckBox0130AM70.Enabled = False
+    
+    Else
+    
+        Sheet1.CheckBoxAllItem70.Value = True
+        Sheet1.CheckBoxAllItem70.Enabled = True
+        
+        Sheet1.CheckBox1030AM70.Enabled = True
+        Sheet1.CheckBox1030AM70.Value = True
+        
+        Sheet1.CheckBox0130AM70.Enabled = True
+        Sheet1.CheckBox0130AM70.Value = True
+        
+    End If
+
+End Sub

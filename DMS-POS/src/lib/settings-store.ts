@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 
 /** Matches DMS-Backend `Properties/launchSettings.json` http profile */
 export const DEFAULT_API_BASE_URL =
-  import.meta.env.VITE_API_URL ?? 'http://localhost:5126'
+  import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:5126'
 
 interface ThemeColors {
   primaryColor: string
@@ -119,9 +119,10 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'dms-pos-settings',
-      version: 5,
+      version: 6,
       migrate: (persisted: unknown, version: number) => {
         const wrongPorts = ['http://localhost:5000', 'http://127.0.0.1:5000']
+        const localhostApi = ['http://localhost:5126', 'http://localhost:5126/']
         if (version < 2 && persisted && typeof persisted === 'object' && 'state' in persisted) {
           const s = (persisted as { state: Partial<SettingsState> }).state
           const url = s?.apiBaseUrl
@@ -158,6 +159,16 @@ export const useSettingsStore = create<SettingsState>()(
           // Version 5: categoryColors support added to theme
           // Existing theme data will be preserved, categoryColors will be fetched on next sync
           return persisted
+        }
+        if (version < 6 && persisted && typeof persisted === 'object' && 'state' in persisted) {
+          const s = (persisted as { state: Partial<SettingsState> }).state
+          const url = s?.apiBaseUrl?.replace(/\/$/, '')
+          if (url && localhostApi.some((bad) => bad.replace(/\/$/, '') === url)) {
+            return {
+              ...(persisted as object),
+              state: { ...s, apiBaseUrl: 'http://127.0.0.1:5126' },
+            }
+          }
         }
         return persisted
       },

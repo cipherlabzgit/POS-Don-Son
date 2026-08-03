@@ -1,0 +1,393 @@
+Attribute VB_Name = "Module8"
+Sub Production_Plan()
+
+    'Print 5.00AM Production Generate
+
+    Sheet2.Select
+    Dim msg As String, Ans As Variant
+    
+    msg = "            *** 5.00AM Production Summary ***" & vbNewLine & vbNewLine & "                    Do You Print All Sheets ???"
+     Ans = MsgBox(msg, vbYesNo)
+
+    Select Case Ans
+
+    Case vbYes
+    
+        'Make Folder
+        Dim FolderDate As String
+        FolderDate = Format(Now() + 1, "dd-mmm-yyyy")
+    
+        Dim sFolderPath As String
+    
+        sFolderPath = "\\serverml310\desktop\DMS Staff Only (DONT DELETE)\5.00AM Production PDF\" & FolderDate & " - 5.00AM"
+    
+        If Right(sFolderPath, 1) <> "\" Then
+    
+            sFolderPath = sFolderPath & "\"
+        
+        End If
+    
+        If Dir(sFolderPath, vbDirectory) <> vbNullString Then
+    
+            'Do Nothing
+        
+        Else
+        
+            Dim fdObj As Object
+            Application.ScreenUpdating = False
+            Set fdObj = CreateObject("Scripting.FileSystemObject")
+        
+            If fdObj.FolderExists(sFolderPath) Then
+        
+                'Do Nothing
+            
+            Else
+        
+                fdObj.CreateFolder (sFolderPath)
+            
+            End If
+        
+            Application.ScreenUpdating = True
+        
+        End If
+    
+    'Sheet2 (Delivery Summary)
+    Sheet2.Unprotect Password:="Admin@donandsons.lk54321"
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+    Sheet6.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Dim wsa As Worksheet
+    For Each wsa In Worksheets
+    wsa.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+    Environ("username") & " on &D at &T"
+    Next wsa
+    
+    Sheet4.PageSetup.LeftFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+    Environ("username") & " on &D at &T"
+
+    Sheet4.PageSetup.CenterFooter = ""
+    
+    Sheet2.Range("V:V").EntireColumn.Hidden = True
+    Sheet2.Range("X:X").EntireColumn.Hidden = True
+    Sheet2.Range("Y:Y").EntireColumn.Hidden = True
+    
+    Dim Workbook_Name As String
+    Workbook_Name = Sheet2.Range("Y1").Value
+    
+    'Sheet2.Range("A1").AutoFilter Field:=1, Criteria1:="Y"
+    
+    Sheet2.Protect Password:="Admin@donandsons.lk54321"
+        
+    Dim NewFolderPath As String
+    NewFolderPath = "\\serverml310\desktop\DMS Staff Only (DONT DELETE)\5.00AM Production PDF\" & FolderDate & " - 5.00AM" & "\"
+        
+    Dim Target As String
+    Target = NewFolderPath & FolderDate & " - 5.00AM" & " - "
+    
+    Dim FileNameSheet2 As String
+    FileNameSheet2 = Target & "Delivery Summary" & ".pdf"
+    
+    Sheet2.PageSetup.PaperSize = xlPaperA3 'A3
+    Sheet2.PageSetup.Orientation = xlPortrait 'Potrait
+    Sheet2.PageSetup.FitToPagesTall = 1
+    Sheet2.PageSetup.FitToPagesWide = 1
+    Sheet2.PageSetup.PrintArea = "$B$2:$Z$76"
+    Sheet2.PrintOut Copies:=1
+    Sheet2.ExportAsFixedFormat Type:=xlTypePDF, FileName:= _
+        FileNameSheet2, Quality:=xlQualityStandard, _
+        IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+        
+    Dim TomorrowDay As String
+    TomorrowDay = Format(Now() + 1, "dddd")
+
+    If TomorrowDay = "Monday" Or TomorrowDay = "Tuesday" Or TomorrowDay = "Wednesday" Then
+        
+        'Visible Sandwich Bread Large Fixed 5.00AM - 40Nos ONLY
+        'Sheet6.Shapes("Picture 5").Visible = msoTrue
+        
+        'Sheet6.Range("F69").Value = "Sandwich Bread Large (40 Nos) - (Fixed)"   'Sandwich Bread Large
+        
+        '**************************************************************************************************************
+        
+        'Visible Sandwich Bread Fixed 5.00AM - 55Nos ONLY
+        'Sheet6.Shapes("Picture 14").Visible = msoTrue
+        
+        'Sheet6.Range("F89").Value = "Sandwich Bread (55 Nos) - (Fixed)"     'Sandwich Bread
+        
+    ElseIf TomorrowDay = "Thursday" Or TomorrowDay = "Friday" Then
+    
+        'Visible Sandwich Bread Large Fixed 5.00AM - 40Nos ONLY
+        'Sheet6.Shapes("Picture 8").Visible = msoTrue
+        
+        'Sheet6.Range("F69").Value = "Sandwich Bread Large (40 Nos) - (Fixed)"   'Sandwich Bread Large
+        
+        '**************************************************************************************************************
+        
+        'Visible Sandwich Bread Fixed 5.00AM - 55Nos ONLY
+        'Sheet6.Shapes("Picture 15").Visible = msoTrue
+        
+        'Sheet6.Range("F89").Value = "Sandwich Bread (55 Nos) - (Fixed)"     'Sandwich Bread
+        
+    ElseIf TomorrowDay = "Saturday" Then
+    
+        'Visible Sandwich Bread Large Fixed 5.00AM - 40Nos ONLY
+        'Sheet6.Shapes("Picture 12").Visible = msoTrue
+        
+        'Sheet6.Range("F69").Value = "Sandwich Bread Large (40 Nos) - (Fixed)"   'Sandwich Bread Large
+        
+        '**************************************************************************************************************
+        
+        'Visible Sandwich Bread Fixed 5.00AM - 55Nos ONLY
+        'Sheet6.Shapes("Picture 16").Visible = msoTrue
+        
+        'Sheet6.Range("F89").Value = "Sandwich Bread (55 Nos) - (Fixed)"     'Sandwich Bread
+        
+    ElseIf TomorrowDay = "Sunday" Then
+    
+        'Visible Sandwich Bread Large Fixed 5.00AM - 55Nos ONLY
+        'Sheet6.Shapes("Picture 11").Visible = msoTrue
+        
+        'Sheet6.Range("F69").Value = "Sandwich Bread Large (55 Nos) - (Fixed)"   'Sandwich Bread Large
+        
+        '**************************************************************************************************************
+        
+        'Visible Sandwich Bread Fixed 5.00AM - 85Nos ONLY
+        'Sheet6.Shapes("Picture 9").Visible = msoTrue
+        
+        'Sheet6.Range("F89").Value = "Sandwich Bread (85 Nos) - (Fixed)"     'Sandwich Bread
+        
+    End If
+    
+        '************************* KURAKKAN ITEMS *************************
+        
+        'Visible Kurakkan Sandwich Slice Pack Fixed 5.00AM
+        'Sheet6.Shapes("Picture 7").Visible = msoTrue
+        
+        'If TomorrowDay = "Monday" Or TomorrowDay = "Tuesday" Or TomorrowDay = "Wednesday" Then
+        
+            'Visible Kurakkan Plain Bun Fixed 5.00AM
+            'Sheet6.Shapes("Picture 6").Visible = msoTrue
+        
+        'ElseIf TomorrowDay = "Thursday" Or TomorrowDay = "Friday" Or TomorrowDay = "Saturday" Or TomorrowDay = "Sunday" Then
+        
+            'Visible Kurakkan Plain Bun Fixed 5.00AM
+            'Sheet6.Shapes("Picture 17").Visible = msoTrue
+        
+        'End If
+        
+        '******************************************************************
+        
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Item List
+        Sheet6.Range("F269").Value = "Effective Delivery Date :"
+        Sheet6.Range("H269").Value = Format(Now() + 1, "dd-mmm-yyyy") 'Production Starting Day
+        Sheet6.Range("F270").Value = "Effective Delivery Time :"
+        Sheet6.Range("H270").Value = "5:00AM" 'Effective Delivery Time
+        
+        Sheet6.PageSetup.RightFooter = "&""Cambria,Italic""&B&14Sale Date : " & Sheet6.Range("H269").Text
+        
+    'Sheet6 (Printing)
+    Dim FileNameSheet6 As String
+    FileNameSheet6 = Target & "Printing" & ".pdf"
+    
+    Sheet6.PageSetup.PaperSize = xlPaperA4
+    Sheet6.PageSetup.Orientation = xlPortrait
+    Sheet6.PageSetup.FitToPagesTall = 1
+    Sheet6.PageSetup.FitToPagesWide = 1
+    Sheet6.PageSetup.PrintArea = "$B$2:$I$47, $B$282:$I$329, $B$49:$I$94, $B$331:$I$377, $B$523:$I$569,$B$96:$I$143, $B$475:$I$521, $B$145:$I$186, $B$235:$I$272"
+    Sheet6.PrintOut
+    Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:= _
+        FileNameSheet6, Quality:=xlQualityStandard, _
+        IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+    
+    'Sheet9 (Section Printing)
+    Dim FileNameSheet9 As String
+    FileNameSheet9 = Target & "Section Printing" & ".pdf"
+    
+    Sheet9.PageSetup.PaperSize = xlPaperA4
+    Sheet9.PageSetup.Orientation = xlPortrait
+    Sheet9.PageSetup.FitToPagesTall = 1
+    Sheet9.PageSetup.FitToPagesWide = 1
+    Sheet9.PageSetup.PrintArea = "$B$2:$I$36, $K$2:$Q$36, $S$2:$Z$36, $AB$2:$AD$36"
+    Sheet9.PrintOut
+    Sheet9.ExportAsFixedFormat Type:=xlTypePDF, FileName:= _
+        FileNameSheet9, Quality:=xlQualityStandard, _
+        IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+    
+    'Set Production Starting Time & Effective Delivery Time on Sheet15("Printing Filling Section")
+    Sheet15.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Sheet15.Range("C2").Value = "5.00AM Production - 5.00AM Delivey" 'Production Time & Delivery Time
+    
+    Sheet15.Protect Password:="Admin@donandsons.lk54321"
+    
+    'Sheet15 (Printing Filling Section)
+    Dim FileNameSheet15 As String
+    FileNameSheet15 = Target & "Printing Filling Section" & ".pdf"
+    
+    Sheet15.PageSetup.PaperSize = xlPaperA3
+    Sheet15.PageSetup.Orientation = xlLandscape
+    Sheet15.PageSetup.FitToPagesTall = 1
+    Sheet15.PageSetup.FitToPagesWide = 1
+    Sheet15.PageSetup.PrintArea = "$B$2:$AF$76, $B$78:$AF$118"
+    Sheet15.PrintOut
+    Sheet15.ExportAsFixedFormat Type:=xlTypePDF, FileName:= _
+        FileNameSheet15, Quality:=xlQualityStandard, _
+        IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+        
+        
+    'Filter Curry Sheet
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    'Total Column Color Changed To White
+    Sheet4.Range("R8:R50").Font.ThemeColor = xlThemeColorDark1
+    Sheet4.Range("R8:R50").Font.TintAndShade = 0
+    
+    Sheet4.Range("R62:R104").Font.ThemeColor = xlThemeColorDark1
+    Sheet4.Range("R62:R104").Font.TintAndShade = 0
+    
+    Sheet4.Range("A1").AutoFilter Field:=1, Criteria1:="Y"
+        
+    'Print 5.00AM Shorteats Section Production Curry Sheet
+    'Short Eats Cutty
+    Dim FileNameSheet4 As String
+    FileNameSheet4 = Target & "Shorteats Section Curry Sheet" & ".pdf"
+    Sheet4.PageSetup.PaperSize = xlPaperA3
+    Sheet4.PageSetup.Orientation = xlLandscape
+    Sheet4.PageSetup.FitToPagesTall = 1
+    Sheet4.PageSetup.FitToPagesWide = 1
+    Sheet4.PageSetup.PrintArea = "B$2:$R$54,$B$56:$R$108"
+    Sheet4.PageSetup.LeftFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+    Sheet4.PrintOut
+    Sheet4.ExportAsFixedFormat Type:=xlTypePDF, FileName:= _
+        FileNameSheet4, Quality:=xlQualityStandard, _
+        IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+        
+    'Filling Section Curry
+    Dim FileNameSheet5 As String
+    FileNameSheet5 = Target & "Filling Section Curry Sheet" & ".pdf"
+    Sheet4.PageSetup.PaperSize = xlPaperA4
+    Sheet4.PageSetup.Orientation = xlLandscape
+    Sheet4.PageSetup.FitToPagesTall = 1
+    Sheet4.PageSetup.FitToPagesWide = 1
+    Sheet4.PageSetup.PrintArea = "B$191:$R$250"
+    Sheet4.PageSetup.LeftFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+    Sheet4.PrintOut
+    Sheet4.ExportAsFixedFormat Type:=xlTypePDF, FileName:= _
+        FileNameSheet5, Quality:=xlQualityStandard, _
+        IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+        
+    Sheet4.ShowAllData
+    
+    'Print 5.00AM Shorteats Section Production Recipy for Curry Items
+    Sheet18.PageSetup.PaperSize = xlPaperA4
+    Sheet18.PageSetup.Orientation = xlLandscape
+    Sheet18.PageSetup.FitToPagesTall = 1
+    Sheet18.PageSetup.FitToPagesWide = 1
+    Sheet18.PageSetup.PrintArea = "$B$2:$X$47, $Z$2:$AV$47, $AX$2:$BT$47, $BV$2:$CJ$47" '
+    Sheet18.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+    'Sheet18.PrintOut
+        
+    Sheet1.Select
+    
+    'Sheet10 (Egg Sandwich Label)
+    Dim EggSandwichValue As String
+    EggSandwichValue = Sheet10.Range("K26").Value
+    
+    If EggSandwichValue = 0 Then
+    
+        'Do Nothing
+    
+    Else
+    
+        Sheet10.Select
+        Application.DisplayFullScreen = True
+        MsgBox "          Print " & Sheet10.Range("K26") & " Egg Sandwich Labels " & vbNewLine & vbNewLine & "            *** Important Reminder ***" _
+        , vbOKOnly + vbInformation, "Labels for Egg Sandwich"
+        Application.DisplayFullScreen = False
+        
+    End If
+    
+     Case vbNo
+    GoTo Quit:
+    End Select
+
+Quit:
+
+ Sheet21.Select
+ 
+     MsgBox "                *** Successfully Printed ***" & vbNewLine & vbNewLine & "This Programme is Automatically Shutting Down" _
+    , vbOKOnly + vbInformation, "*** Powered by Viraj Lakshan Rathnayake ***"
+    
+    '********************************************************************************************************
+    '******************* Transfer Requested Production Data To Daily Production Programme *******************
+    '********************************************************************************************************
+    
+    'Open Daily Production Programme
+    Workbooks.Open "\\serverml310\desktop\DMS Staff Only (DONT DELETE)\Daily Production Report\Daily Production Programme.xlsm"
+    
+    Workbooks(Workbook_Name).Activate
+    
+    Sheet6.Select
+    
+    'Copy & Paste Values
+    On Error Resume Next
+    Sheet6.Range("H269").Select
+    Selection.Copy
+    
+    Workbooks("Daily Production Programme.xlsm").Worksheets("Requested Data").Range("B1").PasteSpecial Paste:=xlPasteValues
+
+    Application.CutCopyMode = False
+
+    Workbooks(Workbook_Name).Activate
+    
+    Application.CutCopyMode = False
+    
+    Application.Wait (Now + 0.00003)
+    
+    Sheet6.Select
+    
+    On Error Resume Next
+    Sheet6.Range("D236:E236").Select
+    Range(Selection, Selection.End(xlDown)).Select
+    Selection.Copy
+    
+    Workbooks("Daily Production Programme.xlsm").Worksheets("Requested Data").Range("B3").PasteSpecial Paste:=xlPasteValues
+
+    Application.CutCopyMode = False
+
+    Application.Wait (Now + 0.00003)
+
+    Workbooks(Workbook_Name).Activate
+    Application.CutCopyMode = False
+    
+    Sheet6.Select
+    
+    On Error Resume Next
+    Sheet6.Range("H236:I268").Select
+    Selection.Copy
+    
+    Workbooks("Daily Production Programme.xlsm").Worksheets("Requested Data").Range("B40").PasteSpecial Paste:=xlPasteValues
+
+    Application.CutCopyMode = False
+
+    Application.Wait (Now + 0.00003)
+
+    Workbooks(Workbook_Name).Activate
+    Application.CutCopyMode = False
+    
+    Workbooks("Daily Production Programme.xlsm").Close SaveChanges:=True
+    
+    '********************************************************************************************************
+    '
+    '********************************************************************************************************
+    
+    Application.Wait (Now + 0.00003)
+    
+    Workbooks.Open ("\\serverml310\data2\Production\Daily Production\02 Breakfast\Daily Breakfast Production.xlsm")
+    
+    'Application.Quit
+    'Application.ActiveWindow.Close SaveChanges:=False
+    'ThisWorkbook.Close SaveChanges:=False
+    Workbooks(Workbook_Name).Close SaveChanges:=False
+
+End Sub

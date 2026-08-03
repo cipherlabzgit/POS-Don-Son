@@ -1,5 +1,7 @@
+using DMS_Backend.Configuration;
 using DMS_Backend.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DMS_Backend.Data.Seeders;
 
@@ -9,11 +11,16 @@ namespace DMS_Backend.Data.Seeders;
 public sealed class DevDataSeeder
 {
     private readonly ApplicationDbContext _context;
+    private readonly DevSeedOptions _options;
     private readonly ILogger<DevDataSeeder> _logger;
 
-    public DevDataSeeder(ApplicationDbContext context, ILogger<DevDataSeeder> logger)
+    public DevDataSeeder(
+        ApplicationDbContext context,
+        IOptions<DevSeedOptions> options,
+        ILogger<DevDataSeeder> logger)
     {
         _context = context;
+        _options = options.Value;
         _logger = logger;
     }
 
@@ -23,8 +30,17 @@ public sealed class DevDataSeeder
 
         try
         {
-            await SeedDemoUsersAsync();
-            await SeedDemoRolesAsync();
+            if (_options.SeedMasterData)
+            {
+                await SeedMasterDataAsync();
+            }
+
+            if (_options.SeedUsers)
+            {
+                await SeedDemoUsersAsync();
+                await SeedDemoRolesAsync();
+            }
+
             await SeedShowroomOpenStockAsync();
             
             _logger.LogInformation("Dev data seed completed successfully");
@@ -34,6 +50,142 @@ public sealed class DevDataSeeder
             _logger.LogError(ex, "Error occurred while seeding dev data");
             throw;
         }
+    }
+
+    private async Task SeedMasterDataAsync()
+    {
+        if (await _context.Products.AnyAsync())
+        {
+            _logger.LogInformation("Master data already exists, skipping");
+            return;
+        }
+
+        _logger.LogInformation("Seeding demo master data (categories, products, outlets)");
+
+        var now = DateTime.UtcNow;
+
+        var uom = new UnitOfMeasure
+        {
+            Id = Guid.NewGuid(),
+            Code = "PCS",
+            Description = "Piece",
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+        _context.UnitOfMeasures.Add(uom);
+
+        var breadCategory = new Category
+        {
+            Id = Guid.NewGuid(),
+            Code = "BREAD",
+            Name = "Bread",
+            Description = "Fresh bread products",
+            DisplayInPOS = true,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+        var pastryCategory = new Category
+        {
+            Id = Guid.NewGuid(),
+            Code = "PASTRY",
+            Name = "Pastry",
+            Description = "Pastries and sweet items",
+            DisplayInPOS = true,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+        var savouryCategory = new Category
+        {
+            Id = Guid.NewGuid(),
+            Code = "SAVOURY",
+            Name = "Savoury",
+            Description = "Savoury bakery items",
+            DisplayInPOS = true,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+        _context.Categories.AddRange(breadCategory, pastryCategory, savouryCategory);
+
+        var demoProducts = new (string Code, string Name, Guid CategoryId, decimal Price, int SortOrder)[]
+        {
+            ("BR001", "White Bread", breadCategory.Id, 120m, 1),
+            ("BR002", "Brown Bread", breadCategory.Id, 140m, 2),
+            ("BR003", "Sandwich Bread", breadCategory.Id, 160m, 3),
+            ("PA001", "Fish Bun", pastryCategory.Id, 85m, 4),
+            ("PA002", "Egg Bun", pastryCategory.Id, 75m, 5),
+            ("PA003", "Jam Bun", pastryCategory.Id, 70m, 6),
+            ("PA004", "Cream Bun", pastryCategory.Id, 90m, 7),
+            ("SV001", "Fish Roll", savouryCategory.Id, 95m, 8),
+            ("SV002", "Vegetable Roll", savouryCategory.Id, 80m, 9),
+            ("SV003", "Chicken Patty", savouryCategory.Id, 110m, 10),
+            ("SV004", "Sausage Roll", savouryCategory.Id, 100m, 11),
+            ("PA005", "Donut", pastryCategory.Id, 65m, 12),
+        };
+
+        foreach (var (code, name, categoryId, price, sortOrder) in demoProducts)
+        {
+            _context.Products.Add(new Product
+            {
+                Id = Guid.NewGuid(),
+                Code = code,
+                Name = name,
+                CategoryId = categoryId,
+                UnitOfMeasureId = uom.Id,
+                UnitPrice = price,
+                ProductType = nameof(ProductCategory.Finished),
+                DisplayInPOS = true,
+                RequireOpenStock = true,
+                SortOrder = sortOrder,
+                IsActive = true,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+        }
+
+        _context.Outlets.Add(new Outlet
+        {
+            Id = Guid.NewGuid(),
+            Code = "SR001",
+            Name = "Main Showroom",
+            Description = "Demo showroom for POS testing",
+            Address = "Colombo",
+            LocationType = "Showroom",
+            DisplayOrder = 1,
+            HasVariants = true,
+            IsDeliveryPoint = true,
+            ShowInDashboard = true,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+
+        _context.Outlets.Add(new Outlet
+        {
+            Id = Guid.NewGuid(),
+            Code = "SR002",
+            Name = "City Outlet",
+            Description = "Second demo showroom",
+            Address = "Kandy Road",
+            LocationType = "Showroom",
+            DisplayOrder = 2,
+            HasVariants = true,
+            IsDeliveryPoint = true,
+            ShowInDashboard = true,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+
+        await _context.SaveChangesAsync();
+        _logger.LogInformation(
+            "Master data seeded: {ProductCount} products, {CategoryCount} categories, {OutletCount} outlets",
+            demoProducts.Length,
+            3,
+            2);
     }
 
     private async Task SeedDemoUsersAsync()

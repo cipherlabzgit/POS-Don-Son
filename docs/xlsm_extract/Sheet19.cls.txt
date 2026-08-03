@@ -1,0 +1,26 @@
+Attribute VB_Name = "Sheet19"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Private Sub Worksheet_Calculate()
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+    If UsernameCheck = "Admin" Then
+
+        Sheet19.Range("B4").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+
+    End If
+End Sub

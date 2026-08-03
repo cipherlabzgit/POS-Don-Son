@@ -1,0 +1,731 @@
+Attribute VB_Name = "Module31"
+Sub Anytime_Recipe_Generator()
+
+'Sheet1 SpotCurrySheetButton Visible True
+    Sheet1.SpotCurrySheetButton.Visible = True
+    
+'Sheet1 6.00AM Programme Buttons Visible False
+    Sheet1.SixAMCurrySheetButton.Visible = False
+    Sheet1.EveningCurfewDeliveryButton.Visible = False
+    Sheet1.WeekdaysEveningButton.Visible = False
+    Sheet1.SaturdayEveningButton.Visible = False
+    Sheet1.SundayEveningButton.Visible = False
+    Sheet1.ApNewYearEveningButton.Visible = False
+    Sheet1.SummaryPrint5AMButton.Visible = False
+    Sheet1.Shapes("Button 5").Visible = msoFalse    'Delivery Summary Button
+    Sheet1.ExtraProductionCheckBox.Visible = False
+    Sheet1.HomeButton.Visible = False
+    
+    Sheet1.Shapes("Rectangle 6").Visible = msoTrue
+    
+    Sheet1.Shapes("Rectangle 10").Visible = msoFalse
+    
+    Sheet1.Shapes("Rectangle 11").Visible = msoTrue
+    
+    Sheet21.Select
+        
+    Sheet21.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Sheet21.Range("B4").Value = "Anytime Recipe Generator"
+    Sheet21.Range("A7").Select
+    Sheet21.LoginButton.Visible = False
+    Sheet21.PlainRollProductionButton.Visible = False
+    
+    Sheet21.Protect Password:="Admin@donandsons.lk54321"
+    
+    Sheet1.Select
+    
+    ThisWorkbook.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Dim wsnew As Worksheet
+    For Each wsnew In Worksheets
+    wsnew.Visible = xlSheetVisible
+    wsnew.Unprotect Password:="Admin@donandsons.lk54321"
+    Next wsnew
+    
+    Application.DisplayAlerts = False
+    Sheet8.Delete
+    Sheet9.Delete
+    Sheet10.Delete
+    Sheet23.Delete
+    Sheet24.Delete
+    Sheet25.Delete
+    Sheet26.Delete
+    Sheet27.Delete
+    Sheet28.Delete
+    Application.DisplayAlerts = True
+    
+    ThisWorkbook.Protect Password:="Admin@donandsons.lk54321"
+    
+    'Unlock Sandwich Bread / Large & Kurakkan Slice Pack Value Cells (Order - Sheet1)
+    Sheet1.Range("D5").Locked = False        'Bread
+    Sheet1.Range("D6").Locked = False        'Kurakkan Slice Pack
+    Sheet1.Range("D8").Locked = False        'Sandwich Bread
+    Sheet1.Range("D9").Locked = False        'Roast Bread Medium
+    Sheet1.Range("D10").Locked = False       'Sandwich Bread Large
+    Sheet1.Range("D57").Locked = False       'Thati Paan
+    
+    Dim wsban As Worksheet
+    For Each wsnew In Worksheets
+    wsnew.Visible = xlSheetVisible
+    wsnew.Protect Password:="Admin@donandsons.lk54321"
+    Next wsnew
+    
+    '10.30AM Items Check Box Visible False
+    Sheet1.CheckBox1030AM1.Visible = False
+    Sheet1.CheckBox1030AM2.Visible = False
+    Sheet1.CheckBox1030AM3.Visible = False
+    Sheet1.CheckBox1030AM4.Visible = False
+    Sheet1.CheckBox1030AM5.Visible = False
+    Sheet1.CheckBox1030AM6.Visible = False
+    Sheet1.CheckBox1030AM7.Visible = False
+    Sheet1.CheckBox1030AM8.Visible = False
+    Sheet1.CheckBox1030AM9.Visible = False
+    Sheet1.CheckBox1030AM10.Visible = False
+    Sheet1.CheckBox1030AM11.Visible = False
+    Sheet1.CheckBox1030AM12.Visible = False
+    Sheet1.CheckBox1030AM13.Visible = False
+    Sheet1.CheckBox1030AM14.Visible = False
+    Sheet1.CheckBox1030AM15.Visible = False
+    Sheet1.CheckBox1030AM16.Visible = False
+    Sheet1.CheckBox1030AM17.Visible = False
+    Sheet1.CheckBox1030AM18.Visible = False
+    Sheet1.CheckBox1030AM19.Visible = False
+    Sheet1.CheckBox1030AM20.Visible = False
+    Sheet1.CheckBox1030AM21.Visible = False
+    Sheet1.CheckBox1030AM22.Visible = False
+    Sheet1.CheckBox1030AM23.Visible = False
+    Sheet1.CheckBox1030AM24.Visible = False
+    Sheet1.CheckBox1030AM25.Visible = False
+    Sheet1.CheckBox1030AM26.Visible = False
+    Sheet1.CheckBox1030AM27.Visible = False
+    Sheet1.CheckBox1030AM28.Visible = False
+    Sheet1.CheckBox1030AM29.Visible = False
+    Sheet1.CheckBox1030AM30.Visible = False
+    Sheet1.CheckBox1030AM31.Visible = False
+    Sheet1.CheckBox1030AM32.Visible = False
+    Sheet1.CheckBox1030AM33.Visible = False
+    Sheet1.CheckBox1030AM34.Visible = False
+    Sheet1.CheckBox1030AM35.Visible = False
+    Sheet1.CheckBox1030AM36.Visible = False
+    Sheet1.CheckBox1030AM37.Visible = False
+    Sheet1.CheckBox1030AM38.Visible = False
+    Sheet1.CheckBox1030AM39.Visible = False
+    Sheet1.CheckBox1030AM40.Visible = False
+    Sheet1.CheckBox1030AM41.Visible = False
+    Sheet1.CheckBox1030AM42.Visible = False
+    Sheet1.CheckBox1030AM43.Visible = False
+    Sheet1.CheckBox1030AM44.Visible = False
+    Sheet1.CheckBox1030AM45.Visible = False
+    Sheet1.CheckBox1030AM46.Visible = False
+    Sheet1.CheckBox1030AM47.Visible = False
+    Sheet1.CheckBox1030AM48.Visible = False
+    Sheet1.CheckBox1030AM49.Visible = False
+    Sheet1.CheckBox1030AM50.Visible = False
+    Sheet1.CheckBox1030AM51.Visible = False
+    Sheet1.CheckBox1030AM52.Visible = False
+    Sheet1.CheckBox1030AM53.Visible = False
+    Sheet1.CheckBox1030AM54.Visible = False
+    Sheet1.CheckBox1030AM55.Visible = False
+    Sheet1.CheckBox1030AM56.Visible = False
+    Sheet1.CheckBox1030AM57.Visible = False
+    Sheet1.CheckBox1030AM58.Visible = False
+    Sheet1.CheckBox1030AM59.Visible = False
+    Sheet1.CheckBox1030AM60.Visible = False
+    Sheet1.CheckBox1030AM61.Visible = False
+    Sheet1.CheckBox1030AM62.Visible = False
+    Sheet1.CheckBox1030AM63.Visible = False
+    Sheet1.CheckBox1030AM64.Visible = False
+    Sheet1.CheckBox1030AM65.Visible = False
+    Sheet1.CheckBox1030AM66.Visible = False
+    Sheet1.CheckBox1030AM67.Visible = False
+    Sheet1.CheckBox1030AM68.Visible = False
+    Sheet1.CheckBox1030AM69.Visible = False
+    Sheet1.CheckBox1030AM70.Visible = False
+    
+    '1.30PM Items Check Box Visible False
+    Sheet1.CheckBox0130AM1.Visible = False
+    Sheet1.CheckBox0130AM2.Visible = False
+    Sheet1.CheckBox0130AM3.Visible = False
+    Sheet1.CheckBox0130AM4.Visible = False
+    Sheet1.CheckBox0130AM5.Visible = False
+    Sheet1.CheckBox0130AM6.Visible = False
+    Sheet1.CheckBox0130AM7.Visible = False
+    Sheet1.CheckBox0130AM8.Visible = False
+    Sheet1.CheckBox0130AM9.Visible = False
+    Sheet1.CheckBox0130AM10.Visible = False
+    Sheet1.CheckBox0130AM11.Visible = False
+    Sheet1.CheckBox0130AM12.Visible = False
+    Sheet1.CheckBox0130AM13.Visible = False
+    Sheet1.CheckBox0130AM14.Visible = False
+    Sheet1.CheckBox0130AM15.Visible = False
+    Sheet1.CheckBox0130AM16.Visible = False
+    Sheet1.CheckBox0130AM17.Visible = False
+    Sheet1.CheckBox0130AM18.Visible = False
+    Sheet1.CheckBox0130AM19.Visible = False
+    Sheet1.CheckBox0130AM20.Visible = False
+    Sheet1.CheckBox0130AM21.Visible = False
+    Sheet1.CheckBox0130AM22.Visible = False
+    Sheet1.CheckBox0130AM23.Visible = False
+    Sheet1.CheckBox0130AM24.Visible = False
+    Sheet1.CheckBox0130AM25.Visible = False
+    Sheet1.CheckBox0130AM26.Visible = False
+    Sheet1.CheckBox0130AM27.Visible = False
+    Sheet1.CheckBox0130AM28.Visible = False
+    Sheet1.CheckBox0130AM29.Visible = False
+    Sheet1.CheckBox0130AM30.Visible = False
+    Sheet1.CheckBox0130AM31.Visible = False
+    Sheet1.CheckBox0130AM32.Visible = False
+    Sheet1.CheckBox0130AM33.Visible = False
+    Sheet1.CheckBox0130AM34.Visible = False
+    Sheet1.CheckBox0130AM35.Visible = False
+    Sheet1.CheckBox0130AM36.Visible = False
+    Sheet1.CheckBox0130AM37.Visible = False
+    Sheet1.CheckBox0130AM38.Visible = False
+    Sheet1.CheckBox0130AM39.Visible = False
+    Sheet1.CheckBox0130AM40.Visible = False
+    Sheet1.CheckBox0130AM41.Visible = False
+    Sheet1.CheckBox0130AM42.Visible = False
+    Sheet1.CheckBox0130AM43.Visible = False
+    Sheet1.CheckBox0130AM44.Visible = False
+    Sheet1.CheckBox0130AM45.Visible = False
+    Sheet1.CheckBox0130AM46.Visible = False
+    Sheet1.CheckBox0130AM47.Visible = False
+    Sheet1.CheckBox0130AM48.Visible = False
+    Sheet1.CheckBox0130AM49.Visible = False
+    Sheet1.CheckBox0130AM50.Visible = False
+    Sheet1.CheckBox0130AM51.Visible = False
+    Sheet1.CheckBox0130AM52.Visible = False
+    Sheet1.CheckBox0130AM53.Visible = False
+    Sheet1.CheckBox0130AM54.Visible = False
+    Sheet1.CheckBox0130AM55.Visible = False
+    Sheet1.CheckBox0130AM56.Visible = False
+    Sheet1.CheckBox0130AM57.Visible = False
+    Sheet1.CheckBox0130AM58.Visible = False
+    Sheet1.CheckBox0130AM59.Visible = False
+    Sheet1.CheckBox0130AM60.Visible = False
+    Sheet1.CheckBox0130AM61.Visible = False
+    Sheet1.CheckBox0130AM62.Visible = False
+    Sheet1.CheckBox0130AM63.Visible = False
+    Sheet1.CheckBox0130AM64.Visible = False
+    Sheet1.CheckBox0130AM65.Visible = False
+    Sheet1.CheckBox0130AM66.Visible = False
+    Sheet1.CheckBox0130AM67.Visible = False
+    Sheet1.CheckBox0130AM68.Visible = False
+    Sheet1.CheckBox0130AM69.Visible = False
+    Sheet1.CheckBox0130AM70.Visible = False
+    
+    Sheet1.Range("D5").Select
+    
+    Sheet21.Select
+    
+    Application.DisplayAlerts = False
+    ActiveWorkbook.SaveAs "\\serverml310\data2\Production\Curry Sheets\Anytime Recipe Geneator.XLSM"
+    Application.DisplayAlerts = False
+    ThisWorkbook.Save
+    Application.DisplayAlerts = True
+        
+    Application.Wait (Now + TimeValue("0:00:03"))
+    Application.Quit
+    Application.ActiveWindow.Close SaveChanges:=False
+    ThisWorkbook.Close SaveChanges:=False
+
+End Sub
+
+Sub FiveAMCheckBoxes()
+
+'All Items Check Box Visible True
+    Sheet1.CheckBoxAllItem1.Visible = True
+    Sheet1.CheckBoxAllItem2.Visible = True
+    Sheet1.CheckBoxAllItem3.Visible = True
+    Sheet1.CheckBoxAllItem4.Visible = True
+    Sheet1.CheckBoxAllItem5.Visible = True
+    Sheet1.CheckBoxAllItem6.Visible = True
+    Sheet1.CheckBoxAllItem7.Visible = True
+    Sheet1.CheckBoxAllItem8.Visible = True
+    Sheet1.CheckBoxAllItem9.Visible = True
+    Sheet1.CheckBoxAllItem10.Visible = True
+    Sheet1.CheckBoxAllItem11.Visible = True
+    Sheet1.CheckBoxAllItem12.Visible = True
+    Sheet1.CheckBoxAllItem13.Visible = True
+    Sheet1.CheckBoxAllItem14.Visible = True
+    Sheet1.CheckBoxAllItem15.Visible = True
+    Sheet1.CheckBoxAllItem16.Visible = True
+    Sheet1.CheckBoxAllItem17.Visible = True
+    Sheet1.CheckBoxAllItem18.Visible = True
+    Sheet1.CheckBoxAllItem19.Visible = True
+    Sheet1.CheckBoxAllItem20.Visible = True
+    Sheet1.CheckBoxAllItem21.Visible = True
+    Sheet1.CheckBoxAllItem22.Visible = True
+    Sheet1.CheckBoxAllItem23.Visible = True
+    Sheet1.CheckBoxAllItem24.Visible = True
+    Sheet1.CheckBoxAllItem25.Visible = True
+    Sheet1.CheckBoxAllItem26.Visible = True
+    Sheet1.CheckBoxAllItem27.Visible = True
+    Sheet1.CheckBoxAllItem28.Visible = True
+    Sheet1.CheckBoxAllItem29.Visible = True
+    Sheet1.CheckBoxAllItem30.Visible = True
+    Sheet1.CheckBoxAllItem31.Visible = True
+    Sheet1.CheckBoxAllItem32.Visible = True
+    Sheet1.CheckBoxAllItem33.Visible = True
+    Sheet1.CheckBoxAllItem34.Visible = True
+    Sheet1.CheckBoxAllItem35.Visible = True
+    Sheet1.CheckBoxAllItem36.Visible = True
+    Sheet1.CheckBoxAllItem37.Visible = True
+    Sheet1.CheckBoxAllItem38.Visible = True
+    Sheet1.CheckBoxAllItem39.Visible = True
+    Sheet1.CheckBoxAllItem40.Visible = True
+    Sheet1.CheckBoxAllItem41.Visible = True
+    Sheet1.CheckBoxAllItem42.Visible = True
+    Sheet1.CheckBoxAllItem43.Visible = True
+    Sheet1.CheckBoxAllItem44.Visible = True
+    Sheet1.CheckBoxAllItem45.Visible = True
+    Sheet1.CheckBoxAllItem46.Visible = True
+    Sheet1.CheckBoxAllItem47.Visible = True
+    Sheet1.CheckBoxAllItem48.Visible = True
+    Sheet1.CheckBoxAllItem49.Visible = True
+    Sheet1.CheckBoxAllItem50.Visible = True
+    Sheet1.CheckBoxAllItem51.Visible = True
+    Sheet1.CheckBoxAllItem52.Visible = True
+    Sheet1.CheckBoxAllItem53.Visible = True
+    Sheet1.CheckBoxAllItem54.Visible = True
+    Sheet1.CheckBoxAllItem55.Visible = True
+    Sheet1.CheckBoxAllItem56.Visible = True
+    Sheet1.CheckBoxAllItem57.Visible = True
+    Sheet1.CheckBoxAllItem58.Visible = True
+    Sheet1.CheckBoxAllItem59.Visible = True
+    Sheet1.CheckBoxAllItem60.Visible = True
+    Sheet1.CheckBoxAllItem61.Visible = True
+    Sheet1.CheckBoxAllItem62.Visible = True
+    Sheet1.CheckBoxAllItem63.Visible = True
+    Sheet1.CheckBoxAllItem64.Visible = True
+    Sheet1.CheckBoxAllItem65.Visible = True
+    Sheet1.CheckBoxAllItem66.Visible = True
+    Sheet1.CheckBoxAllItem67.Visible = True
+    Sheet1.CheckBoxAllItem68.Visible = True
+    Sheet1.CheckBoxAllItem69.Visible = True
+    Sheet1.CheckBoxAllItem70.Visible = True
+    
+    '10.30AM Items Check Box Visible False
+    Sheet1.CheckBox1030AM1.Visible = False
+    Sheet1.CheckBox1030AM2.Visible = False
+    Sheet1.CheckBox1030AM3.Visible = False
+    Sheet1.CheckBox1030AM4.Visible = False
+    Sheet1.CheckBox1030AM5.Visible = False
+    Sheet1.CheckBox1030AM6.Visible = False
+    Sheet1.CheckBox1030AM7.Visible = False
+    Sheet1.CheckBox1030AM8.Visible = False
+    Sheet1.CheckBox1030AM9.Visible = False
+    Sheet1.CheckBox1030AM10.Visible = False
+    Sheet1.CheckBox1030AM11.Visible = False
+    Sheet1.CheckBox1030AM12.Visible = False
+    Sheet1.CheckBox1030AM13.Visible = False
+    Sheet1.CheckBox1030AM14.Visible = False
+    Sheet1.CheckBox1030AM15.Visible = False
+    Sheet1.CheckBox1030AM16.Visible = False
+    Sheet1.CheckBox1030AM17.Visible = False
+    Sheet1.CheckBox1030AM18.Visible = False
+    Sheet1.CheckBox1030AM19.Visible = False
+    Sheet1.CheckBox1030AM20.Visible = False
+    Sheet1.CheckBox1030AM21.Visible = False
+    Sheet1.CheckBox1030AM22.Visible = False
+    Sheet1.CheckBox1030AM23.Visible = False
+    Sheet1.CheckBox1030AM24.Visible = False
+    Sheet1.CheckBox1030AM25.Visible = False
+    Sheet1.CheckBox1030AM26.Visible = False
+    Sheet1.CheckBox1030AM27.Visible = False
+    Sheet1.CheckBox1030AM28.Visible = False
+    Sheet1.CheckBox1030AM29.Visible = False
+    Sheet1.CheckBox1030AM30.Visible = False
+    Sheet1.CheckBox1030AM31.Visible = False
+    Sheet1.CheckBox1030AM32.Visible = False
+    Sheet1.CheckBox1030AM33.Visible = False
+    Sheet1.CheckBox1030AM34.Visible = False
+    Sheet1.CheckBox1030AM35.Visible = False
+    Sheet1.CheckBox1030AM36.Visible = False
+    Sheet1.CheckBox1030AM37.Visible = False
+    Sheet1.CheckBox1030AM38.Visible = False
+    Sheet1.CheckBox1030AM39.Visible = False
+    Sheet1.CheckBox1030AM40.Visible = False
+    Sheet1.CheckBox1030AM41.Visible = False
+    Sheet1.CheckBox1030AM42.Visible = False
+    Sheet1.CheckBox1030AM43.Visible = False
+    Sheet1.CheckBox1030AM44.Visible = False
+    Sheet1.CheckBox1030AM45.Visible = False
+    Sheet1.CheckBox1030AM46.Visible = False
+    Sheet1.CheckBox1030AM47.Visible = False
+    Sheet1.CheckBox1030AM48.Visible = False
+    Sheet1.CheckBox1030AM49.Visible = False
+    Sheet1.CheckBox1030AM50.Visible = False
+    Sheet1.CheckBox1030AM51.Visible = False
+    Sheet1.CheckBox1030AM52.Visible = False
+    Sheet1.CheckBox1030AM53.Visible = False
+    Sheet1.CheckBox1030AM54.Visible = False
+    Sheet1.CheckBox1030AM55.Visible = False
+    Sheet1.CheckBox1030AM56.Visible = False
+    Sheet1.CheckBox1030AM57.Visible = False
+    Sheet1.CheckBox1030AM58.Visible = False
+    Sheet1.CheckBox1030AM59.Visible = False
+    Sheet1.CheckBox1030AM60.Visible = False
+    Sheet1.CheckBox1030AM61.Visible = False
+    Sheet1.CheckBox1030AM62.Visible = False
+    Sheet1.CheckBox1030AM63.Visible = False
+    Sheet1.CheckBox1030AM64.Visible = False
+    Sheet1.CheckBox1030AM65.Visible = False
+    Sheet1.CheckBox1030AM66.Visible = False
+    Sheet1.CheckBox1030AM67.Visible = False
+    Sheet1.CheckBox1030AM68.Visible = False
+    Sheet1.CheckBox1030AM69.Visible = False
+    Sheet1.CheckBox1030AM70.Visible = False
+    
+    '1.30PM Items Check Box Visible False
+    Sheet1.CheckBox0130AM1.Visible = False
+    Sheet1.CheckBox0130AM2.Visible = False
+    Sheet1.CheckBox0130AM3.Visible = False
+    Sheet1.CheckBox0130AM4.Visible = False
+    Sheet1.CheckBox0130AM5.Visible = False
+    Sheet1.CheckBox0130AM6.Visible = False
+    Sheet1.CheckBox0130AM7.Visible = False
+    Sheet1.CheckBox0130AM8.Visible = False
+    Sheet1.CheckBox0130AM9.Visible = False
+    Sheet1.CheckBox0130AM10.Visible = False
+    Sheet1.CheckBox0130AM11.Visible = False
+    Sheet1.CheckBox0130AM12.Visible = False
+    Sheet1.CheckBox0130AM13.Visible = False
+    Sheet1.CheckBox0130AM14.Visible = False
+    Sheet1.CheckBox0130AM15.Visible = False
+    Sheet1.CheckBox0130AM16.Visible = False
+    Sheet1.CheckBox0130AM17.Visible = False
+    Sheet1.CheckBox0130AM18.Visible = False
+    Sheet1.CheckBox0130AM19.Visible = False
+    Sheet1.CheckBox0130AM20.Visible = False
+    Sheet1.CheckBox0130AM21.Visible = False
+    Sheet1.CheckBox0130AM22.Visible = False
+    Sheet1.CheckBox0130AM23.Visible = False
+    Sheet1.CheckBox0130AM24.Visible = False
+    Sheet1.CheckBox0130AM25.Visible = False
+    Sheet1.CheckBox0130AM26.Visible = False
+    Sheet1.CheckBox0130AM27.Visible = False
+    Sheet1.CheckBox0130AM28.Visible = False
+    Sheet1.CheckBox0130AM29.Visible = False
+    Sheet1.CheckBox0130AM30.Visible = False
+    Sheet1.CheckBox0130AM31.Visible = False
+    Sheet1.CheckBox0130AM32.Visible = False
+    Sheet1.CheckBox0130AM33.Visible = False
+    Sheet1.CheckBox0130AM34.Visible = False
+    Sheet1.CheckBox0130AM35.Visible = False
+    Sheet1.CheckBox0130AM36.Visible = False
+    Sheet1.CheckBox0130AM37.Visible = False
+    Sheet1.CheckBox0130AM38.Visible = False
+    Sheet1.CheckBox0130AM39.Visible = False
+    Sheet1.CheckBox0130AM40.Visible = False
+    Sheet1.CheckBox0130AM41.Visible = False
+    Sheet1.CheckBox0130AM42.Visible = False
+    Sheet1.CheckBox0130AM43.Visible = False
+    Sheet1.CheckBox0130AM44.Visible = False
+    Sheet1.CheckBox0130AM45.Visible = False
+    Sheet1.CheckBox0130AM46.Visible = False
+    Sheet1.CheckBox0130AM47.Visible = False
+    Sheet1.CheckBox0130AM48.Visible = False
+    Sheet1.CheckBox0130AM49.Visible = False
+    Sheet1.CheckBox0130AM50.Visible = False
+    Sheet1.CheckBox0130AM51.Visible = False
+    Sheet1.CheckBox0130AM52.Visible = False
+    Sheet1.CheckBox0130AM53.Visible = False
+    Sheet1.CheckBox0130AM54.Visible = False
+    Sheet1.CheckBox0130AM55.Visible = False
+    Sheet1.CheckBox0130AM56.Visible = False
+    Sheet1.CheckBox0130AM57.Visible = False
+    Sheet1.CheckBox0130AM58.Visible = False
+    Sheet1.CheckBox0130AM59.Visible = False
+    Sheet1.CheckBox0130AM60.Visible = False
+    Sheet1.CheckBox0130AM61.Visible = False
+    Sheet1.CheckBox0130AM62.Visible = False
+    Sheet1.CheckBox0130AM63.Visible = False
+    Sheet1.CheckBox0130AM64.Visible = False
+    Sheet1.CheckBox0130AM65.Visible = False
+    Sheet1.CheckBox0130AM66.Visible = False
+    Sheet1.CheckBox0130AM67.Visible = False
+    Sheet1.CheckBox0130AM68.Visible = False
+    Sheet1.CheckBox0130AM69.Visible = False
+    Sheet1.CheckBox0130AM70.Visible = False
+
+End Sub
+
+Sub SixAMCheckBoxes()
+
+'All Items Check Box Visible True
+    Sheet1.CheckBoxAllItem1.Visible = True
+    Sheet1.CheckBoxAllItem2.Visible = True
+    Sheet1.CheckBoxAllItem3.Visible = True
+    Sheet1.CheckBoxAllItem4.Visible = True
+    Sheet1.CheckBoxAllItem5.Visible = True
+    Sheet1.CheckBoxAllItem6.Visible = True
+    Sheet1.CheckBoxAllItem7.Visible = True
+    Sheet1.CheckBoxAllItem8.Visible = True
+    Sheet1.CheckBoxAllItem9.Visible = True
+    Sheet1.CheckBoxAllItem10.Visible = True
+    Sheet1.CheckBoxAllItem11.Visible = True
+    Sheet1.CheckBoxAllItem12.Visible = True
+    Sheet1.CheckBoxAllItem13.Visible = True
+    Sheet1.CheckBoxAllItem14.Visible = True
+    Sheet1.CheckBoxAllItem15.Visible = True
+    Sheet1.CheckBoxAllItem16.Visible = True
+    Sheet1.CheckBoxAllItem17.Visible = True
+    Sheet1.CheckBoxAllItem18.Visible = True
+    Sheet1.CheckBoxAllItem19.Visible = True
+    Sheet1.CheckBoxAllItem20.Visible = True
+    Sheet1.CheckBoxAllItem21.Visible = True
+    Sheet1.CheckBoxAllItem22.Visible = True
+    Sheet1.CheckBoxAllItem23.Visible = True
+    Sheet1.CheckBoxAllItem24.Visible = True
+    Sheet1.CheckBoxAllItem25.Visible = True
+    Sheet1.CheckBoxAllItem26.Visible = True
+    Sheet1.CheckBoxAllItem27.Visible = True
+    Sheet1.CheckBoxAllItem28.Visible = True
+    Sheet1.CheckBoxAllItem29.Visible = True
+    Sheet1.CheckBoxAllItem30.Visible = True
+    Sheet1.CheckBoxAllItem31.Visible = True
+    Sheet1.CheckBoxAllItem32.Visible = True
+    Sheet1.CheckBoxAllItem33.Visible = True
+    Sheet1.CheckBoxAllItem34.Visible = True
+    Sheet1.CheckBoxAllItem35.Visible = True
+    Sheet1.CheckBoxAllItem36.Visible = True
+    Sheet1.CheckBoxAllItem37.Visible = True
+    Sheet1.CheckBoxAllItem38.Visible = True
+    Sheet1.CheckBoxAllItem39.Visible = True
+    Sheet1.CheckBoxAllItem40.Visible = True
+    Sheet1.CheckBoxAllItem41.Visible = True
+    Sheet1.CheckBoxAllItem42.Visible = True
+    Sheet1.CheckBoxAllItem43.Visible = True
+    Sheet1.CheckBoxAllItem44.Visible = True
+    Sheet1.CheckBoxAllItem45.Visible = True
+    Sheet1.CheckBoxAllItem46.Visible = True
+    Sheet1.CheckBoxAllItem47.Visible = True
+    Sheet1.CheckBoxAllItem48.Visible = True
+    Sheet1.CheckBoxAllItem49.Visible = True
+    Sheet1.CheckBoxAllItem50.Visible = True
+    Sheet1.CheckBoxAllItem51.Visible = True
+    Sheet1.CheckBoxAllItem52.Visible = True
+    Sheet1.CheckBoxAllItem53.Visible = True
+    Sheet1.CheckBoxAllItem54.Visible = True
+    Sheet1.CheckBoxAllItem55.Visible = True
+    Sheet1.CheckBoxAllItem56.Visible = True
+    Sheet1.CheckBoxAllItem57.Visible = True
+    Sheet1.CheckBoxAllItem58.Visible = True
+    Sheet1.CheckBoxAllItem59.Visible = True
+    Sheet1.CheckBoxAllItem60.Visible = True
+    Sheet1.CheckBoxAllItem61.Visible = True
+    Sheet1.CheckBoxAllItem62.Visible = True
+    Sheet1.CheckBoxAllItem63.Visible = True
+    Sheet1.CheckBoxAllItem64.Visible = True
+    Sheet1.CheckBoxAllItem65.Visible = True
+    Sheet1.CheckBoxAllItem66.Visible = True
+    Sheet1.CheckBoxAllItem67.Visible = True
+    Sheet1.CheckBoxAllItem68.Visible = True
+    Sheet1.CheckBoxAllItem69.Visible = True
+    Sheet1.CheckBoxAllItem70.Visible = True
+    
+    '10.30AM Items Check Box Visible True
+    Sheet1.CheckBox1030AM1.Visible = True
+    Sheet1.CheckBox1030AM2.Visible = True
+    Sheet1.CheckBox1030AM3.Visible = True
+    Sheet1.CheckBox1030AM4.Visible = True
+    Sheet1.CheckBox1030AM5.Visible = True
+    Sheet1.CheckBox1030AM6.Visible = True
+    Sheet1.CheckBox1030AM7.Visible = True
+    Sheet1.CheckBox1030AM8.Visible = True
+    Sheet1.CheckBox1030AM9.Visible = True
+    Sheet1.CheckBox1030AM10.Visible = True
+    Sheet1.CheckBox1030AM11.Visible = True
+    Sheet1.CheckBox1030AM12.Visible = True
+    Sheet1.CheckBox1030AM13.Visible = True
+    Sheet1.CheckBox1030AM14.Visible = True
+    Sheet1.CheckBox1030AM15.Visible = True
+    Sheet1.CheckBox1030AM16.Visible = True
+    Sheet1.CheckBox1030AM17.Visible = True
+    Sheet1.CheckBox1030AM18.Visible = True
+    Sheet1.CheckBox1030AM19.Visible = True
+    Sheet1.CheckBox1030AM20.Visible = True
+    Sheet1.CheckBox1030AM21.Visible = True
+    Sheet1.CheckBox1030AM22.Visible = True
+    Sheet1.CheckBox1030AM23.Visible = True
+    Sheet1.CheckBox1030AM24.Visible = True
+    Sheet1.CheckBox1030AM25.Visible = True
+    Sheet1.CheckBox1030AM26.Visible = True
+    Sheet1.CheckBox1030AM27.Visible = True
+    Sheet1.CheckBox1030AM28.Visible = True
+    Sheet1.CheckBox1030AM29.Visible = True
+    Sheet1.CheckBox1030AM30.Visible = True
+    Sheet1.CheckBox1030AM31.Visible = True
+    Sheet1.CheckBox1030AM32.Visible = True
+    Sheet1.CheckBox1030AM33.Visible = True
+    Sheet1.CheckBox1030AM34.Visible = True
+    Sheet1.CheckBox1030AM35.Visible = True
+    Sheet1.CheckBox1030AM36.Visible = True
+    Sheet1.CheckBox1030AM37.Visible = True
+    Sheet1.CheckBox1030AM38.Visible = True
+    Sheet1.CheckBox1030AM39.Visible = True
+    Sheet1.CheckBox1030AM40.Visible = True
+    Sheet1.CheckBox1030AM41.Visible = True
+    Sheet1.CheckBox1030AM42.Visible = True
+    Sheet1.CheckBox1030AM43.Visible = True
+    Sheet1.CheckBox1030AM44.Visible = True
+    Sheet1.CheckBox1030AM45.Visible = True
+    Sheet1.CheckBox1030AM46.Visible = True
+    Sheet1.CheckBox1030AM47.Visible = True
+    Sheet1.CheckBox1030AM48.Visible = True
+    Sheet1.CheckBox1030AM49.Visible = True
+    Sheet1.CheckBox1030AM50.Visible = True
+    Sheet1.CheckBox1030AM51.Visible = True
+    Sheet1.CheckBox1030AM52.Visible = True
+    Sheet1.CheckBox1030AM53.Visible = True
+    Sheet1.CheckBox1030AM54.Visible = True
+    Sheet1.CheckBox1030AM55.Visible = True
+    Sheet1.CheckBox1030AM56.Visible = True
+    Sheet1.CheckBox1030AM57.Visible = True
+    Sheet1.CheckBox1030AM58.Visible = True
+    Sheet1.CheckBox1030AM59.Visible = True
+    Sheet1.CheckBox1030AM60.Visible = True
+    Sheet1.CheckBox1030AM61.Visible = True
+    Sheet1.CheckBox1030AM62.Visible = True
+    Sheet1.CheckBox1030AM63.Visible = True
+    Sheet1.CheckBox1030AM64.Visible = True
+    Sheet1.CheckBox1030AM65.Visible = True
+    Sheet1.CheckBox1030AM66.Visible = True
+    Sheet1.CheckBox1030AM67.Visible = True
+    Sheet1.CheckBox1030AM68.Visible = True
+    Sheet1.CheckBox1030AM69.Visible = True
+    Sheet1.CheckBox1030AM70.Visible = True
+    
+    '1.30PM Items Check Box Visible True
+    Sheet1.CheckBox0130AM1.Visible = True
+    Sheet1.CheckBox0130AM2.Visible = True
+    Sheet1.CheckBox0130AM3.Visible = True
+    Sheet1.CheckBox0130AM4.Visible = True
+    Sheet1.CheckBox0130AM5.Visible = True
+    Sheet1.CheckBox0130AM6.Visible = True
+    Sheet1.CheckBox0130AM7.Visible = True
+    Sheet1.CheckBox0130AM8.Visible = True
+    Sheet1.CheckBox0130AM9.Visible = True
+    Sheet1.CheckBox0130AM10.Visible = True
+    Sheet1.CheckBox0130AM11.Visible = True
+    Sheet1.CheckBox0130AM12.Visible = True
+    Sheet1.CheckBox0130AM13.Visible = True
+    Sheet1.CheckBox0130AM14.Visible = True
+    Sheet1.CheckBox0130AM15.Visible = True
+    Sheet1.CheckBox0130AM16.Visible = True
+    Sheet1.CheckBox0130AM17.Visible = True
+    Sheet1.CheckBox0130AM18.Visible = True
+    Sheet1.CheckBox0130AM19.Visible = True
+    Sheet1.CheckBox0130AM20.Visible = True
+    Sheet1.CheckBox0130AM21.Visible = True
+    Sheet1.CheckBox0130AM22.Visible = True
+    Sheet1.CheckBox0130AM23.Visible = True
+    Sheet1.CheckBox0130AM24.Visible = True
+    Sheet1.CheckBox0130AM25.Visible = True
+    Sheet1.CheckBox0130AM26.Visible = True
+    Sheet1.CheckBox0130AM27.Visible = True
+    Sheet1.CheckBox0130AM28.Visible = True
+    Sheet1.CheckBox0130AM29.Visible = True
+    Sheet1.CheckBox0130AM30.Visible = True
+    Sheet1.CheckBox0130AM31.Visible = True
+    Sheet1.CheckBox0130AM32.Visible = True
+    Sheet1.CheckBox0130AM33.Visible = True
+    Sheet1.CheckBox0130AM34.Visible = True
+    Sheet1.CheckBox0130AM35.Visible = True
+    Sheet1.CheckBox0130AM36.Visible = True
+    Sheet1.CheckBox0130AM37.Visible = True
+    Sheet1.CheckBox0130AM38.Visible = True
+    Sheet1.CheckBox0130AM39.Visible = True
+    Sheet1.CheckBox0130AM40.Visible = True
+    Sheet1.CheckBox0130AM41.Visible = True
+    Sheet1.CheckBox0130AM42.Visible = True
+    Sheet1.CheckBox0130AM43.Visible = True
+    Sheet1.CheckBox0130AM44.Visible = True
+    Sheet1.CheckBox0130AM45.Visible = True
+    Sheet1.CheckBox0130AM46.Visible = True
+    Sheet1.CheckBox0130AM47.Visible = True
+    Sheet1.CheckBox0130AM48.Visible = True
+    Sheet1.CheckBox0130AM49.Visible = True
+    Sheet1.CheckBox0130AM50.Visible = True
+    Sheet1.CheckBox0130AM51.Visible = True
+    Sheet1.CheckBox0130AM52.Visible = True
+    Sheet1.CheckBox0130AM53.Visible = True
+    Sheet1.CheckBox0130AM54.Visible = True
+    Sheet1.CheckBox0130AM55.Visible = True
+    Sheet1.CheckBox0130AM56.Visible = True
+    Sheet1.CheckBox0130AM57.Visible = True
+    Sheet1.CheckBox0130AM58.Visible = True
+    Sheet1.CheckBox0130AM59.Visible = True
+    Sheet1.CheckBox0130AM60.Visible = True
+    Sheet1.CheckBox0130AM61.Visible = True
+    Sheet1.CheckBox0130AM62.Visible = True
+    Sheet1.CheckBox0130AM63.Visible = True
+    Sheet1.CheckBox0130AM64.Visible = True
+    Sheet1.CheckBox0130AM65.Visible = True
+    Sheet1.CheckBox0130AM66.Visible = True
+    Sheet1.CheckBox0130AM67.Visible = True
+    Sheet1.CheckBox0130AM68.Visible = True
+    Sheet1.CheckBox0130AM69.Visible = True
+    Sheet1.CheckBox0130AM70.Visible = True
+
+
+    Dim MyDay1 As String
+    MyDay1 = "25"
+
+    Dim MyDay2 As String
+    MyDay2 = "26"
+
+    Dim MyDay3 As String
+    MyDay3 = "27"
+
+    Dim MyDay4 As String
+    MyDay4 = "28"
+
+    Dim MyDay5 As String
+    MyDay5 = "29"
+
+    Dim MyDay6 As String
+    MyDay6 = "30"
+
+    Dim MyDay7 As String
+    MyDay7 = "31"
+
+    Dim MyDay8 As String
+    MyDay8 = "01"
+
+    Dim MyDay9 As String
+    MyDay9 = "02"
+
+    Dim MyDay10 As String
+    MyDay10 = "03"
+
+    Dim MyDay11 As String
+    MyDay11 = "04"
+
+    Dim MyDay12 As String
+    MyDay12 = "05"
+
+    Dim MyDay13 As String
+    MyDay13 = "06"
+
+    Dim MyDay14 As String
+    MyDay14 = "07"
+
+    Dim TodayDay As Date
+    TodayDay = Format(Now() + 1, "dd")
+
+    If TodayDay = MyDay1 Or TodayDay = MyDay2 Or TodayDay = MyDay3 Or TodayDay = MyDay4 Or TodayDay = MyDay5 Or TodayDay = MyDay6 Or TodayDay = MyDay7 Or _
+    TodayDay = MyDay8 Or TodayDay = MyDay9 Or TodayDay = MyDay10 Or TodayDay = MyDay11 Or TodayDay = MyDay12 Or TodayDay = MyDay13 Or TodayDay = MyDay14 Then
+
+        'Sheet1.ExtraProductionCheckBox.Visible = True
+        'Sheet1.ExtraProductionCheckBox.Value = True
+        
+    Else
+    
+        Sheet1.ExtraProductionCheckBox.Visible = False
+        'Sheet1.ExtraProductionCheckBox.Value = False
+
+    End If
+End Sub

@@ -1,0 +1,91 @@
+Attribute VB_Name = "Module29"
+Sub SaturdayFishRotty()
+
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+'Copy & Paste 10.30AM & 2.30PM Fish Rotty Delivery Data
+    Dim FishRottyMorning As String
+    FishRottyMorning = Sheet23.Range("BK152").Value    '10.30AM Delivery
+    
+    Sheet4.Range("E186").Value = FishRottyMorning  'Curry Sheet
+'********************************************************************
+
+    Dim FishRottyEvening As String
+    FishRottyEvening = Sheet23.Range("BK74").Value    '2.30PM Delivery
+    
+    Sheet4.Range("F186").Value = FishRottyEvening  'Curry Sheet
+'********************************************************************
+    Sheet4.Protect Password:="Admin@donandsons.lk54321"
+
+End Sub
+
+Sub SundayFishRotty()
+   
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+'Copy & Paste 10.30AM & 2.30PM Fish Rotty Delivery Data
+    Dim FishRottyMorning As String
+    FishRottyMorning = Sheet23.Range("CF152").Value    '10.30AM Delivery
+    
+    Sheet4.Range("E186").Value = FishRottyMorning  'Curry Sheet
+'********************************************************************
+    Dim FishRottyEvening As String
+    FishRottyEvening = Sheet23.Range("CF74").Value    '2.30PM Delivery
+    
+    Sheet4.Range("F186").Value = FishRottyEvening  'Curry Sheet
+'********************************************************************
+    Sheet4.Protect Password:="Admin@donandsons.lk54321"
+    
+End Sub
+
+Sub CurfewFishRotty()
+            
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+'Copy & Paste 10.30AM & 2.30PM Fish Rotty Delivery Data
+    Dim FishRottyMorning As String
+    FishRottyMorning = Sheet23.Range("T152").Value '10.30AM Delivery
+    
+    Sheet4.Range("E186").Value = FishRottyMorning  'Curry Sheet
+'********************************************************************
+    Dim FishRottyEvening As String
+    FishRottyEvening = Sheet23.Range("T74").Value '2.30PM Delivery
+    
+    Sheet4.Range("F186").Value = FishRottyEvening  'Curry Sheet
+'********************************************************************
+    Sheet4.Protect Password:="Admin@donandsons.lk54321"
+    
+End Sub
+
+Sub WeekdaysFishRotty()
+            
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+'Copy & Paste 10.30AM & 2.30PM Fish Rotty Delivery Data
+    Dim FishRottyMorning As String
+    FishRottyMorning = Sheet23.Range("AP152").Value    '10.30AM Delivery
+    
+    Sheet4.Range("E186").Value = FishRottyMorning  'Curry Sheet
+'********************************************************************
+    Dim FishRottyEvening As String
+    FishRottyEvening = Sheet23.Range("AP74").Value    '2.30PM Delivery
+    
+    Sheet4.Range("F186").Value = FishRottyEvening  'Curry Sheet
+'********************************************************************
+    Sheet4.Protect Password:="Admin@donandsons.lk54321"
+    
+End Sub
+
+Sub AprilNewYearFishRotty()
+            
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+'Copy & Paste 10.30AM & 2.30PM Fish Rotty Delivery Data
+    Dim FishRottyMorning As String
+    FishRottyMorning = Sheet23.Range("DA152").Value    '10.30AM Delivery
+    
+    Sheet4.Range("E186").Value = FishRottyMorning  'Curry Sheet
+'********************************************************************
+    Dim FishRottyEvening As String
+    FishRottyEvening = Sheet23.Range("DA74").Value    '1.30PM Delivery
+    
+    Sheet4.Range("F186").Value = FishRottyEvening  'Curry Sheet
+'********************************************************************
+    Sheet4.Protect Password:="Admin@donandsons.lk54321"
+    
+End Sub

@@ -1,0 +1,920 @@
+Attribute VB_Name = "Module26"
+Sub Anytime_Curry_Sheet_Print()
+
+    'Spot Curry Sheet Print *****************************************************************
+        
+        'Make Folder
+        Dim FolderDate As String
+        FolderDate = Sheet1.Range("O11").Text
+    
+        Dim sFolderPath As String
+    
+        sFolderPath = "\\serverml310\desktop\DMS Staff Only (DONT DELETE)\Anytime Curry Sheets PDF\" & FolderDate
+    
+        If Right(sFolderPath, 1) <> "\" Then
+    
+            sFolderPath = sFolderPath & "\"
+        
+        End If
+    
+        If Dir(sFolderPath, vbDirectory) <> vbNullString Then
+    
+            'Do Nothing
+        
+        Else
+        
+            Dim fdObj As Object
+            Application.ScreenUpdating = False
+            Set fdObj = CreateObject("Scripting.FileSystemObject")
+        
+            If fdObj.FolderExists(sFolderPath) Then
+        
+                'Do Nothing
+            
+            Else
+                On Error Resume Next
+                fdObj.CreateFolder (sFolderPath)
+            
+            End If
+        
+            Application.ScreenUpdating = True
+        
+        End If
+
+        'Unprotect Sheet4("Curry Sheet"), Sheet6("Printing") & Sheet18(Recipy for Curry Items) with Password Added by Viraj Lakshan Rathnayake on 18.07.2019
+        Sheet2.Unprotect Password:="Admin@donandsons.lk54321"
+        Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+        Sheet6.Unprotect Password:="Admin@donandsons.lk54321"
+        Sheet15.Unprotect Password:="Admin@donandsons.lk54321"
+        Sheet18.Unprotect Password:="Admin@donandsons.lk54321"
+        
+        Dim Workbook_Name As String
+        Workbook_Name = Sheet2.Range("Y1").Value
+        
+        Sheet2.Protect Password:="Admin@donandsons.lk54321"
+    
+        'Remove 5Ltr Oil Can to Shorteats Section
+        Sheet6.Range("H101").Value = 0
+    
+        'Remove Bread Fixed Data in Bakery Section
+        Sheet6.Range("D56").Value = 0       'Gloves
+        Sheet6.Range("H76").Value = 0
+        Sheet6.Range("H77").Value = 0
+        Sheet6.Range("H78").Value = 0
+        Sheet6.Range("H79").Value = 0
+        Sheet6.Range("H80").Value = 0
+        Sheet6.Range("H90").Value = 0
+        Sheet6.Range("D94").Value = 0       'Egg Wash Eggs For Pastry
+        
+        'Remove Bread Fixed Data in Filling Section
+        Sheet6.Range("H5").Value = 0        'Gloves
+        Sheet6.Range("H6").Value = 0        'Piping Bag
+        Sheet6.Range("H8").Value = 0        'Yellow Coloring
+        
+        'Remove Bread Fixed Data in Bakery Section 2
+        Sheet6.Range("D203:D210").Value = 0 'Sandwich Bread
+        Sheet6.Range("H203").Value = 0      'Kurakkan Plain Bun
+        Sheet6.Range("D213").Value = 0      'Kurakkan Bread
+        Sheet6.Range("H213").Value = 0      'Thati Paan
+        Sheet6.Range("D222:D229").Value = 0 'Sandwich Bread Large
+        
+        'Clear Extra Dusting Flour Value
+        Sheet6.Range("D55").Value = 0
+        
+        'Clear Sandwich Bread Fixed 5.00AM
+        Sheet6.Shapes("Picture 9").Visible = msoFalse
+    
+        'Change Date
+        Sheet6.Range("B2").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+        Sheet6.Range("B49").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+        Sheet6.Range("B96").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+        Sheet6.Range("B145").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+        Sheet6.Range("B165").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+        Sheet6.Range("B188").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+        Sheet6.Range("B282").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+        Sheet6.Range("B331").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+        Sheet6.Range("B425").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+        Sheet6.Range("B475").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+        Sheet6.Range("B523").Value = Format(Now(), "dddd, mmmm dd, yyyy")
+        
+        'Change Bakery 3 (Fish Bun / Chicken Bun & Seeni Sambol Bun) Category Name As 5.00AM to Anytime
+        Sheet6.Range("F334").Value = "Anytime Order - (Plain Roll)"
+        
+        'Change Bakery 3 (Tea Bun) Category Name As 5.00AM to Anytime
+        Sheet6.Range("F371").Value = "Anytime Order - (Tea Bun)"
+        
+        'Change Bakery 3 Plain Roll Category Name As 5.00AM to Anytime
+        Sheet6.Range("F342").Value = "Anytime Order - (Fish Bun / Chicken Bun & Seeni Sambol Bun)"
+    
+
+        If Sheet18.Range("B5").Value Or Sheet18.Range("F5").Value Or Sheet18.Range("J5").Value Or Sheet18.Range("N5").Value Or Sheet18.Range("R5").Value Or _
+        Sheet18.Range("V5").Value >= 1 Then
+            Sheet18.CheckBox1.Value = True
+        End If
+        
+        If Sheet18.Range("Z5").Value Or Sheet18.Range("AD5").Value Or Sheet18.Range("AH5").Value Or Sheet18.Range("AL5").Value Or _
+        Sheet18.Range("AP5").Value Or Sheet18.Range("AT5").Value >= 1 Then
+            Sheet18.CheckBox2.Value = True
+        End If
+        
+        If Sheet18.Range("AX5").Value Or Sheet18.Range("BB5").Value Or Sheet18.Range("BF5").Value Or Sheet18.Range("BJ5").Value Or _
+        Sheet18.Range("BN5").Value Or Sheet18.Range("BR5").Value >= 1 Then
+            Sheet18.CheckBox3.Value = True
+        End If
+        
+        If Sheet18.Range("BV5").Value Or Sheet18.Range("BZ5").Value Or Sheet18.Range("CD5").Value >= 1 Then
+            Sheet18.CheckBox4.Value = True
+        End If
+    
+        'Clear Comment on Sheet4(Curry Sheet), Sheet6(Printing) & Sheet18(Recipy for Curry Items)
+        Sheet4.Range("B2").Value = ""
+        Sheet4.Range("C5").Value = ""
+        Sheet4.Range("E5").Value = ""
+        Sheet4.Range("H5").Value = ""
+        Sheet4.Range("J5").Value = ""
+        Sheet4.Range("K5").Value = ""
+        Sheet4.Range("M5").Value = ""
+        Sheet4.Range("O5").Value = ""
+    
+        Sheet6.Range("E96").Value = ""
+        Sheet6.Range("H96").Value = ""
+        Sheet6.Range("I96").Value = ""
+    
+        'Clear Chinese Roll Batter Data
+        Sheet6.Range("H112").Value = ""
+        Sheet6.Range("H113").Value = ""
+        Sheet6.Range("H114").Value = ""
+        Sheet6.Range("H115").Value = ""
+    
+        Sheet18.Range("E2").Value = ""
+        Sheet18.Range("E3").Value = ""
+        Sheet18.Range("H2").Value = ""
+        Sheet18.Range("H3").Value = ""
+    
+        'Programme Date of Today
+        Sheet4.Range("B2").Value = Sheet1.Range("O11").Value
+        
+        'Set Order Bill No & Recipe Requesion No on Sheet4("Curry Sheet")
+        Sheet4.Range("C5").Value = "Recipe Requestion No. :"
+        Sheet4.Range("E5").NumberFormat = "0"
+        Sheet4.Range("E5").Value = Sheet1.Range("O14").Value
+        
+        Sheet4.Range("K5").Value = "Effective Delivery Time :"
+        Sheet4.Range("M5").Value = Sheet1.Range("O11").Value
+        Sheet4.Range("O5").Value = Sheet1.Range("O12").Value
+        
+        Sheet4.Range("P5").Value = "Order Bill No. :"
+        Sheet4.Range("R5").NumberFormat = "0"
+        Sheet4.Range("R5").Value = Sheet1.Range("O13").Value
+        
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Item List
+        Sheet6.Range("F269").Value = "Effective Delivery Date :"
+        Sheet6.Range("H269").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("F270").Value = "Effective Delivery Time :"
+        Sheet6.Range("H270").Value = Sheet1.Range("O12").Value
+        Sheet6.Range("F271").Value = "Order Bill No. :"
+        Sheet6.Range("H271").NumberFormat = "0"
+        Sheet6.Range("H271").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("F272").Value = "Recipe Requestion No. :"
+        Sheet6.Range("H272").Value = Sheet1.Range("O14").Value
+    
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Shorteats 1
+        Sheet6.Range("D97").Value = "Order Bill No. :"
+        Sheet6.Range("G97").NumberFormat = "0"
+        Sheet6.Range("G97").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("H97").Value = ""
+        Sheet6.Range("G98").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("H98").Value = Sheet1.Range("O12").Value
+    
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Rotty
+        Sheet6.Range("D146").Value = "Order Bill No. :"
+        Sheet6.Range("G146").NumberFormat = "0"
+        Sheet6.Range("G146").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("H146").Value = ""
+        Sheet6.Range("G147").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("H147").Value = Sheet1.Range("O12").Value
+    
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Bakery
+        Sheet6.Range("D50").Value = "Order Bill No. :"
+        Sheet6.Range("G50").NumberFormat = "0"
+        Sheet6.Range("G50").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("H50").Value = ""
+        Sheet6.Range("G51").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("H51").Value = Sheet1.Range("O12").Value
+        
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Bakery 2
+        Sheet6.Range("D189").Value = "Order Bill No. :"
+        Sheet6.Range("G189").NumberFormat = "0"
+        Sheet6.Range("G189").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("H189").Value = ""
+        Sheet6.Range("G190").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("H190").Value = Sheet1.Range("O12").Value
+        
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Filling
+        Sheet6.Range("D3").Value = "Order Bill No. :"
+        Sheet6.Range("G3").NumberFormat = "0"
+        Sheet6.Range("G3").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("H3").Value = ""
+        Sheet6.Range("G4").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("H4").Value = Sheet1.Range("O12").Value
+        
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Filling 2
+        Sheet6.Range("D283").Value = "Order Bill No. :"
+        Sheet6.Range("G283").NumberFormat = "0"
+        Sheet6.Range("G283").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("H283").Value = ""
+        Sheet6.Range("G284").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("H284").Value = Sheet1.Range("O12").Value
+        
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Bakery 3
+        Sheet6.Range("D332").Value = "Order Bill No. :"
+        Sheet6.Range("G332").NumberFormat = "0"
+        Sheet6.Range("G332").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("H332").Value = ""
+        Sheet6.Range("G333").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("H333").Value = Sheet1.Range("O12").Value
+        
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Bakery 4
+        Sheet6.Range("D426").Value = "Order Bill No. :"
+        Sheet6.Range("G426").NumberFormat = "0"
+        Sheet6.Range("G426").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("H426").Value = ""
+        Sheet6.Range("G427").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("H427").Value = Sheet1.Range("O12").Value
+        
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Shorteats 2
+        Sheet6.Range("D476").Value = "Order Bill No. :"
+        Sheet6.Range("G476").NumberFormat = "0"
+        Sheet6.Range("G476").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("H476").Value = ""
+        Sheet6.Range("G477").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("H477").Value = Sheet1.Range("O12").Value
+        
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Bakery 5
+        Sheet6.Range("D524").Value = "Order Bill No. :"
+        Sheet6.Range("G524").NumberFormat = "0"
+        Sheet6.Range("G524").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("H524").Value = ""
+        Sheet6.Range("G525").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("H525").Value = Sheet1.Range("O12").Value
+        
+        'Set Production Starting Time & Effective Delivery Time on Sheet6("Printing") : Bakery 6
+        Sheet6.Range("D572").Value = "Order Bill No. :"
+        Sheet6.Range("G572").NumberFormat = "0"
+        Sheet6.Range("G572").Value = Sheet1.Range("O13").Value
+        Sheet6.Range("H572").Value = ""
+        Sheet6.Range("G573").Value = Sheet1.Range("O11").Value
+        Sheet6.Range("H573").Value = Sheet1.Range("O12").Value
+        
+        'Bakery Section 3 Item Name Setting
+        Sheet6.Range("F342").Value = "Anytime Order - (Fish Bun / Chicken Bun & Seeni Sambol Bun)"
+        Sheet6.Range("F372").Value = "Anytime Order - Beef Rotty Dough"
+        
+        'Set Production Starting Time & Effective Delivery Time on Sheet15("Printing Filling Section")
+        Sheet15.Range("B3").Value = Format(Now(), "dd-mmm-yyyy")
+        Sheet15.Range("C2").Value = "'Order Bill No. : " & Sheet1.Range("O13").Value & " - " & "Effective Delivery Date & Time : " & Sheet1.Range("O11").Value & " - " & Sheet1.Range("O12").Value
+    
+        'Set Production Starting Time & Effective Delivery Time on Sheet18(Recipy for Curry Items)
+        Sheet18.Range("E2").Value = ""
+        Sheet18.Range("H2").Value = ""
+        Sheet18.Range("E3").Value = Sheet1.Range("O11").Value
+        Sheet18.Range("H3").Value = Sheet1.Range("O12").Value
+        
+        'Check Plain Roll Availability
+        If Sheet2.Range("X20").Value >= 1 Or Sheet2.Range("X22").Value >= 1 Or Sheet2.Range("X23").Value >= 1 Or Sheet2.Range("X24").Value >= 1 Or _
+        Sheet2.Range("X25").Value >= 1 Or Sheet2.Range("X26").Value >= 1 Or Sheet2.Range("X28").Value >= 1 Or Sheet2.Range("X29").Value >= 1 Or _
+        Sheet2.Range("X31").Value >= 1 Or _
+        Sheet2.Range("X35").Value >= 1 Or Sheet2.Range("X36").Value >= 1 Or Sheet2.Range("X38").Value >= 1 Or Sheet2.Range("X39").Value >= 1 Or _
+        Sheet2.Range("X40").Value >= 1 Or Sheet2.Range("X41").Value >= 1 Or Sheet2.Range("X42").Value >= 1 Or Sheet2.Range("X43").Value >= 1 Or _
+        Sheet2.Range("X44").Value >= 1 Or Sheet2.Range("X76").Value >= 1 Or Sheet2.Range("X30").Value >= 1 Or Sheet2.Range("X27").Value >= 1 Then
+        
+            Sheet2.CheckBoxPlainRoll.Value = True
+            
+        End If
+        
+        'Check Pizza Availability
+        If Sheet2.Range("X62").Value >= 1 Or Sheet2.Range("X63").Value >= 1 Or Sheet2.Range("X64").Value >= 1 Or Sheet2.Range("X37").Value >= 1 Or Sheet2.Range("X33").Value >= 1 Or Sheet2.Range("X34").Value >= 1 Then
+        
+            Sheet2.CheckBoxPizza.Value = True
+        
+        End If
+    
+        'Check Bakery Section 1 Availability
+        If Sheet2.Range("X16").Value >= 1 Or Sheet2.Range("X17").Value >= 1 Or _
+        Sheet2.Range("X18").Value >= 1 Or Sheet2.Range("X58").Value >= 1 Or Sheet2.Range("X9").Value >= 1 Or Sheet2.Range("X32").Value >= 1 Then
+    
+            Sheet4.CheckBoxBakery.Value = True
+        
+        End If
+        
+        'Check Bakery Section 5 Availability
+        If Sheet2.Range("X7").Value >= 1 Or Sheet2.Range("X8").Value >= 1 Or Sheet2.Range("X10").Value >= 1 Or Sheet2.Range("X12").Value >= 1 Or _
+        Sheet2.Range("X9").Value >= 1 Or Sheet2.Range("X11").Value >= 1 Or Sheet2.Range("X44").Value >= 1 Or Sheet2.Range("X58").Value >= 1 Or _
+        Sheet2.Range("X59").Value >= 1 Then
+        
+            Sheet4.CheckBoxBakery2.Value = True
+            
+        End If
+        
+        'Check Bakery Section 6 Availability
+        'If Sheet2.Range("X7").Value >= 1 Or Sheet2.Range("X11").Value >= 1 Or Sheet2.Range("X59").Value >= 1 Then
+        
+            'Sheet4.CheckBoxBakery6.Value = True
+            
+        'End If
+        
+        'Check Bakery Section 3 Availability
+        If Sheet2.Range("X15").Value >= 1 Or Sheet2.Range("X13").Value >= 1 Or Sheet2.Range("X20").Value >= 1 Or Sheet2.Range("X22").Value >= 1 Or Sheet2.Range("X23").Value >= 1 Or _
+        Sheet2.Range("X24").Value >= 1 Or Sheet2.Range("X25").Value >= 1 Or Sheet2.Range("X26").Value >= 1 Or Sheet2.Range("X28").Value >= 1 Or _
+        Sheet2.Range("X29").Value >= 1 Or Sheet2.Range("X30").Value >= 1 Or Sheet2.Range("X31").Value >= 1 Or _
+        Sheet2.Range("Y33").Value >= 1 Or Sheet2.Range("X14").Value >= 1 Or Sheet2.Range("X19").Value >= 1 Or Sheet2.Range("X21").Value >= 1 Or _
+        Sheet2.Range("X45").Value >= 1 Then
+        
+            Sheet4.CheckBoxBakery3.Value = True
+            
+        End If
+        
+        'Check Shorteats Section Availability
+        If Sheet18.CheckBox1.Value = True Or Sheet18.CheckBox2.Value = True Or Sheet18.Range("BJ5").Value >= 1 Or Sheet18.Range("BN5").Value >= 1 Or _
+        Sheet18.Range("BR5").Value >= 1 Or Sheet18.CheckBox4.Value = True Or Sheet2.Range("X45").Value >= 1 Or Sheet2.Range("X13").Value >= 1 Then
+    
+            Sheet4.CheckBoxShorteats.Value = True
+        
+        End If
+        
+        'Check Rotty Section With Shorteats Curry Availability
+        If Sheet2.Range("X73").Value >= 1 Or Sheet2.Range("X74").Value >= 1 Or Sheet2.Range("X75").Value >= 1 Then
+    
+            Sheet4.CheckBoxShorteats.Value = True
+        
+            Sheet4.CheckBoxRotty.Value = True
+        
+        End If
+    
+        'Check Rotty Section Availability
+        If Sheet2.Range("X72").Value >= 1 Then
+    
+            Sheet4.CheckBoxRotty.Value = True
+        
+        End If
+        
+        'Check Shorteats Section Availability
+        If Sheet2.Range("X20").Value >= 1 Or Sheet2.Range("X23").Value >= 1 Or Sheet2.Range("X24").Value >= 1 Or Sheet2.Range("X28").Value >= 1 Or _
+        Sheet2.Range("X29").Value >= 1 Or Sheet2.Range("X30").Value >= 1 Or Sheet2.Range("X31").Value >= 1 Or Sheet2.Range("X42").Value >= 1 Then
+    
+            Sheet4.CheckBoxShorteats2.Value = True
+        
+        End If
+        
+        '**************************************************************************************************************************************
+                                                    'Section Wise Printing Sheets Checkup
+        '**************************************************************************************************************************************
+        
+        'Filling Section 1
+        If Sheet2.CheckBoxPlainRoll.Value = True Then
+            
+            Sheet6.Range("C273").Value = "ü"
+            
+        Else
+        
+            Sheet6.Range("C273").Value = "û"
+            
+        End If
+        
+        'Filling Section 2
+        If Sheet2.CheckBoxPizza.Value = True Then
+            
+            Sheet6.Range("C274").Value = "ü"
+            
+        Else
+        
+            Sheet6.Range("C274").Value = "û"
+            
+        End If
+        
+        'Bakery Section 1
+        If Sheet4.CheckBoxBakery.Value = True Then
+            
+            Sheet6.Range("C275").Value = "ü"
+            
+        Else
+        
+            Sheet6.Range("C275").Value = "û"
+        
+        End If
+        
+        'Bakery Section 5
+        If Sheet4.CheckBoxBakery2.Value = True Then
+            
+            Sheet6.Range("C278").Value = "ü"
+            
+        Else
+        
+            Sheet6.Range("C278").Value = "û"
+            
+        End If
+        
+        'Bakery Section 3
+        If Sheet4.CheckBoxBakery3.Value = True Then
+            
+            Sheet6.Range("C276").Value = "ü"
+            
+        Else
+        
+            Sheet6.Range("C276").Value = "û"
+            
+        End If
+        
+        'Bakery Section 4
+        If Sheet4.CheckBoxBakery4.Value = True Then
+            
+            Sheet6.Range("C277").Value = "ü"
+            
+        Else
+        
+            Sheet6.Range("C277").Value = "û"
+            
+        End If
+        
+        'Bakery Section 6
+        If Sheet4.CheckBoxBakery6.Value = True Then
+            
+            Sheet6.Range("C279").Value = "ü"
+            
+        Else
+        
+            Sheet6.Range("C279").Value = "û"
+            
+        End If
+        
+        'Rotty Section
+        If Sheet4.CheckBoxRotty.Value = True Then
+        
+            Sheet6.Range("C280").Value = "ü"
+            
+        Else
+        
+            Sheet6.Range("C280").Value = "û"
+        
+        End If
+        
+        'Shorteats Section 1
+        If Sheet4.CheckBoxShorteats.Value = True Then
+            
+            Sheet6.Range("H279").Value = "ü"
+            
+        Else
+        
+            Sheet6.Range("H279").Value = "û"
+        
+        End If
+        
+        'Shorteats Section 2
+        If Sheet4.CheckBoxShorteats2.Value = True Then
+            
+            Sheet6.Range("H280").Value = "ü"
+            
+        Else
+        
+            Sheet6.Range("H280").Value = "û"
+        
+        End If
+        
+        '**************************************************************************************************************************************
+        '**************************************************************************************************************************************
+        
+        MsgBox "                *** Successfully Printed ***" & vbNewLine & vbNewLine & "This Programme is Automatically Shutting Down" _
+        , vbOKOnly + vbInformation, "*** Powered by Viraj Lakshan Rathnayake ***"
+        
+        Sheet6.PageSetup.RightFooter = "&""Cambria,Italic""&B&14Sale Date : " & Sheet6.Range("H269").Text
+        
+        'ActiveWindow.WindowState = xlMinimized
+        
+        Dim OrderDate As String
+        OrderDate = Sheet1.Range("O11").Text
+        
+        Dim NewFolderPath As String
+        NewFolderPath = "\\serverml310\desktop\DMS Staff Only (DONT DELETE)\Anytime Curry Sheets PDF\" & OrderDate & "\"
+        
+        Dim OrderBillNo As String
+        OrderBillNo = Sheet1.Range("O13").Text
+        
+        Dim RecipeRequestionNo As String
+        RecipeRequestionNo = Sheet1.Range("O14").Text
+        
+        Dim Target As String
+        Target = NewFolderPath & OrderDate & " - " & "Order No " & OrderBillNo & " - " & _
+        "Requestion No " & " - " & RecipeRequestionNo & " - "
+        
+        If Sheet2.CheckBoxPlainRoll.Value = True Then
+    
+            'Print Filling Section 1 Production Goods Issue Note
+            Dim FileNameFillingSec1Stores As String
+            FileNameFillingSec1Stores = Target & "Filling 1 Stores" & ".pdf"
+            
+            Sheet6.PageSetup.PaperSize = xlPaperA4
+            Sheet6.PageSetup.Orientation = xlPortrait
+            Sheet6.PageSetup.FitToPagesTall = 1
+            Sheet6.PageSetup.FitToPagesWide = 1
+            Sheet6.PageSetup.PrintArea = "$B$2:$I$47"
+            Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet6.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameFillingSec1Stores, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+            
+            Dim FileNameFillingSection As String
+            FileNameFillingSection = Target & "Filling Section Recipe" & ".pdf"
+            
+            Sheet15.PageSetup.PaperSize = xlPaperA3
+            Sheet15.PageSetup.Orientation = xlLandscape
+            Sheet15.PageSetup.FitToPagesTall = 1
+            Sheet15.PageSetup.FitToPagesWide = 1
+            Sheet15.PageSetup.PrintArea = "$B$2:$AF$76, $B$78:$AF$118"
+            Sheet15.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet15.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet15.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameFillingSection, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+    
+        End If
+        
+        If Sheet2.CheckBoxPizza.Value = True Then
+    
+            'Print Filling Section 2 Production Goods Issue Note
+            Dim FileNameFillingSecTwo As String
+            FileNameFillingSecTwo = Target & "Filling 2 Stores" & ".pdf"
+            
+            Sheet6.PageSetup.PaperSize = xlPaperA4
+            Sheet6.PageSetup.Orientation = xlPortrait
+            Sheet6.PageSetup.FitToPagesTall = 1
+            Sheet6.PageSetup.FitToPagesWide = 1
+            Sheet6.PageSetup.PrintArea = "$B$282:$I$329"
+            Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet6.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameFillingSecTwo, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+            
+            Dim FileNameFillingSec As String
+            FileNameFillingSec = Target & "Filling Section Recipe" & ".pdf"
+            
+            Sheet15.PageSetup.PaperSize = xlPaperA3
+            Sheet15.PageSetup.Orientation = xlLandscape
+            Sheet15.PageSetup.FitToPagesTall = 1
+            Sheet15.PageSetup.FitToPagesWide = 1
+            Sheet15.PageSetup.PrintArea = "$B$2:$AF$76, $B$78:$AF$116"
+            Sheet15.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            
+            If Sheet2.CheckBoxPlainRoll.Value = True Then
+            
+                'Do Not Print
+            
+            Else
+            
+                Sheet15.PrintOut
+                
+                Application.Wait (Now + TimeValue("0:00:02"))
+            
+                Application.ScreenUpdating = False
+                Sheet15.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameFillingSec, Quality:=xlQualityStandard, _
+                IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+                Application.ScreenUpdating = True
+                
+            End If
+    
+        End If
+        
+        If Sheet4.CheckBoxBakery.Value = True Then
+    
+            'Print Bakery Section production Goods Issue Note
+            Dim FileNameBakery As String
+            FileNameBakery = Target & "Bakery Stores" & ".pdf"
+            
+            Sheet6.PageSetup.PaperSize = xlPaperA4
+            Sheet6.PageSetup.Orientation = xlPortrait
+            Sheet6.PageSetup.FitToPagesTall = 1
+            Sheet6.PageSetup.FitToPagesWide = 1
+            Sheet6.PageSetup.PrintArea = "$B$49:$I$94"
+            Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet6.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameBakery, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+    
+        End If
+        
+        If Sheet4.CheckBoxBakery2.Value = True Then
+    
+            'Print Bakery Section production Goods Issue Note
+            Dim FileNameBakery5 As String
+            FileNameBakery5 = Target & "Bakery 5 Stores" & ".pdf"
+            
+            Sheet6.PageSetup.PaperSize = xlPaperA4
+            Sheet6.PageSetup.Orientation = xlPortrait
+            Sheet6.PageSetup.FitToPagesTall = 1
+            Sheet6.PageSetup.FitToPagesWide = 1
+            Sheet6.PageSetup.PrintArea = "$B$523:$I$569"
+            Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet6.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameBakery5, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+    
+        End If
+        
+        If Sheet4.CheckBoxBakery3.Value = True Then
+    
+            'Print Bakery Section production Goods Issue Note
+            Dim FileNameBakery3 As String
+            FileNameBakery3 = Target & "Bakery 3 Stores" & ".pdf"
+            
+            Sheet6.PageSetup.PaperSize = xlPaperA4
+            Sheet6.PageSetup.Orientation = xlPortrait
+            Sheet6.PageSetup.FitToPagesTall = 1
+            Sheet6.PageSetup.FitToPagesWide = 1
+            Sheet6.PageSetup.PrintArea = "$B$331:$I$377"
+            Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet6.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameBakery3, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+    
+        End If
+        
+        If Sheet4.CheckBoxBakery4.Value = True Then
+    
+            'Print Bakery Section production Goods Issue Note
+            Dim FileNameBakery4 As String
+            FileNameBakery4 = Target & "Bakery 4 Stores" & ".pdf"
+            
+            Sheet6.PageSetup.PaperSize = xlPaperA4
+            Sheet6.PageSetup.Orientation = xlPortrait
+            Sheet6.PageSetup.FitToPagesTall = 1
+            Sheet6.PageSetup.FitToPagesWide = 1
+            Sheet6.PageSetup.PrintArea = "$B$426:$I$473"
+            Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet6.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameBakery4, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+    
+        End If
+        
+        If Sheet4.CheckBoxBakery6.Value = True Then
+    
+            'Print Bakery Section production Goods Issue Note
+            Dim FileNameBakery6 As String
+            FileNameBakery6 = Target & "Bakery 6 Stores" & ".pdf"
+            
+            Sheet6.PageSetup.PaperSize = xlPaperA4
+            Sheet6.PageSetup.Orientation = xlPortrait
+            Sheet6.PageSetup.FitToPagesTall = 1
+            Sheet6.PageSetup.FitToPagesWide = 1
+            Sheet6.PageSetup.PrintArea = "$B$571:$I$610"
+            Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet6.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameBakery6, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+    
+        End If
+    
+        If Sheet4.CheckBoxRotty.Value = True Then
+    
+            'Print Rotty Section production Goods Issue Note
+            Dim FileNameRotty As String
+            FileNameRotty = Target & "Rotty Stores" & ".pdf"
+            
+            Sheet6.PageSetup.PaperSize = xlPaperA4
+            Sheet6.PageSetup.Orientation = xlPortrait
+            Sheet6.PageSetup.FitToPagesTall = 1
+            Sheet6.PageSetup.FitToPagesWide = 1
+            Sheet6.PageSetup.PrintArea = "$B$145:$I$164"
+            Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet6.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameRotty, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+    
+        End If
+    
+        If Sheet4.CheckBoxShorteats.Value = True Then
+        
+            Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+            
+            'Total Column Color Changed To White
+            Sheet4.Range("R8:R50").Font.ThemeColor = xlThemeColorDark1
+            Sheet4.Range("R8:R50").Font.TintAndShade = 0
+            
+            Sheet4.Range("R62:R104").Font.ThemeColor = xlThemeColorDark1
+            Sheet4.Range("R62:R104").Font.TintAndShade = 0
+        
+            Sheet4.Range("A1").AutoFilter Field:=1, Criteria1:="Y"
+    
+            'Print Shorteats Production Curry Sheet
+            Dim FileNameCurry As String
+            FileNameCurry = Target & "Short Eats Recipe" & ".pdf"
+
+            Sheet4.PageSetup.PaperSize = xlPaperA3
+            Sheet4.PageSetup.Orientation = xlLandscape
+            Sheet4.PageSetup.FitToPagesTall = 1
+            Sheet4.PageSetup.FitToPagesWide = 1
+            Sheet4.PageSetup.PrintArea = "B$2:$R$54,$B$56:$R$108"
+            Sheet4.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet4.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameCurry, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+            
+            Sheet4.ShowAllData
+        
+            'Print Shorteats Section production Goods Issue Note
+            Dim FileNameShorteats As String
+            FileNameShorteats = Target & "Shorteats 1 Stores" & ".pdf"
+            
+            Sheet6.PageSetup.PaperSize = xlPaperA4
+            Sheet6.PageSetup.Orientation = xlPortrait
+            Sheet6.PageSetup.FitToPagesTall = 1
+            Sheet6.PageSetup.FitToPagesWide = 1
+            Sheet6.PageSetup.PrintArea = "$B$96:$I$143"
+            Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet6.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameShorteats, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+    
+        End If
+        
+        If Sheet4.CheckBoxShorteats2.Value = True Then
+        
+            Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+        
+            Sheet4.Range("A1").AutoFilter Field:=1, Criteria1:="Y"
+    
+            'Print Shorteats Production Curry Sheet
+            Dim FileNameFillingCurry As String
+            FileNameFillingCurry = Target & "Short Eats Recipe" & ".pdf"
+
+            Sheet4.PageSetup.PaperSize = xlPaperA4
+            Sheet4.PageSetup.Orientation = xlLandscape
+            Sheet4.PageSetup.FitToPagesTall = 1
+            Sheet4.PageSetup.FitToPagesWide = 1
+            Sheet4.PageSetup.PrintArea = "B$191:$R$250"
+            Sheet4.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet4.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameFillingCurry, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+            
+            Sheet4.ShowAllData
+        
+            'Print Shorteats Section production Goods Issue Note
+            Dim FileNameShorteats2 As String
+            FileNameShorteats2 = Target & "Shorteats 2 Stores" & ".pdf"
+            
+            Sheet6.PageSetup.PaperSize = xlPaperA4
+            Sheet6.PageSetup.Orientation = xlPortrait
+            Sheet6.PageSetup.FitToPagesTall = 1
+            Sheet6.PageSetup.FitToPagesWide = 1
+            Sheet6.PageSetup.PrintArea = "$B$475:$I$521"
+            Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet6.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameShorteats2, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+    
+        End If
+    
+    
+        'Print Sheet18
+        If Sheet18.CheckBox1.Value = True Then
+            Sheet18.PageSetup.PrintArea = ""
+            Sheet18.PageSetup.PaperSize = xlPaperA4
+            Sheet18.PageSetup.Orientation = xlLandscape
+            Sheet18.PageSetup.FitToPagesTall = 1
+            Sheet18.PageSetup.FitToPagesWide = 1
+                                    'Sheet1
+            Sheet18.PageSetup.PrintArea = "$B$2:$X$47"
+            Sheet18.PageSetup.RightHeader = "&""Cambria,Italic""&B&14Page &P of &N"
+            'Sheet18.PrintOut
+        End If
+    
+        If Sheet18.CheckBox2.Value = True Then
+            Sheet18.PageSetup.PrintArea = ""
+            Sheet18.PageSetup.PaperSize = xlPaperA4
+            Sheet18.PageSetup.Orientation = xlLandscape
+            Sheet18.PageSetup.FitToPagesTall = 1
+            Sheet18.PageSetup.FitToPagesWide = 1
+                                    'Sheet2
+            Sheet18.PageSetup.PrintArea = "$Z$2:$AV$47"
+            Sheet18.PageSetup.RightHeader = "&""Cambria,Italic""&B&14Page &P of &N"
+            'Sheet18.PrintOut
+        End If
+    
+        If Sheet18.CheckBox3.Value = True Then
+            Sheet18.PageSetup.PrintArea = ""
+            Sheet18.PageSetup.PaperSize = xlPaperA4
+            Sheet18.PageSetup.Orientation = xlLandscape
+            Sheet18.PageSetup.FitToPagesTall = 1
+            Sheet18.PageSetup.FitToPagesWide = 1
+                                    'Sheet3
+            Sheet18.PageSetup.PrintArea = "$AX$2:$BT$47"
+            Sheet18.PageSetup.RightHeader = "&""Cambria,Italic""&B&14Page &P of &N"
+            'Sheet18.PrintOut
+        End If
+    
+        If Sheet18.CheckBox4.Value = True Then
+            Sheet18.PageSetup.PrintArea = ""
+            Sheet18.PageSetup.PaperSize = xlPaperA4
+            Sheet18.PageSetup.Orientation = xlLandscape
+            Sheet18.PageSetup.FitToPagesTall = 1
+            Sheet18.PageSetup.FitToPagesWide = 1
+                                    'Sheet4
+            Sheet18.PageSetup.PrintArea = "$BV$2:$CJ$47"
+            Sheet18.PageSetup.RightHeader = "&""Cambria,Italic""&B&14Page &P of &N"
+            'Sheet18.PrintOut
+        End If
+        
+            'Print All Item List
+            Dim FileNameAllItems As String
+            FileNameAllItems = Target & "Item List" & ".pdf"
+            
+            Sheet6.PageSetup.PaperSize = xlPaperA4
+            Sheet6.PageSetup.Orientation = xlPortrait
+            Sheet6.PageSetup.FitToPagesTall = 1
+            Sheet6.PageSetup.FitToPagesWide = 1
+            Sheet6.PageSetup.PrintArea = "$B$235:$I$280"
+            Sheet6.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & Environ("username") & " on &D at &T"
+            Sheet6.PrintOut
+            
+            Application.Wait (Now + TimeValue("0:00:02"))
+            
+            Application.ScreenUpdating = False
+            Sheet6.ExportAsFixedFormat Type:=xlTypePDF, FileName:=FileNameAllItems, Quality:=xlQualityStandard, _
+            IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=False
+            Application.ScreenUpdating = True
+    
+        'Protect Sheet4("Curry Sheet"), Sheet6("Printing") & Sheet18(Recipy for Curry Items) with Password Added by Viraj Lakshan Rathnayake on 18.07.2019
+        Sheet4.Protect Password:="Admin@donandsons.lk54321"
+        Sheet6.Protect Password:="Admin@donandsons.lk54321"
+        Sheet15.Protect Password:="Admin@donandsons.lk54321"
+        Sheet18.Protect Password:="Admin@donandsons.lk54321"
+    
+        Application.Quit
+        Application.ActiveWindow.Close SaveChanges:=False
+        ThisWorkbook.Close SaveChanges:=False
+
+End Sub
+
+

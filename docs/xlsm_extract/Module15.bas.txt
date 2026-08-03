@@ -1,0 +1,46 @@
+Attribute VB_Name = "Module15"
+Sub Disable_Insert()
+
+Dim I As Integer
+Dim cbStr As String
+Dim cbCtrl As CommandBarControl
+Application.ScreenUpdating = False
+For I = 1 To 2
+    If I = 1 Then
+        cbStr = "row"
+    Else
+        cbStr = "column"
+    End If
+    For Each cbCtrl In Application.CommandBars(cbStr).Controls
+        If cbCtrl.ID = 3183 Then
+            cbCtrl.Enabled = False
+        End If
+    Next
+Next
+Application.ScreenUpdating = True
+
+End Sub
+
+Sub Enable_Insert()
+
+Dim I As Integer
+Dim cbStr As String
+Dim cbCtrl As CommandBarControl
+Application.ScreenUpdating = False
+For I = 1 To 2
+    If I = 1 Then
+        cbStr = "row"
+    Else
+        cbStr = "column"
+    End If
+    For Each cbCtrl In Application.CommandBars(cbStr).Controls
+        If cbCtrl.ID = 3183 Then
+            cbCtrl.Enabled = True
+        End If
+    Next
+Next
+Application.ScreenUpdating = True
+
+End Sub
+
+

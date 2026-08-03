@@ -1,0 +1,136 @@
+Attribute VB_Name = "Welcome"
+Attribute VB_Base = "0{EE8E5977-D700-47AF-9E83-0DB6238AFEA0}{6AB88248-AF0F-498B-912E-64D36E22C78E}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = False
+'''***********************************************************'''
+'''***********************************************************'''
+'''                                                           '''
+'''   *** PROUDLY DEVELOPED BY VIRAJ LAKSHAN RATHNAYAKE ***   '''
+'''***********************************************************'''
+'''                                                           '''
+'''           **   ** ***** ******    *      *****            '''
+'''            ** **   ***  **  **   * *       *              '''
+'''             ***    ***  *****   * * *   *  *              '''
+'''              *    ***** **  ** **   **  ****              '''
+'''                                                           '''
+'''         Copyrigt © 2020 Viraj Lakshan Rathnayake ®        '''
+'''                                                           '''
+'''***********************************************************'''
+'''***********************************************************'''
+
+
+'***************************************************************************************************
+'********************************** Hide Close Button in the Form **********************************
+'***************************************************************************************************
+
+Private Const GWL_STYLE = -16
+Private Const WS_CAPTION = &HC00000
+Private Const WS_SYSMENU = &H80000
+
+#If VBA7 Then
+
+    Private Declare PtrSafe Function GetWindowLong _
+        Lib "user32" Alias "GetWindowLongA" (ByVal hWnd As Long, _
+        ByVal nIndex As Long) As Long
+    Private Declare PtrSafe Function SetWindowLong _
+        Lib "user32" Alias "SetWindowLongA" (ByVal hWnd As Long, _
+        ByVal nIndex As Long, ByVal dwNewLong As Long) As Long
+    Private Declare PtrSafe Function FindWindowA _
+        Lib "user32" (ByVal lpClassName As String, _
+        ByVal lpWindowName As String) As Long
+    Private Declare PtrSafe Function DrawMenuBar _
+        Lib "user32" (ByVal hWnd As Long) As Long
+        
+#Else
+
+    Private Declare Function GetWindowLong _
+        Lib "user32" Alias "GetWindowLongA" ( _
+        ByVal hWnd As Long, ByVal nIndex As Long) As Long
+    Private Declare Function SetWindowLong _
+        Lib "user32" Alias "SetWindowLongA" ( _
+        ByVal hWnd As Long, ByVal nIndex As Long, ByVal dwNewLong As Long) As Long
+    Private Declare Function FindWindowA _
+        Lib "user32" (ByVal lpClassName As String, _
+        ByVal lpWindowName As String) As Long
+    Private Declare Function DrawMenuBar _
+        Lib "user32" (ByVal hWnd As Long) As Long
+#End If
+
+
+Public Sub SystemButtonSettings(frm As Object, show As Boolean)
+Dim windowStyle As Long
+Dim windowHandle As Long
+
+windowHandle = FindWindowA(vbNullString, frm.Caption)
+windowStyle = GetWindowLong(windowHandle, GWL_STYLE)
+
+If show = False Then
+
+    SetWindowLong windowHandle, GWL_STYLE, (windowStyle And Not WS_SYSMENU)
+
+Else
+
+    SetWindowLong windowHandle, GWL_STYLE, (windowStyle + WS_SYSMENU)
+
+End If
+
+DrawMenuBar (windowHandle)
+
+End Sub
+Private Sub UserForm_Initialize()
+
+Call SystemButtonSettings(Me, False)
+
+End Sub '***************************************************************************************************
+        '********************************** Hide Close Button in the Form **********************************
+        '***************************************************************************************************
+
+Private Sub UserForm_Activate()
+
+Dim Username1 As String
+Username1 = Login.UsernameTextBox.Text
+
+Sheet21.Range("A1").Value = "Welcome,"
+Sheet21.Range("U1").Value = Username1
+
+Sheet21.LoginButton.Visible = False
+
+'Protect Welcome Sheet
+Sheet21.Protect Password:="Admin@donandsons.lk54321"
+
+Application.Wait (Now + TimeValue("0:00:05"))
+
+'***************************************************************************************************************************************************
+'                                                        *** #### Call Permissions ### ***
+'***************************************************************************************************************************************************
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+If UsernameCheck = "Admin" Then
+    
+    Call Admin_Permissions ' Admin Permissions
+    
+ElseIf UsernameCheck = "Manager" Then
+
+    Call Manager_Permissions ' Manager Permissions
+
+End If
+
+Welcome.Hide
+
+MsgBox "            Important Reminder Dear " & Login.UsernameTextBox.Text & vbNewLine & vbNewLine & "***Please be Absolutely Logout of This Login***", _
+                    vbOKOnly + vbInformation, Title:="                        ***5.00AM Production Programme***"
+
+End Sub

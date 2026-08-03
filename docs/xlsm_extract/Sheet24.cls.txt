@@ -1,0 +1,326 @@
+Attribute VB_Name = "Sheet24"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Attribute VB_Control = "AprilNewYearPrintButton, 22, 4, MSForms, CommandButton"
+Attribute VB_Control = "AprilNewYearButton, 21, 5, MSForms, CommandButton"
+Attribute VB_Control = "HomeButton, 19, 6, MSForms, CommandButton"
+Attribute VB_Control = "CurfewPrintButton, 1, 7, MSForms, CommandButton"
+Attribute VB_Control = "PoyaButton, 2, 8, MSForms, CommandButton"
+Attribute VB_Control = "WeekdaysPrintButton, 5, 9, MSForms, CommandButton"
+Attribute VB_Control = "SaturdayPrintButton, 6, 10, MSForms, CommandButton"
+Attribute VB_Control = "SundayPrintButton, 7, 11, MSForms, CommandButton"
+Attribute VB_Control = "CurfewButton, 8, 12, MSForms, CommandButton"
+Attribute VB_Control = "WeekdaysButton, 9, 13, MSForms, CommandButton"
+Attribute VB_Control = "SaturdayButton, 10, 14, MSForms, CommandButton"
+Attribute VB_Control = "SundayButton, 11, 15, MSForms, CommandButton"
+Attribute VB_Control = "PoyaPrintButton, 18, 16, MSForms, CommandButton"
+Private Sub AprilNewYearButton_Click()
+
+    Sheet24.Range("DF7").Select
+
+End Sub
+
+Private Sub AprilNewYearPrintButton_Click()
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+
+    Sheet24.Range("A1:DC77").AutoFilter Field:=107, Criteria1:="Y"
+
+    Sheet24.PageSetup.PaperSize = xlPaperA4
+    Sheet24.PageSetup.Orientation = xlLandscape
+    Sheet24.PageSetup.FitToPagesTall = 1
+    Sheet24.PageSetup.FitToPagesWide = 1
+    Sheet24.PageSetup.PrintArea = "$DD$2:$DV$76"
+
+    Sheet24.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+    Username & " on &D at &T"
+    
+    Application.Dialogs(xlDialogPrint).show
+    
+    Sheet24.ShowAllData
+    Cells.AutoFilter
+    
+If UsernameCheck = "Admin" Then
+    
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+    
+End If
+
+End Sub
+
+Private Sub CurfewButton_Click()
+
+    Sheet24.Range("D7").Select
+
+End Sub
+
+Private Sub CurfewPrintButton_Click()
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+
+    Sheet24.Range("A1").AutoFilter Field:=1, Criteria1:="Y"
+
+    Sheet24.PageSetup.PaperSize = xlPaperA4
+    Sheet24.PageSetup.Orientation = xlLandscape
+    Sheet24.PageSetup.FitToPagesTall = 1
+    Sheet24.PageSetup.FitToPagesWide = 1
+    Sheet24.PageSetup.PrintArea = "$B$2:$T$76"
+
+    Sheet24.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+    Username & " on &D at &T"
+    
+    Application.Dialogs(xlDialogPrint).show
+    
+    Sheet24.ShowAllData
+    Cells.AutoFilter
+    
+If UsernameCheck = "Admin" Then
+    
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+    
+End If
+
+End Sub
+
+Private Sub HomeButton_Click()
+
+'Back to Home
+Sheet21.Select
+
+End Sub
+
+Private Sub PoyaButton_Click()
+
+    Sheet24.Range("CK7").Select
+
+End Sub
+
+Private Sub PoyaPrintButton_Click()
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+
+    Sheet24.Range("A1:CH77").AutoFilter Field:=86, Criteria1:="Y"
+
+    Sheet24.PageSetup.PaperSize = xlPaperA4
+    Sheet24.PageSetup.Orientation = xlLandscape
+    Sheet24.PageSetup.FitToPagesTall = 1
+    Sheet24.PageSetup.FitToPagesWide = 1
+    Sheet24.PageSetup.PrintArea = "$CI$2:$DA$76"
+
+    Sheet24.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+    Username & " on &D at &T"
+    
+    Application.Dialogs(xlDialogPrint).show
+    
+    Sheet24.ShowAllData
+    Cells.AutoFilter
+    
+If UsernameCheck = "Admin" Then
+    
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+    
+End If
+
+End Sub
+
+Private Sub SaturdayButton_Click()
+
+    Sheet24.Range("AU7").Select
+
+End Sub
+
+Private Sub SaturdayPrintButton_Click()
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+
+    Sheet24.Range("A1:AR77").AutoFilter Field:=44, Criteria1:="Y"
+
+    Sheet24.PageSetup.PaperSize = xlPaperA4
+    Sheet24.PageSetup.Orientation = xlLandscape
+    Sheet24.PageSetup.FitToPagesTall = 1
+    Sheet24.PageSetup.FitToPagesWide = 1
+    Sheet24.PageSetup.PrintArea = "$AS$2:$BK$76"
+
+    Sheet24.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+    Username & " on &D at &T"
+    
+    Application.Dialogs(xlDialogPrint).show
+    
+    Sheet24.ShowAllData
+    Cells.AutoFilter
+    
+If UsernameCheck = "Admin" Then
+    
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+    
+End If
+
+End Sub
+
+Private Sub SundayButton_Click()
+
+    Sheet24.Range("BP7").Select
+
+End Sub
+
+Private Sub SundayPrintButton_Click()
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+
+    Sheet24.Range("A1:BM77").AutoFilter Field:=65, Criteria1:="Y"
+
+    Sheet24.PageSetup.PaperSize = xlPaperA4
+    Sheet24.PageSetup.Orientation = xlLandscape
+    Sheet24.PageSetup.FitToPagesTall = 1
+    Sheet24.PageSetup.FitToPagesWide = 1
+    Sheet24.PageSetup.PrintArea = "$BN$2:$CF$76"
+
+    Sheet24.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+    Username & " on &D at &T"
+    
+    Application.Dialogs(xlDialogPrint).show
+    
+    Sheet24.ShowAllData
+    Cells.AutoFilter
+    
+If UsernameCheck = "Admin" Then
+    
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+    
+End If
+
+End Sub
+
+Private Sub WeekdaysButton_Click()
+
+    Sheet24.Range("Z7").Select
+
+End Sub
+
+Private Sub WeekdaysPrintButton_Click()
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+
+    Sheet24.Range("A1:AQ77").AutoFilter Field:=23, Criteria1:="Y"
+
+    Sheet24.PageSetup.PaperSize = xlPaperA4
+    Sheet24.PageSetup.Orientation = xlLandscape
+    Sheet24.PageSetup.FitToPagesTall = 1
+    Sheet24.PageSetup.FitToPagesWide = 1
+    Sheet24.PageSetup.PrintArea = "$X$2:$AP$76"
+
+    Sheet24.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+    Username & " on &D at &T"
+    
+    Application.Dialogs(xlDialogPrint).show
+    
+    Sheet24.ShowAllData
+    Cells.AutoFilter
+    
+If UsernameCheck = "Admin" Then
+    
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+    
+End If
+
+End Sub
+
+Private Sub Worksheet_Activate()
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+If UsernameCheck = "Admin" Then
+
+    If Username = "Dulan" Then
+    
+        Call Disable_Insert
+    
+    End If
+    
+ElseIf UsernameCheck = "Manager" Then
+
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+ 
+End If
+
+End Sub

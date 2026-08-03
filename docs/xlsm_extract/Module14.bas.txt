@@ -1,0 +1,104 @@
+Attribute VB_Name = "Module14"
+Sub Print_Block()
+Attribute Print_Block.VB_ProcData.VB_Invoke_Func = "p\n14"
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+If UsernameCheck = "Admin" Then
+    
+    Application.CommandBars.ExecuteMso ("PrintPreviewAndPrint")
+    
+Else
+
+    MsgBox "Please Use The 'Print Button' For Print", vbCritical + vbOKOnly, "                *** Powered By Viraj Rathnayake ***"
+    
+End If
+
+End Sub
+
+Sub Sunday_Notification()
+
+Dim FiveAMProd As String
+FiveAMProd = "5.00AM Delivery Production Programme"
+
+Dim CurrySheet As String
+CurrySheet = "Curry Sheet Programme"
+
+Dim CheckApplication As String
+CheckApplication = Sheet21.Range("B4").Text
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+If UsernameCheck = "Admin" Then
+
+    'Do Nothing
+
+Else
+
+    If CheckApplication = FiveAMProd Then
+    
+        If Sheet1.TextBoxSunday5AM.Text = "Viewed" Then
+    
+            Sheet1.Shapes("Rounded Rectangular Callout 5").Visible = msoFalse
+    
+        Else
+    
+            Sheet1.Range("D5").Select
+    
+            Sheet1.Shapes("Rounded Rectangular Callout 5").Visible = msoTrue
+    
+            MsgBox "*** Tomarrow Is Sunday ***", vbInformation + vbOKOnly, "Production Programme"
+    
+            Application.Wait (Now + TimeValue("0:00:03"))
+    
+            Sheet1.Shapes("Rounded Rectangular Callout 5").Visible = msoFalse
+        
+            Sheet1.TextBoxSunday5AM.Value = "Viewed"
+        
+        End If
+    
+    ElseIf CheckApplication = CurrySheet Then
+
+        If Sheet1.TextBoxSunday6AM.Text = "Viewed" Then
+    
+            Sheet1.Shapes("Rounded Rectangular Callout 2").Visible = msoFalse
+    
+        Else
+    
+            Sheet1.Range("D5").Select
+    
+            Sheet1.Shapes("Rounded Rectangular Callout 2").Visible = msoTrue
+    
+            MsgBox "*** Tomarrow Is Sunday ***", vbInformation + vbOKOnly, "Production Programme"
+    
+            Application.Wait (Now + TimeValue("0:00:03"))
+    
+            Sheet1.Shapes("Rounded Rectangular Callout 2").Visible = msoFalse
+        
+            Sheet1.TextBoxSunday6AM.Value = "Viewed"
+        
+        End If
+
+    End If
+    
+End If
+
+End Sub

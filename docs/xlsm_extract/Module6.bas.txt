@@ -1,0 +1,74 @@
+Attribute VB_Name = "Module6"
+Sub Admin_Permissions()
+'Unprotect Workbook with a Password Added by Viraj Lakshan Rathnayake on 20.03.2019
+    ThisWorkbook.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    For Each ws In ThisWorkbook.Worksheets
+        ws.Visible = xlSheetVisible
+        ws.Unprotect Password:="Admin@donandsons.lk54321"
+    Next
+    
+    ActiveWindow.DisplayWorkbookTabs = True
+    ActiveWindow.DisplayHorizontalScrollBar = True
+    
+    Sheet1.HomeButton.Visible = True
+    
+    Sheet1.MorningCurfewButton.Visible = False
+    Sheet1.MorningApNewYearButton.Visible = False
+    Sheet1.MorningPoyaButton.Visible = False
+    Sheet1.MorningSaturdayButton.Visible = False
+    Sheet1.MorningSundayButton.Visible = False
+    Sheet1.MorningWeekdaysButton.Visible = False
+    
+    'Navigate to Dashboard
+    Sheet27.Select
+    
+'Sheet21 LoginButton Visible False
+    Sheet21.LoginButton.Visible = False
+End Sub
+
+Sub Manager_Permissions()
+'Unprotect Workbook with a Password Added by Viraj Lakshan Rathnayake on 20.03.2019
+    ThisWorkbook.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    For Each ws In ThisWorkbook.Worksheets
+        ws.Visible = xlSheetVisible
+    Next
+    
+'Sheet21 LoginButton Visible False
+    Sheet21.LoginButton.Visible = False
+    
+'Sheet16("Users") Visible xlVeryHidden
+    Sheet16.Visible = xlSheetVeryHidden
+    
+    Sheet28.Visible = xlSheetHidden
+    
+'Unprotect Sheet21 & Sheet1 with a Password Added by Viraj Lakshan Rathnayake on 20.03.2019
+    Sheet21.Unprotect Password:="Admin@donandsons.lk54321"
+    Sheet1.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Sheet1.HomeButton.Visible = True
+    
+    Sheet1.MorningCurfewButton.Visible = False
+    Sheet1.MorningApNewYearButton.Visible = False
+    Sheet1.MorningPoyaButton.Visible = False
+    Sheet1.MorningSaturdayButton.Visible = False
+    Sheet1.MorningSundayButton.Visible = False
+    Sheet1.MorningWeekdaysButton.Visible = False
+    
+'Protect Sheet21 & Sheet1 with a Password Added by Viraj Lakshan Rathnayake on 20.03.2019
+    Sheet21.Protect Password:="Admin@donandsons.lk54321"
+    Sheet1.Protect Password:="Admin@donandsons.lk54321"
+
+    'Navigate to Dashboard
+    Sheet27.Select
+    
+    Sheet27.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+    Sheet28.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+    
+    ActiveWindow.DisplayWorkbookTabs = True
+    ActiveWindow.DisplayHorizontalScrollBar = True
+    
+'Protect Workbook with a Password Added by Viraj Lakshan Rathnayake on 15.03.2019
+    ThisWorkbook.Protect Password:="Admin@donandsons.lk54321"
+End Sub

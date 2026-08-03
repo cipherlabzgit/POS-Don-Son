@@ -66,6 +66,10 @@ sql/
 DMS-Backend/*.sql
 DMS-Backend/Data/fix_super_admin_index.sql
 
-docs
 .env
+.env.local
+!.env.local.example
 .env.development
+.env.production
+DMS-POS/.env
+DMS-POS/release/

@@ -33,7 +33,7 @@ function createMainWindow() {
   // ASP.NET CORS policy accepts requests from the packaged app (file:// origin
   // is sent as "null" by Chromium, which most CORS policies reject).
   mainWin.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
-    details.requestHeaders['Origin'] = 'http://localhost:5173'
+    details.requestHeaders['Origin'] = 'http://127.0.0.1:5173'
     callback({ requestHeaders: details.requestHeaders })
   })
 

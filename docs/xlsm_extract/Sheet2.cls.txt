@@ -1,0 +1,35 @@
+Attribute VB_Name = "Sheet2"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Attribute VB_Control = "CheckBoxPlainRoll, 3, 0, MSForms, CheckBox"
+Attribute VB_Control = "CheckBoxPizza, 4, 1, MSForms, CheckBox"
+Private Sub Worksheet_Activate()
+
+Dim Username As String, Rng As Range
+Username = Sheet21.Range("U1").Text
+
+Set Rng = Worksheets("Users").Range("B2:F7")
+
+Dim UsernameCheck As String
+
+On Error Resume Next
+UsernameCheck = Application.WorksheetFunction.VLookup(Username, Rng, 5, False)
+On Error GoTo 0
+
+If UsernameCheck = "Admin" Then
+
+    If Username = "Dulan" Then
+    
+        Call Disable_Insert
+    
+    End If
+    
+
+End If
+
+End Sub

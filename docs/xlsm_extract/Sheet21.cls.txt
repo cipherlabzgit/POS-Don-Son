@@ -1,0 +1,315 @@
+Attribute VB_Name = "Sheet21"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Attribute VB_Control = "PlainRollProductionButton, 6, 0, MSForms, CommandButton"
+Attribute VB_Control = "HomeButton, 1, 1, MSForms, CommandButton"
+Attribute VB_Control = "LogoutButton, 2, 2, MSForms, CommandButton"
+Attribute VB_Control = "LoginButton, 3, 3, MSForms, CommandButton"
+Attribute VB_Control = "TextBoxWelcomeGreeting, 4, 4, MSForms, TextBox"
+Option Explicit
+
+'Api Declarations
+Private Declare Function GetCursorInfo Lib "user32" (ByRef pci As CursorInfo) As Boolean
+Private Declare PtrSafe Function LoadCursor Lib "user32" Alias "LoadCursorA" (ByVal hInstance As Long, ByVal lpCursorName As Long) As Long
+Private Declare PtrSafe Function SetCursor Lib "user32" (ByVal hCursor As Long) As Long
+Private Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
+
+'You can use the default cursors in windows
+Public Enum CursorTypes
+    IDC_ARROW = 32512
+    IDC_IBEAM = 32513
+    IDC_WAIT = 32514
+    IDC_CROSS = 32515
+    IDC_UPARROW = 32516
+    IDC_SIZE = 32640
+    IDC_ICON = 32641
+    IDC_SIZENWSE = 32642
+    IDC_SIZENESW = 32643
+    IDC_SIZEWE = 32644
+    IDC_SIZENS = 32645
+    IDC_SIZEALL = 32646
+    IDC_NO = 32648
+    IDC_HAND = 32649
+    IDC_APPSTARTING = 32650
+End Enum
+
+'Needed for GetCursorInfo
+Private Type POINT
+    X As Long
+    Y As Long
+End Type
+
+'Needed for GetCursorInfo
+Private Type CursorInfo
+    cbSize As Long
+    flags As Long
+    hCursor As Long
+    ptScreenPos As POINT
+End Type
+
+Private Sub HomeButton_Click()
+
+Dim Anytime_Recipe_Generator As String
+Anytime_Recipe_Generator = "Anytime Recipe Generator"
+
+Dim CheckApplication As String
+CheckApplication = Sheet21.Range("B4").Text
+
+If CheckApplication = Anytime_Recipe_Generator Then
+    
+    Sheet1.Select
+
+    Sheet1.Range("O11").Value = Format(Now(), "dd-mmm-yyyy")
+    
+    Sheet1.Range("O12").Value = Format(Now(), "hh:mm AM/PM")
+    
+Else
+
+    Sheet1.Select
+    
+End If
+    
+End Sub
+
+Private Sub LoginButton_Click()
+
+    Login.show
+    
+End Sub
+
+Private Sub LogoutButton_Click()
+
+    Call Workbook_Close
+
+End Sub
+
+Private Sub PlainRollProductionButton_Click()
+
+Sheet1.Unprotect Password:="Admin@donandsons.lk54321"
+
+Sheet1.Select
+
+Sheet1.PlainRollGenerateButton.Visible = True
+
+Sheet1.ApNewYearEveningButton.Visible = False
+Sheet1.EveningCurfewDeliveryButton.Visible = False
+Sheet1.WeekdaysEveningButton.Visible = False
+Sheet1.SaturdayEveningButton.Visible = False
+Sheet1.ShorteatsSectionButton.Visible = False
+Sheet1.SixAMCurrySheetButton.Visible = False
+Sheet1.SpotCurrySheetButton.Visible = False
+Sheet1.SummaryPrint5AMButton.Visible = False
+Sheet1.SundayEveningButton.Visible = False
+
+Sheet1.Shapes("Rectangle 10").Visible = msoTrue
+
+Sheet1.Shapes("Rectangle 6").Visible = msoFalse
+
+Sheet1.Shapes("Button 5").Visible = msoFalse
+
+Sheet1.ExtraProductionCheckBox.Visible = False
+
+'Showroom Check Boxes
+Sheet1.CheckBox.Visible = False
+Sheet1.CheckBox0.Visible = False
+Sheet1.CheckBox1.Visible = False
+Sheet1.CheckBox2.Visible = False
+Sheet1.CheckBox3.Visible = False
+Sheet1.CheckBox4.Visible = False
+Sheet1.CheckBox5.Visible = False
+Sheet1.CheckBox6.Visible = False
+Sheet1.CheckBox7.Visible = False
+Sheet1.CheckBox8.Visible = False
+Sheet1.CheckBox9.Visible = False
+Sheet1.CheckBox10.Visible = False
+Sheet1.CheckBox11.Visible = False
+Sheet1.CheckBox12.Visible = False
+Sheet1.CheckBox13.Visible = False
+
+'All Item Check Boxes
+Sheet1.CheckBoxAllItem1.Visible = False
+Sheet1.CheckBoxAllItem2.Visible = False
+Sheet1.CheckBoxAllItem3.Visible = False
+Sheet1.CheckBoxAllItem4.Visible = False
+Sheet1.CheckBoxAllItem5.Visible = False
+Sheet1.CheckBoxAllItem6.Visible = False
+Sheet1.CheckBoxAllItem7.Visible = False
+Sheet1.CheckBoxAllItem8.Visible = False
+Sheet1.CheckBoxAllItem9.Visible = False
+Sheet1.CheckBoxAllItem10.Visible = False
+Sheet1.CheckBoxAllItem11.Visible = False
+Sheet1.CheckBoxAllItem12.Visible = False
+Sheet1.CheckBoxAllItem13.Visible = False
+Sheet1.CheckBoxAllItem14.Visible = False
+Sheet1.CheckBoxAllItem15.Visible = False
+Sheet1.CheckBoxAllItem16.Visible = False
+Sheet1.CheckBoxAllItem17.Visible = False
+Sheet1.CheckBoxAllItem18.Visible = False
+Sheet1.CheckBoxAllItem19.Visible = False
+Sheet1.CheckBoxAllItem20.Visible = False
+Sheet1.CheckBoxAllItem21.Visible = False
+Sheet1.CheckBoxAllItem22.Visible = False
+Sheet1.CheckBoxAllItem23.Visible = False
+Sheet1.CheckBoxAllItem24.Visible = False
+Sheet1.CheckBoxAllItem25.Visible = False
+Sheet1.CheckBoxAllItem26.Visible = False
+Sheet1.CheckBoxAllItem27.Visible = False
+Sheet1.CheckBoxAllItem28.Visible = False
+Sheet1.CheckBoxAllItem29.Visible = False
+Sheet1.CheckBoxAllItem30.Visible = False
+Sheet1.CheckBoxAllItem31.Visible = False
+Sheet1.CheckBoxAllItem32.Visible = False
+Sheet1.CheckBoxAllItem33.Visible = False
+Sheet1.CheckBoxAllItem34.Visible = False
+Sheet1.CheckBoxAllItem35.Visible = False
+Sheet1.CheckBoxAllItem36.Visible = False
+Sheet1.CheckBoxAllItem37.Visible = False
+Sheet1.CheckBoxAllItem38.Visible = False
+Sheet1.CheckBoxAllItem39.Visible = False
+Sheet1.CheckBoxAllItem40.Visible = False
+Sheet1.CheckBoxAllItem41.Visible = False
+Sheet1.CheckBoxAllItem42.Visible = False
+Sheet1.CheckBoxAllItem43.Visible = False
+Sheet1.CheckBoxAllItem44.Visible = False
+Sheet1.CheckBoxAllItem45.Visible = False
+Sheet1.CheckBoxAllItem46.Visible = False
+Sheet1.CheckBoxAllItem47.Visible = False
+Sheet1.CheckBoxAllItem48.Visible = False
+Sheet1.CheckBoxAllItem49.Visible = False
+Sheet1.CheckBoxAllItem50.Visible = False
+Sheet1.CheckBoxAllItem51.Visible = False
+Sheet1.CheckBoxAllItem52.Visible = False
+Sheet1.CheckBoxAllItem53.Visible = False
+Sheet1.CheckBoxAllItem54.Visible = False
+Sheet1.CheckBoxAllItem55.Visible = False
+Sheet1.CheckBoxAllItem56.Visible = False
+Sheet1.CheckBoxAllItem57.Visible = False
+Sheet1.CheckBoxAllItem58.Visible = False
+Sheet1.CheckBoxAllItem59.Visible = False
+Sheet1.CheckBoxAllItem60.Visible = False
+Sheet1.CheckBoxAllItem61.Visible = False
+Sheet1.CheckBoxAllItem62.Visible = False
+Sheet1.CheckBoxAllItem63.Visible = False
+Sheet1.CheckBoxAllItem64.Visible = False
+Sheet1.CheckBoxAllItem65.Visible = False
+Sheet1.CheckBoxAllItem66.Visible = False
+Sheet1.CheckBoxAllItem67.Visible = False
+Sheet1.CheckBoxAllItem68.Visible = False
+Sheet1.CheckBoxAllItem69.Visible = False
+Sheet1.CheckBoxAllItem70.Visible = False
+
+Sheet1.Range("D5:G74").Locked = True
+
+Sheet1.Range("R2:V2").Locked = False
+Sheet1.Range("R3:V3").Locked = False
+
+Sheet1.Range("R2").Value = "Weekdays"
+Sheet1.Range("R3").Value = "Weekdays"
+
+Sheet1.Range("D11").Locked = False      'Plain Roll / Plain Bun
+Sheet1.Range("D11").Interior.Color = 5296274
+
+Sheet1.Range("D12").Locked = False      'Seeni Sambol Bun
+Sheet1.Range("D12").Interior.Color = 5296274
+
+Sheet1.Range("D17").Locked = False      'Fish Bun
+Sheet1.Range("D17").Interior.Color = 5296274
+
+Sheet1.Range("D18").Locked = False      'Cuttlefish Bun
+Sheet1.Range("D18").Interior.Color = 5296274
+
+Sheet1.Range("D19").Locked = False      'Chicken Sausage Bun
+Sheet1.Range("D19").Interior.Color = 5296274
+
+Sheet1.Range("D20").Locked = False      'Egg Bun
+Sheet1.Range("D20").Interior.Color = 5296274
+
+Sheet1.Range("D21").Locked = False      'Omelette Bun
+Sheet1.Range("D21").Interior.Color = 5296274
+
+Sheet1.Range("D22").Locked = False      'Egg Burger
+Sheet1.Range("D22").Interior.Color = 5296274
+
+Sheet1.Range("D23").Locked = False      'Fish Curry Bun
+Sheet1.Range("D23").Interior.Color = 5296274
+
+Sheet1.Range("D24").Locked = False      'Chicken Hot Dog
+Sheet1.Range("D24").Interior.Color = 5296274
+
+Sheet1.Range("D26").Locked = False      'Honey Sausage Bun
+Sheet1.Range("D26").Interior.Color = 5296274
+
+Sheet1.Range("D27").Locked = False      'Cheese Chicken Curry Bun
+Sheet1.Range("D27").Interior.Color = 5296274
+
+Sheet1.Range("D28").Locked = False      'Chicken Bun
+Sheet1.Range("D28").Interior.Color = 5296274
+
+Sheet1.Range("D29").Locked = False      'Prawn Bun
+Sheet1.Range("D29").Interior.Color = 5296274
+
+Sheet1.Range("D30").Locked = False      'Dinner Bun 35g
+Sheet1.Range("D30").Interior.Color = 5296274
+
+Sheet1.Range("R2").Select
+
+Sheet1.Shapes("Speech Bubble: Rectangle with Corners Rounded 8").Visible = msoTrue
+
+MsgBox "Please Select First 5.00AM & 6.00AM Production Plan", vbInformation + vbOKOnly, "                        *** Production Programme ***"
+
+Application.Wait (Now + TimeValue("00:00:03"))
+    
+Sheet1.Shapes("Speech Bubble: Rectangle with Corners Rounded 8").Visible = msoFalse
+
+Sheet1.Protect Password:="Admin@donandsons.lk54321"
+
+End Sub
+
+Private Sub Worksheet_Activate()
+
+    Sheet21.DisplayPageBreaks = False
+    
+End Sub
+
+'Event that handles knowing when the mouse is over the control
+Private Sub LoginButton_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+    AddCursor IDC_HAND
+End Sub
+
+'Event that handles knowing when the mouse is over the control
+Private Sub HomeButton_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+    AddCursor IDC_HAND
+End Sub
+
+'Event that handles knowing when the mouse is over the control
+Private Sub LogoutButton_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+    AddCursor IDC_HAND
+End Sub
+
+'To set a cursor
+Private Function AddCursor(CursorType As CursorTypes)
+    If Not IsCursorType(CursorType) Then
+        SetCursor LoadCursor(0, CursorType)
+        Sleep 200 ' wait a bit, needed for rendering
+    End If
+End Function
+
+
+'To determine if the cursor is already set
+Private Function IsCursorType(CursorType As CursorTypes) As Boolean
+    Dim CursorHandle As Long: CursorHandle = LoadCursor(ByVal 0&, CursorType)
+    Dim Cursor As CursorInfo: Cursor.cbSize = Len(Cursor)
+    Dim CursorInfo As Boolean: CursorInfo = GetCursorInfo(Cursor)
+
+    If Not CursorInfo Then
+        IsCursorType = False
+        Exit Function
+    End If
+
+    IsCursorType = (Cursor.hCursor = CursorHandle)
+End Function

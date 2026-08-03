@@ -1,0 +1,230 @@
+Attribute VB_Name = "Module32"
+Sub OpenMacro()
+
+'Macro Added by Viraj Lakshan Rathnayake on 20.03.2019
+Sheet18.PageSetup.RightHeader = "&""Cambria,Italic""&B&14Page &P of &N"
+
+Sheet4.PageSetup.LeftFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+Environ("username") & " on &D at &T"
+
+Dim ws As Worksheet
+For Each ws In Worksheets
+ws.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+Environ("username") & " on &D at &T"
+ws.Protect Password:="Admin@donandsons.lk54321"
+Next ws
+
+Sheet4.PageSetup.CenterFooter = ""
+
+If Sheet21.LogoutButton.Visible = True Then
+
+    Sheet21.LogoutButton.Visible = False
+    
+    Sheet21.LoginButton.Visible = True
+    
+    ThisWorkbook.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Sheet21.Select
+    
+    Sheet21.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Sheet21.LogoutButton.Visible = False
+    Sheet21.LoginButton.Visible = True
+    Sheet21.Range("A1").Value = ""
+    Sheet21.Range("U1").Value = ""
+    Sheet21.Range("A7").Select
+        
+    'Sheet1 SpotCurrySheetButton & SixAMCurrySheetButton Visible False
+        Sheet1.SpotCurrySheetButton.Visible = False
+        Sheet1.SixAMCurrySheetButton.Visible = False
+        Sheet1.EveningCurfewDeliveryButton.Visible = False
+        Sheet1.WeekdaysEveningButton.Visible = False
+        Sheet1.SaturdayEveningButton.Visible = False
+        Sheet1.SundayEveningButton.Visible = False
+        Sheet1.ApNewYearEveningButton.Visible = False
+        
+        Sheet1.HomeButton.Visible = True
+        
+        Sheet1.ShorteatsSectionButton.Visible = False
+    
+    Sheet27.Unprotect Password:="Admin@donandsons.lk54321"
+    Sheet28.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Sheet1.Protect Password:="Admin@donandsons.lk54321", AllowFormattingCells:=True
+    Sheet2.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True
+    Sheet4.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True
+    Sheet23.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True
+    Sheet24.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True
+    
+    Sheet27.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+    Sheet28.Protect Password:="Admin@donandsons.lk54321", AllowFiltering:=True, AllowUsingPivotTables:=True, AllowSorting:=True, Scenarios:=True
+        
+    'xlSheetVeryHiddon of Sheet3, Sheet5, Sheet7, Sheet8, Sheet11, Sheet12, Sheet13, Sheet14, Sheet16, Sheet17 & Sheet19
+        Sheet3.Visible = xlSheetVeryHidden  'Bakery
+        Sheet5.Visible = xlSheetVeryHidden  'Recipe Per Item
+        Sheet7.Visible = xlSheetVeryHidden  'Plain Roll Section
+        Sheet8.Visible = xlSheetVeryHidden  'Size Totals
+        Sheet11.Visible = xlSheetVeryHidden 'Calculation
+        Sheet12.Visible = xlSheetVeryHidden 'Filling Section
+        Sheet13.Visible = xlSheetVeryHidden 'Patties Dough
+        Sheet14.Visible = xlSheetVeryHidden 'Doughs
+        Sheet16.Visible = xlSheetVeryHidden 'Users
+        Sheet17.Visible = xlSheetVeryHidden 'Vegetable Curry Sheet
+        Sheet19.Visible = xlSheetVeryHidden 'Bakery Recipe Per Item
+        Sheet23.Visible = xlSheetVeryHidden 'Curfew Evening Summary
+        Sheet27.Visible = xlSheetVeryHidden 'Dashboard
+        Sheet28.Visible = xlSheetVeryHidden 'Data
+        
+    'Protect Workbook with a Password Added by Viraj Lakshan Rathnayake on 20.03.2019
+        ThisWorkbook.Protect Password:="Admin@donandsons.lk54321"
+    
+End If
+
+    Sheet24.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Dim Mond As String
+    Mond = "Monday"
+
+    Dim Tues As String
+    Tues = "Tuesday"
+
+    Dim Wedn As String
+    Wedn = "Wednesday"
+
+    Dim Thurs As String
+    Thurs = "Thursday"
+
+    Dim Fri As String
+    Fri = "Friday"
+
+    Dim Satu As String
+    Satu = "Saturday"
+
+    Dim Sund As String
+    Sund = "Sunday"
+
+    Dim TomorrowD As String
+    TomorrowD = Format(Now() + 1, "dddd")
+
+    If TomorrowD = Mond Then
+
+        Sheet24.Range("X77").Value = Mond
+    
+    ElseIf TomorrowD = Tues Then
+
+        Sheet24.Range("X77").Value = Tues
+    
+    ElseIf TomorrowD = Wedn Then
+
+        Sheet24.Range("X77").Value = Wedn
+    
+    ElseIf TomorrowD = Thurs Then
+
+        Sheet24.Range("X77").Value = Thurs
+    
+    ElseIf TomorrowD = Fri Then
+
+        Sheet24.Range("X77").Value = Fri
+    
+    ElseIf TomorrowD = Satu Then
+
+        Sheet24.Range("X77").Value = Satu
+    
+    ElseIf TomorrowD = Sund Then
+
+        Sheet24.Range("X77").Value = Sund
+
+    End If
+
+    Sheet24.Protect Password:="Admin@donandsons.lk54321"
+
+End Sub
+
+Sub SixAMOpenMacro()
+
+    Sheet1.Unprotect Password:="Admin@donandsons.lk54321"
+    Sheet23.Unprotect Password:="Admin@donandsons.lk54321"
+
+    Sheet1.Range("O11").Value = Format(Now(), "dd-mmm-yyyy")
+    
+    Sheet1.Range("O12").Value = Format(Now(), "hh:mm AM/PM")
+    
+    Dim Mon As String
+    Mon = "Monday"
+
+    Dim Tue As String
+    Tue = "Tuesday"
+
+    Dim Wed As String
+    Wed = "Wednesday"
+
+    Dim Thur As String
+    Thur = "Thursday"
+
+    Dim Frid As String
+    Frid = "Friday"
+
+    Dim Sat As String
+    Sat = "Saturday"
+
+    Dim Sun As String
+    Sun = "Sunday"
+
+    Dim TomorrowDay As String
+    TomorrowDay = Format(Now() + 1, "dddd")
+
+    If TomorrowDay = Mon Then
+
+        Sheet23.Range("AC79").Value = Mon
+    
+    ElseIf TomorrowDay = Tue Then
+
+        Sheet23.Range("AC79").Value = Tue
+    
+    ElseIf TomorrowDay = Wed Then
+
+        Sheet23.Range("AC79").Value = Wed
+    
+    ElseIf TomorrowDay = Thur Then
+
+        Sheet23.Range("AC79").Value = Thur
+    
+    ElseIf TomorrowDay = Frid Then
+
+        Sheet23.Range("AC79").Value = Frid
+    
+    ElseIf TomorrowDay = Sat Then
+
+        Sheet23.Range("AC79").Value = Sat
+    
+    ElseIf TomorrowDay = Sun Then
+
+        Sheet23.Range("AC79").Value = Sun
+
+    End If
+    
+    Sheet1.Protect Password:="Admin@donandsons.lk54321"
+    Sheet23.Protect Password:="Admin@donandsons.lk54321"
+    
+    Sheet4.PageSetup.LeftFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+    Environ("username") & " on &D at &T"
+
+    Dim wss As Worksheet
+    For Each wss In Worksheets
+    wss.PageSetup.CenterFooter = "&""Cambria,Italic""&B&10This File Was Prepared by " & _
+    Environ("username") & " on &D at &T"
+    Next wss
+
+    Sheet4.PageSetup.CenterFooter = ""
+    
+    Sheet21.Select
+    
+    'Display False Page Breaks of Sheet21 ("Home")
+    Sheet21.DisplayPageBreaks = False
+    
+    'Macro Added by Viraj Lakshan Rathnayake on 20.03.2019
+    MsgBox Prompt:="    ***Don & Sons (PVT) LTD.  6.00AM Production Programme***" & vbNewLine & vbNewLine & "                                          Welcome  " & _
+    Environ("username"), Title:="                   ***Powered by Viraj Lakshan Rathnayake***"
+
+End Sub
+

@@ -1,0 +1,45 @@
+Attribute VB_Name = "Module20"
+Sub Re_Call_6_00AM_Production()
+
+Dim Check_Production As String
+Check_Production = Sheet2.Range("B3").Text
+
+Dim Curfew As String
+Curfew = "Curfew"
+
+Dim Weekdays As String
+Weekdays = "Weekdays"
+
+Dim Saturday As String
+Saturday = "Saturday"
+
+Dim Sunday As String
+Sunday = "Sunday"
+
+Dim April_New_Year As String
+April_New_Year = "April New Year"
+
+
+If Check_Production = Curfew Then
+
+    Call Evening_Curfew
+
+ElseIf Check_Production = Weekdays Then
+
+    Call Weekdays_Evening
+
+ElseIf Check_Production = Saturday Then
+
+    Call Saturday_Evening
+
+ElseIf Check_Production = Sunday Then
+
+    Call Sunday_Evening
+
+ElseIf Check_Production = April_New_Year Then
+
+    Call April_New_Year_Evening
+
+End If
+
+End Sub

@@ -1,0 +1,136 @@
+Attribute VB_Name = "Module27"
+Sub Extra_Shorteats_Add()
+
+Dim MyDay1 As String
+MyDay1 = "25"
+
+Dim MyDay2 As String
+MyDay2 = "26"
+
+Dim MyDay3 As String
+MyDay3 = "27"
+
+Dim MyDay4 As String
+MyDay4 = "28"
+
+Dim MyDay5 As String
+MyDay5 = "29"
+
+Dim MyDay6 As String
+MyDay6 = "30"
+
+Dim MyDay7 As String
+MyDay7 = "31"
+
+Dim MyDay8 As String
+MyDay8 = "01"
+
+Dim MyDay9 As String
+MyDay9 = "02"
+
+Dim MyDay10 As String
+MyDay10 = "03"
+
+Dim MyDay11 As String
+MyDay11 = "04"
+
+Dim MyDay12 As String
+MyDay12 = "05"
+
+Dim MyDay13 As String
+MyDay13 = "06"
+
+Dim MyDay14 As String
+MyDay14 = "07"
+
+Dim TodayDay As Date
+TodayDay = Format(Now() + 1, "dd")
+
+If TodayDay = MyDay1 Or TodayDay = MyDay2 Or TodayDay = MyDay3 Or TodayDay = MyDay4 Or TodayDay = MyDay5 Or TodayDay = MyDay6 Or TodayDay = MyDay7 Or _
+TodayDay = MyDay8 Or TodayDay = MyDay9 Or TodayDay = MyDay10 Or TodayDay = MyDay11 Or TodayDay = MyDay12 Or TodayDay = MyDay13 Or TodayDay = MyDay14 Then
+    
+    If Sheet1.ExtraProductionCheckBox.Value = True Then
+    
+        Sheet23.Select
+
+        Sheet23.Unprotect Password:="Admin@donandsons.lk54321"
+    
+        Sheet23.Range("U1").Select
+    
+        'Sheet23.Range("U1").Value = "Extra Enabled"
+        
+        Application.Wait (Now + TimeValue("0:00:03"))
+        
+    End If
+    
+Else
+
+    Sheet23.Unprotect Password:="Admin@donandsons.lk54321"
+
+    Sheet23.Range("U1").Value = ""
+    
+    Sheet23.Protect Password:="Admin@donandsons.lk54321"
+    
+End If
+
+If Sheet23.Range("U1").Value = "Extra Enabled" Then
+    
+    'Copy & Paste 1.30PM Extra Weekdays Delivery Data
+
+    Sheet23.Range("DF7:DU77").Copy 'Extra Weekdays 3.30 Delivery
+    
+    Sheet23.Range("Z7").PasteSpecial xlPasteValues 'Weekdays 3.30Delivery
+    
+    Application.CutCopyMode = False
+    
+    Sheet23.Range("D7").Select
+    
+    Application.Wait (Now + TimeValue("0:00:03"))
+    
+    '*********************************************
+    
+    '*********************************************
+    
+    'Copy & Paste 1.30PM Extra Saturday Delivery Data
+
+    Sheet23.Range("DZ7:EO77").Copy 'Extra Saturday 3.30 Delivery
+    
+    Sheet23.Range("AU7").PasteSpecial xlPasteValues 'Saturday 3.30Delivery
+    
+    Application.CutCopyMode = False
+    
+    Sheet23.Range("D7").Select
+    
+    Application.Wait (Now + TimeValue("0:00:03"))
+    
+    '*********************************************
+    
+    '*********************************************
+    
+    'Copy & Paste 1.30PM Extra Sunday Delivery Data
+
+    Sheet23.Range("ET7:FI77").Copy 'Extra Sunday 3.30 Delivery
+    
+    Sheet23.Range("BP7").PasteSpecial xlPasteValues 'Sunday 3.30Delivery
+    
+    Application.CutCopyMode = False
+    
+    Sheet23.Range("D7").Select
+    
+    Application.Wait (Now + TimeValue("0:00:03"))
+    
+    '*********************************************
+    
+    '*********************************************
+    
+    Sheet1.Unprotect Password:="Admin@donandsons.lk54321"
+    
+    Sheet1.Shapes("Picture 7").Visible = msoTrue
+    
+    Sheet1.Protect Password:="Admin@donandsons.lk54321"
+        
+    Sheet23.Protect Password:="Admin@donandsons.lk54321"
+    
+End If
+
+End Sub

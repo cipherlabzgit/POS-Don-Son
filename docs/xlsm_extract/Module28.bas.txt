@@ -1,0 +1,92 @@
+Attribute VB_Name = "Module28"
+Sub SaturdayVegetableRotty()
+
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+'Copy & Paste 10.30AM & 2.30PM Vegetable Rotty Delivery Data
+    Dim VegetableRottyMorning As String
+    VegetableRottyMorning = Sheet23.Range("BK151").Value    '10.30AM Delivery
+    
+    Sheet4.Range("C186").Value = VegetableRottyMorning  'Curry Sheet
+'********************************************************************
+
+    Dim VegetableRottyEvening As String
+    VegetableRottyEvening = Sheet23.Range("BK73").Value    '2.30PM Delivery
+    
+    Sheet4.Range("D186").Value = VegetableRottyEvening  'Curry Sheet
+'********************************************************************
+    Sheet4.Protect Password:="Admin@donandsons.lk54321"
+
+End Sub
+
+Sub SundayVegetableRotty()
+   
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+'Copy & Paste 10.30AM & 2.30PM Vegetable Rotty Delivery Data
+    Dim VegetableRottyMorning As String
+    VegetableRottyMorning = Sheet23.Range("CF151").Value    '10.30AM Delivery
+    
+    Sheet4.Range("C186").Value = VegetableRottyMorning  'Curry Sheet
+'********************************************************************
+    Dim VegetableRottyEvening As String
+    VegetableRottyEvening = Sheet23.Range("CF73").Value    '2.30PM Delivery
+    
+    Sheet4.Range("D186").Value = VegetableRottyEvening  'Curry Sheet
+'********************************************************************
+    Sheet4.Protect Password:="Admin@donandsons.lk54321"
+    
+End Sub
+
+Sub CurfewVegetableRotty()
+            
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+'Copy & Paste 10.30AM & 2.30PM Vegetable Rotty Delivery Data
+    Dim VegetableRottyMorning As String
+    VegetableRottyMorning = Sheet23.Range("T151").Value '10.30AM Delivery
+    
+    Sheet4.Range("C186").Value = VegetableRottyMorning  'Curry Sheet
+'********************************************************************
+    Dim VegetableRottyEvening As String
+    VegetableRottyEvening = Sheet23.Range("T73").Value '2.30PM Delivery
+    
+    Sheet4.Range("D186").Value = VegetableRottyEvening  'Curry Sheet
+'********************************************************************
+    Sheet4.Protect Password:="Admin@donandsons.lk54321"
+    
+End Sub
+
+Sub WeekdaysVegetableRotty()
+            
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+'Copy & Paste 10.30AM & 2.30PM Vegetable Rotty Delivery Data
+    Dim VegetableRottyMorning As String
+    VegetableRottyMorning = Sheet23.Range("AP151").Value    '10.30AM Delivery
+    
+    Sheet4.Range("C186").Value = VegetableRottyMorning  'Curry Sheet
+'********************************************************************
+    Dim VegetableRottyEvening As String
+    VegetableRottyEvening = Sheet23.Range("AP73").Value    '2.30PM Delivery
+    
+    Sheet4.Range("D186").Value = VegetableRottyEvening  'Curry Sheet
+'********************************************************************
+    Sheet4.Protect Password:="Admin@donandsons.lk54321"
+    
+End Sub
+
+Sub AprilNewYearVegetableRotty()
+            
+    Sheet4.Unprotect Password:="Admin@donandsons.lk54321"
+'Copy & Paste 10.30AM & 2.30PM Vegetable Rotty Delivery Data
+    Dim VegetableRottyMorning As String
+    VegetableRottyMorning = Sheet23.Range("DA151").Value    '10.30AM Delivery
+    
+    Sheet4.Range("C186").Value = VegetableRottyMorning  'Curry Sheet
+'********************************************************************
+    Dim VegetableRottyEvening As String
+    VegetableRottyEvening = Sheet23.Range("DA73").Value    '1.30PM Delivery
+    
+    Sheet4.Range("D186").Value = VegetableRottyEvening  'Curry Sheet
+'********************************************************************
+    Sheet4.Protect Password:="Admin@donandsons.lk54321"
+    
+End Sub
+

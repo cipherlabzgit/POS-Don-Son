@@ -61,17 +61,68 @@ if (-not (Test-Path $psql)) {
     }
 }
 
-Write-Host "Checking local PostgreSQL on localhost:$pgPort ..." -ForegroundColor Cyan
-$env:PGPASSWORD = $pgPass
-& $psql -U $pgUser -h localhost -p $pgPort -d postgres -c "SELECT 1;" | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    throw "Cannot connect to local PostgreSQL. Check POSTGRES_USER and POSTGRES_PASSWORD in .env."
+function Ensure-LocalPostgresService {
+    $services = Get-Service -Name "*postgres*" -ErrorAction SilentlyContinue | Where-Object {
+        $_.Name -like "postgresql*" -or $_.DisplayName -like "*PostgreSQL*"
+    }
+
+    if (-not $services) {
+        Write-Host "No PostgreSQL Windows service found." -ForegroundColor Yellow
+        Write-Host "Start PostgreSQL manually in services.msc or install PostgreSQL 18." -ForegroundColor Yellow
+        return
+    }
+
+    foreach ($svc in $services) {
+        if ($svc.Status -ne "Running") {
+            Write-Host "Starting PostgreSQL service: $($svc.Name) ..." -ForegroundColor Yellow
+            try {
+                Start-Service -Name $svc.Name -ErrorAction Stop
+                Write-Host "Service $($svc.Name) started." -ForegroundColor Green
+            } catch {
+                Write-Host "Could not start $($svc.Name). Run PowerShell as Administrator." -ForegroundColor Red
+                throw $_.Exception.Message
+            }
+        } else {
+            Write-Host "PostgreSQL service running: $($svc.Name)" -ForegroundColor Green
+        }
+    }
+
+    $ready = $false
+    for ($i = 1; $i -le 12; $i++) {
+        $test = Test-NetConnection -ComputerName 127.0.0.1 -Port $pgPort -WarningAction SilentlyContinue
+        if ($test.TcpTestSucceeded) {
+            $ready = $true
+            break
+        }
+        Start-Sleep -Seconds 2
+    }
+
+    if (-not $ready) {
+        Write-Host "Port $pgPort is not listening yet." -ForegroundColor Yellow
+        Write-Host "Check postgresql.conf: listen_addresses and port." -ForegroundColor Yellow
+    }
 }
 
-$dbExists = & $psql -U $pgUser -h localhost -p $pgPort -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$pgDb';"
+Ensure-LocalPostgresService
+
+Write-Host "Checking local PostgreSQL on localhost:$pgPort ..." -ForegroundColor Cyan
+$env:PGPASSWORD = $pgPass
+& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d postgres -c "SELECT 1;" 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "Cannot connect to local PostgreSQL on port $pgPort." -ForegroundColor Red
+    Write-Host "Fix on this server:" -ForegroundColor Yellow
+    Write-Host "  1. Open services.msc and start 'postgresql-x64-18' (Run as Administrator)"
+    Write-Host "  2. Or run:  Start-Service postgresql-x64-18"
+    Write-Host "  3. Confirm password in .env matches pgAdmin (POSTGRES_PASSWORD)"
+    Write-Host "  4. Test:  psql -U postgres -h 127.0.0.1 -p $pgPort -d postgres"
+    throw "Local PostgreSQL is not running or wrong password."
+}
+
+$dbExists = & $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$pgDb';"
 if ($dbExists -ne "1") {
     Write-Host "Creating database '$pgDb' on local PostgreSQL ..." -ForegroundColor Yellow
-    & $psql -U $pgUser -h localhost -p $pgPort -d postgres -c "CREATE DATABASE $pgDb;"
+    & $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d postgres -c "CREATE DATABASE $pgDb;"
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create database '$pgDb'."
     }
@@ -106,7 +157,7 @@ for ($i = 1; $i -le 36; $i++) {
 
 if ($healthy) {
     Write-Host "Backend is healthy." -ForegroundColor Green
-    $tableCount = & $psql -U $pgUser -h localhost -p $pgPort -d $pgDb -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';"
+    $tableCount = & $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';"
     Write-Host "Tables in local '$pgDb': $tableCount" -ForegroundColor Green
 } else {
     Write-Host "Backend not healthy yet. Check docker compose logs backend" -ForegroundColor Yellow

@@ -32,16 +32,22 @@ if (-not (Test-Path $psql)) {
     if ($found) { $psql = $found.FullName } else { throw "psql not found." }
 }
 
+# PostgreSQL columns are PascalCase and must be double-quoted in SQL.
+$safeEmail = $adminEmail.Replace("'", "''")
+$showSql = 'SELECT "Email", "IsSuperAdmin", "IsActive" FROM users WHERE "IsSuperAdmin" = true OR LOWER("Email") = LOWER(''' + $safeEmail + ''');'
+$deleteSql = 'DELETE FROM users WHERE "IsSuperAdmin" = true OR LOWER("Email") = LOWER(''' + $safeEmail + ''');'
+$afterSql = 'SELECT "Email", "IsSuperAdmin", "IsActive" FROM users WHERE "IsSuperAdmin" = true;'
+
 Write-Host "Current admin user(s):" -ForegroundColor Cyan
 $env:PGPASSWORD = $pgPass
-& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -c "SELECT ""Email"", ""IsSuperAdmin"", ""IsActive"" FROM users WHERE ""IsSuperAdmin"" = true OR LOWER(""Email"") = LOWER('$adminEmail');"
+& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -c $showSql
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to query users table."
+}
 
 Write-Host ""
 Write-Host "Deleting super admin so backend can recreate with .env password ..." -ForegroundColor Yellow
-
-$sql = "DELETE FROM users WHERE ""IsSuperAdmin"" = true OR LOWER(""Email"") = LOWER('$adminEmail');"
-
-& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -c $sql
+& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -c $deleteSql
 if ($LASTEXITCODE -ne 0) {
     throw "Failed to delete admin user. Check psql output above."
 }
@@ -70,6 +76,6 @@ if (-not $healthy) {
 Write-Host ""
 Write-Host "Admin login reset complete." -ForegroundColor Green
 Write-Host "  Email:    $adminEmail"
-Write-Host "  Password: (value of SUPERADMIN_PASSWORD in .env)"
+Write-Host "  Password: $adminPass"
 Write-Host ""
-& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -c "SELECT ""Email"", ""IsSuperAdmin"", ""IsActive"" FROM users WHERE ""IsSuperAdmin"" = true;"
+& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -c $afterSql

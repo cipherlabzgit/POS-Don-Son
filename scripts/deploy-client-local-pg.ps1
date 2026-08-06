@@ -29,6 +29,23 @@ if (-not (Test-Path ".env")) {
     exit 1
 }
 
+$ComposeFiles = @("-f", "docker-compose.yml", "-f", "docker-compose.local-pg.yml")
+
+function Invoke-DockerCompose {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Args
+    )
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & docker compose @ComposeFiles @Args 2>&1 | ForEach-Object { Write-Host $_ }
+    $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = $prev
+    if ($exitCode -ne 0) {
+        throw "docker compose failed (exit $exitCode): docker compose $($ComposeFiles -join ' ') $($Args -join ' ')"
+    }
+}
+
 function Get-EnvValue {
     param(
         [string]$Name,
@@ -133,8 +150,8 @@ if ($dbExists -ne "1") {
 
 Write-Host ""
 Write-Host "Starting Docker (backend, frontend, pos) using HOST PostgreSQL ..." -ForegroundColor Cyan
-docker compose -f docker-compose.yml -f docker-compose.local-pg.yml down 2>$null
-docker compose -f docker-compose.yml -f docker-compose.local-pg.yml up -d --build backend frontend pos
+Invoke-DockerCompose -Args @("down")
+Invoke-DockerCompose -Args @("up", "-d", "--build", "backend", "frontend", "pos")
 
 $backendPort = 5126
 if ($envContent -match 'BACKEND_PORT=(\d+)') {
@@ -175,4 +192,4 @@ Write-Host "  Login:    admin@donandson.com / SUPERADMIN_PASSWORD in .env"
 Write-Host ""
 Write-Host "In pgAdmin: Databases -> $pgDb -> Schemas -> public -> Tables -> Refresh"
 Write-Host ""
-docker compose -f docker-compose.yml -f docker-compose.local-pg.yml ps
+Invoke-DockerCompose -Args @("ps")

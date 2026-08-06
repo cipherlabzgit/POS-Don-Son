@@ -11,6 +11,20 @@ function Get-EnvValue {
     return $Default
 }
 
+function Invoke-PsqlFile {
+    param(
+        [string]$Psql,
+        [string]$User,
+        [int]$Port,
+        [string]$Database,
+        [string]$SqlFile
+    )
+    & $Psql -U $User -h 127.0.0.1 -p $Port -d $Database -f $SqlFile
+    if ($LASTEXITCODE -ne 0) {
+        throw "psql failed for file: $SqlFile"
+    }
+}
+
 if (-not (Test-Path ".env")) {
     throw ".env not found. Create it from .env.client-ready first."
 }
@@ -18,7 +32,7 @@ if (-not (Test-Path ".env")) {
 $pgUser = Get-EnvValue "POSTGRES_USER" "postgres"
 $pgPass = Get-EnvValue "POSTGRES_PASSWORD" "postgres"
 $pgDb   = Get-EnvValue "POSTGRES_DB" "dms_erp_db"
-$pgPort = Get-EnvValue "POSTGRES_PORT" "5432"
+$pgPort = [int](Get-EnvValue "POSTGRES_PORT" "5432")
 $adminEmail = Get-EnvValue "SUPERADMIN_EMAIL" "admin@donandson.com"
 $adminPass  = Get-EnvValue "SUPERADMIN_PASSWORD" ""
 
@@ -32,50 +46,66 @@ if (-not (Test-Path $psql)) {
     if ($found) { $psql = $found.FullName } else { throw "psql not found." }
 }
 
-# PostgreSQL columns are PascalCase and must be double-quoted in SQL.
 $safeEmail = $adminEmail.Replace("'", "''")
-$showSql = 'SELECT "Email", "IsSuperAdmin", "IsActive" FROM users WHERE "IsSuperAdmin" = true OR LOWER("Email") = LOWER(''' + $safeEmail + ''');'
-$deleteSql = 'DELETE FROM users WHERE "IsSuperAdmin" = true OR LOWER("Email") = LOWER(''' + $safeEmail + ''');'
-$afterSql = 'SELECT "Email", "IsSuperAdmin", "IsActive" FROM users WHERE "IsSuperAdmin" = true;'
+$tempDir = Join-Path $env:TEMP "dms-reset-admin"
+New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+$showFile = Join-Path $tempDir "show-users.sql"
+$deleteFile = Join-Path $tempDir "delete-admin.sql"
+$afterFile = Join-Path $tempDir "after-users.sql"
+
+@(
+    'SELECT "Email", "IsSuperAdmin", "IsActive" FROM users'
+    'WHERE "IsSuperAdmin" = true OR LOWER("Email") = LOWER(''' + $safeEmail + ''');'
+) | Set-Content -Path $showFile -Encoding ASCII
+
+@(
+    'DELETE FROM users'
+    'WHERE "IsSuperAdmin" = true OR LOWER("Email") = LOWER(''' + $safeEmail + ''');'
+) | Set-Content -Path $deleteFile -Encoding ASCII
+
+@(
+    'SELECT "Email", "IsSuperAdmin", "IsActive" FROM users'
+    'WHERE "IsSuperAdmin" = true;'
+) | Set-Content -Path $afterFile -Encoding ASCII
 
 Write-Host "Current admin user(s):" -ForegroundColor Cyan
 $env:PGPASSWORD = $pgPass
-& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -c $showSql
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to query users table."
+try {
+    Invoke-PsqlFile -Psql $psql -User $pgUser -Port $pgPort -Database $pgDb -SqlFile $showFile
+
+    Write-Host ""
+    Write-Host "Deleting super admin so backend can recreate with .env password ..." -ForegroundColor Yellow
+    Invoke-PsqlFile -Psql $psql -User $pgUser -Port $pgPort -Database $pgDb -SqlFile $deleteFile
+
+    Write-Host "Restarting backend container ..." -ForegroundColor Cyan
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & docker compose -f docker-compose.yml -f docker-compose.local-pg.yml restart backend 2>&1 | ForEach-Object { Write-Host $_ }
+    $ErrorActionPreference = $prev
+
+    Write-Host "Waiting for backend ..." -ForegroundColor Cyan
+    $backendPort = Get-EnvValue "BACKEND_PORT" "5126"
+    $healthy = $false
+    for ($i = 1; $i -le 24; $i++) {
+        try {
+            $r = Invoke-WebRequest -Uri "http://127.0.0.1:$backendPort/health" -UseBasicParsing -TimeoutSec 5
+            if ($r.StatusCode -eq 200) { $healthy = $true; break }
+        } catch { Start-Sleep -Seconds 5 }
+    }
+
+    if (-not $healthy) {
+        Write-Host "Backend not healthy yet. Check: docker compose -f docker-compose.yml -f docker-compose.local-pg.yml logs backend --tail 30" -ForegroundColor Yellow
+        exit 1
+    }
+
+    Write-Host ""
+    Write-Host "Admin login reset complete." -ForegroundColor Green
+    Write-Host "  Email:    $adminEmail"
+    Write-Host "  Password: $adminPass"
+    Write-Host ""
+    Invoke-PsqlFile -Psql $psql -User $pgUser -Port $pgPort -Database $pgDb -SqlFile $afterFile
 }
-
-Write-Host ""
-Write-Host "Deleting super admin so backend can recreate with .env password ..." -ForegroundColor Yellow
-& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -c $deleteSql
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to delete admin user. Check psql output above."
+finally {
+    Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 }
-
-Write-Host "Restarting backend container ..." -ForegroundColor Cyan
-$prev = $ErrorActionPreference
-$ErrorActionPreference = "Continue"
-& docker compose -f docker-compose.yml -f docker-compose.local-pg.yml restart backend 2>&1 | ForEach-Object { Write-Host $_ }
-$ErrorActionPreference = $prev
-
-Write-Host "Waiting for backend ..." -ForegroundColor Cyan
-$backendPort = Get-EnvValue "BACKEND_PORT" "5126"
-$healthy = $false
-for ($i = 1; $i -le 24; $i++) {
-    try {
-        $r = Invoke-WebRequest -Uri "http://127.0.0.1:$backendPort/health" -UseBasicParsing -TimeoutSec 5
-        if ($r.StatusCode -eq 200) { $healthy = $true; break }
-    } catch { Start-Sleep -Seconds 5 }
-}
-
-if (-not $healthy) {
-    Write-Host "Backend not healthy yet. Check: docker compose -f docker-compose.yml -f docker-compose.local-pg.yml logs backend --tail 30" -ForegroundColor Yellow
-    exit 1
-}
-
-Write-Host ""
-Write-Host "Admin login reset complete." -ForegroundColor Green
-Write-Host "  Email:    $adminEmail"
-Write-Host "  Password: $adminPass"
-Write-Host ""
-& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -c $afterSql

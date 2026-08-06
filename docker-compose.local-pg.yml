@@ -19,3 +19,6 @@ services:
     environment:
       ConnectionStrings__DefaultConnection: >-
         Host=host.docker.internal;Port=${POSTGRES_PORT:-5432};Database=${POSTGRES_DB:-dms_erp_db};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres};Pooling=true;MinPoolSize=1;MaxPoolSize=50
+      # Allow LAN IP when public IP is CLIENT_HOST (optional in .env)
+      Cors__AllowedOrigins__6: ${LAN_FRONTEND_URL:-}
+      Cors__AllowedOrigins__7: ${LAN_POS_URL:-}

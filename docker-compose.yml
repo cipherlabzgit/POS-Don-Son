@@ -71,6 +71,9 @@ services:
       # POS web UI origins (browser-side, served by nginx container)
       Cors__AllowedOrigins__2: ${POS_URL:-http://localhost:5174}
       Cors__AllowedOrigins__3: http://127.0.0.1:${POS_PORT:-5174}
+      # localhost and 127.0.0.1 are different browser origins
+      Cors__AllowedOrigins__4: http://localhost:${FRONTEND_PORT:-3000}
+      Cors__AllowedOrigins__5: http://localhost:${POS_PORT:-5174}
       TZ: UTC
     ports:
       - "${BACKEND_PORT:-5126}:8080"

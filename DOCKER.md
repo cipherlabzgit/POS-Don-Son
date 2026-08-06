@@ -26,6 +26,18 @@ docker compose version
 
 ---
 
+## Local PostgreSQL (pgAdmin) instead of Docker database
+
+If the client uses **PostgreSQL 18 on Windows** (pgAdmin) and you do **not** want Docker postgres:
+
+```powershell
+.\scripts\deploy-client-local-pg.ps1
+```
+
+Full guide: **[PGADMIN-LOCAL.md](PGADMIN-LOCAL.md)**
+
+---
+
 ## Quick start (client server)
 
 ### 1. Create folder and get the code

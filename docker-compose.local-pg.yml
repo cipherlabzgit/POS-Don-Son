@@ -1,0 +1,21 @@
+# Use LOCAL PostgreSQL (pgAdmin / PostgreSQL 18 on the host) instead of Docker postgres.
+#
+# Deploy:
+#   .\scripts\deploy-client-local-pg.ps1
+#
+# Or manually:
+#   docker compose -f docker-compose.yml -f docker-compose.local-pg.yml up -d --build
+
+services:
+  # Do not start the Docker postgres container when this override is used.
+  postgres:
+    profiles:
+      - with-docker-db
+
+  backend:
+    depends_on: !reset []
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ConnectionStrings__DefaultConnection: >-
+        Host=host.docker.internal;Port=${POSTGRES_PORT:-5432};Database=${POSTGRES_DB:-dms_erp_db};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres};Pooling=true;MinPoolSize=1;MaxPoolSize=50

@@ -5,6 +5,13 @@ const nextConfig: NextConfig = {
   // server bundle at .next/standalone that the runtime stage copies in.
   output: "standalone",
 
+  async redirects() {
+    return [
+      { source: "/settings", destination: "/administrator/system-settings", permanent: false },
+      { source: "/profile", destination: "/dashboard", permanent: false },
+    ];
+  },
+
   typescript: {
     ignoreBuildErrors: true,
   },

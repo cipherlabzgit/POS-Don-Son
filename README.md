@@ -12,6 +12,25 @@ Delivery Management System and Point of Sale for Don & Sons (Pvt) Ltd.
 | **DMS-Frontend** | Next.js 16 / React 19 | `3000` (or `3001`) |
 | **DMS-POS** | Vite + Electron | `5173` (web), desktop via Electron |
 
+## Client server deployment (Docker)
+
+**Deploy everything on the client's machine in one step:**
+
+```bash
+git clone https://github.com/cipherlabzgit/POS-Don-Son.git
+cd POS-Don-Son
+cp .env.docker.example .env    # edit CLIENT_HOST, passwords, JWT secret
+./scripts/deploy-client.sh
+```
+
+| App | URL (replace host) |
+|-----|---------------------|
+| DMS Web | `http://SERVER:3000` |
+| POS (browser) | `http://SERVER:5174` |
+| API | `http://SERVER:5126` |
+
+Full instructions: **[DOCKER.md](DOCKER.md)**
+
 ## Quick start (local dev)
 
 ### Prerequisites
@@ -97,9 +116,10 @@ docker-compose.yml   Full production-style local stack
 
 ## Documentation
 
+- **[DOCKER.md](DOCKER.md)** — client server deploy (start here for production)
+- [docs/DOCKER_GUIDE.md](docs/DOCKER_GUIDE.md) — detailed Docker reference
 - [DEV_WORKFLOW.MD](DEV_WORKFLOW.MD) — day-to-day development
-- [docs/DOCKER_GUIDE.md](docs/DOCKER_GUIDE.md) — Docker deployment
-- [docs/DEPLOYMENT_GUIDE.MD](docs/DEPLOYMENT_GUIDE.MD) — field / remote deployment
+- [docs/DEPLOYMENT_GUIDE.MD](docs/DEPLOYMENT_GUIDE.MD) — field / remote POS (Electron)
 - [MIGRATION_QUICKREF.MD](MIGRATION_QUICKREF.MD) — database migrations
 
 ## Notes

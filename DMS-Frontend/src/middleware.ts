@@ -4,6 +4,14 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Legacy / bookmarked paths → real routes
+  if (pathname === '/settings') {
+    return NextResponse.redirect(new URL('/administrator/system-settings', request.url));
+  }
+  if (pathname === '/profile') {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
   // Public routes that don't require authentication
   const publicRoutes = ['/login'];
 

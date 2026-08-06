@@ -1,7 +1,10 @@
 # Don & Sons DMS — Docker Deployment Guide
 
-A complete, from-scratch guide to running the **DMS-ERP** stack
-(PostgreSQL 16 + .NET 10 backend + Next.js 16 frontend) with Docker Compose.
+> **Quick start:** see [DOCKER.md](../DOCKER.md) in the repo root for client server steps.
+
+A complete guide to running the **DMS-ERP + POS** stack with Docker Compose:
+
+PostgreSQL 16 + .NET 10 backend + Next.js 16 frontend + POS web UI (nginx).
 
 The setup is intentionally **production-shaped**: multi-stage builds, non-root
 runtime users, healthchecks, named volumes for data and logs, secrets injected
@@ -57,21 +60,16 @@ docker run --rm hello-world
 Your project directory should contain (names may match your disk path):
 
 ```
-DonandSons-DMS/
-├─ docker-compose.yml              ← orchestrates the 3 services
+POS-Don-Son/
+├─ docker-compose.yml              ← orchestrates 4 services
 ├─ .env.docker.example             ← template for secrets / config
 ├─ .env                            ← YOUR copy (create locally; keep private)
-├─ DOCKER_GUIDE.md                 ← this file
+├─ DOCKER.md                       ← quick client deploy guide
+├─ docs/DOCKER_GUIDE.md            ← this file
 │
-├─ DMS-Backend/
-│  ├─ Dockerfile                   ← multi-stage .NET 10 build
-│  ├─ .dockerignore
-│  └─ ... (csproj, Program.cs, etc.)
-│
-└─ DMS-Frontend/
-   ├─ Dockerfile                   ← multi-stage Next.js 16 standalone build
-   ├─ .dockerignore
-   └─ ... (package.json, next.config.ts, etc.)
+├─ DMS-Backend/Dockerfile
+├─ DMS-Frontend/Dockerfile
+└─ DMS-POS/Dockerfile              ← browser POS (not Electron)
 ```
 
 ---
@@ -123,10 +121,13 @@ Default host ports are:
 | Postgres  | 5432           | 5432                | `POSTGRES_PORT`    |
 | Backend   | 8080           | 5126                | `BACKEND_PORT`     |
 | Frontend  | 3000           | 3000                | `FRONTEND_PORT`    |
+| POS       | 5174           | 5174                | `POS_PORT`         |
 
-If you change `BACKEND_PORT`, also update `NEXT_PUBLIC_API_URL` so the
-**browser** can still reach the API (it is baked into the JS bundle at
-build time).
+If you change `BACKEND_PORT`, also update `NEXT_PUBLIC_API_URL` and
+`VITE_API_URL` so the **browser** can still reach the API (baked in at build time).
+
+On a **remote client server**, set `CLIENT_HOST` and all public URLs in `.env`
+to the server IP or domain — not `localhost`.
 
 ---
 
@@ -176,7 +177,7 @@ docker compose up -d
    * applies all EF Core migrations (`Database.MigrateAsync()`),
    * seeds the permission catalog and the SuperAdmin user,
    * (only if `DEV_SEED_ENABLED=true`) seeds demo data.
-4. Once `backend`'s healthcheck passes, start `frontend`.
+4. Once `backend`'s healthcheck passes, start `frontend` and `pos`.
 
 Watch progress:
 
@@ -196,13 +197,14 @@ Press `Ctrl-C` to stop tailing (containers keep running).
 docker compose ps
 ```
 
-You should see all three services with `STATUS = healthy`:
+You should see all four services running (postgres, backend, frontend, pos):
 
 ```
 NAME            STATUS                    PORTS
 dms-postgres    Up X minutes (healthy)    0.0.0.0:5432->5432/tcp
 dms-backend     Up X minutes (healthy)    0.0.0.0:5126->8080/tcp
-dms-frontend    Up X minutes (healthy)    0.0.0.0:3000->3000/tcp
+dms-frontend    Up X minutes              0.0.0.0:3000->3000/tcp
+dms-pos         Up X minutes (healthy)    0.0.0.0:5174->5174/tcp
 ```
 
 ### 6.2 Backend API
@@ -212,12 +214,19 @@ dms-frontend    Up X minutes (healthy)    0.0.0.0:3000->3000/tcp
 
 ### 6.3 Frontend
 
-Open <http://localhost:3000>, log in with the credentials from `.env`:
+Open <http://localhost:3000> (or `http://CLIENT_HOST:3000` on a server), log in with the credentials from `.env`:
 
 * **Email:** `SUPERADMIN_EMAIL` (default `admin@donandson.com`)
 * **Password:** `SUPERADMIN_PASSWORD`
 
-### 6.4 Quick log check
+### 6.4 POS (browser)
+
+Open <http://localhost:5174> (or `http://CLIENT_HOST:5174`). Same login credentials.
+
+Select a **showroom** from the header. If the catalogue is empty, ensure
+`DEV_SEED_ENABLED=true` on first install and rebuild, or add products in DMS.
+
+### 6.5 Quick log check
 
 ```bash
 docker compose logs backend  | tail -n 50

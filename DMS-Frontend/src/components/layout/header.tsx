@@ -241,7 +241,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   <button
                     onClick={() => {
                       setShowUserMenu(false);
-                      router.push('/profile');
+                      router.push('/dashboard');
                     }}
                     className="w-full px-4 py-2 text-left text-sm flex items-center space-x-2"
                     style={{ color: 'var(--foreground)' }}
@@ -254,7 +254,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   <button
                     onClick={() => {
                       setShowUserMenu(false);
-                      router.push('/settings');
+                      router.push('/administrator/system-settings');
                     }}
                     className="w-full px-4 py-2 text-left text-sm flex items-center space-x-2"
                     style={{ color: 'var(--foreground)' }}

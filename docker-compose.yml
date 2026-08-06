@@ -62,6 +62,8 @@ services:
       SuperAdmin__LastName: ${SUPERADMIN_LASTNAME:-Administrator}
       SuperAdmin__Password: ${SUPERADMIN_PASSWORD:?SUPERADMIN_PASSWORD must be set in .env}
       DevSeed__Enabled: ${DEV_SEED_ENABLED:-false}
+      DevSeed__SeedUsers: ${DEV_SEED_USERS:-true}
+      DevSeed__SeedMasterData: ${DEV_SEED_MASTER_DATA:-true}
       FrontendUrl: ${FRONTEND_URL:-http://localhost:3000}
       # Align CORS with how the UI is opened and with FRONTEND_PORT (localhost vs 127.0.0.1 differ)
       Cors__AllowedOrigins__0: ${FRONTEND_URL:-http://localhost:3000}

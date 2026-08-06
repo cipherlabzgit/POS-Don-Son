@@ -1,0 +1,11 @@
+# Fixes frontend "unhealthy" when Next.js needs longer to start on Windows Docker.
+# Docker Compose merges this automatically with docker-compose.yml.
+
+services:
+  frontend:
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/login >/dev/null || curl -fsS http://127.0.0.1:3000/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s

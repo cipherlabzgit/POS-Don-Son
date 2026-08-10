@@ -20,7 +20,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
-    [HasPermission("products:view")]
+    [HasPermission("products:view|pos:sale:view")]
     public async Task<ActionResult<ApiResponse<object>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
@@ -43,7 +43,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [HasPermission("products:view")]
+    [HasPermission("products:view|pos:sale:view")]
     public async Task<ActionResult<ApiResponse<ProductDetailDto>>> GetById(
         Guid id,
         CancellationToken cancellationToken = default)

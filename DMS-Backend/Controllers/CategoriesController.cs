@@ -20,7 +20,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet]
-    [HasPermission("categories:view")]
+    [HasPermission("categories:view|pos:sale:view")]
     public async Task<ActionResult<ApiResponse<object>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
@@ -42,7 +42,7 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [HasPermission("categories:view")]
+    [HasPermission("categories:view|pos:sale:view")]
     public async Task<ActionResult<ApiResponse<CategoryDetailDto>>> GetById(
         Guid id,
         CancellationToken cancellationToken = default)

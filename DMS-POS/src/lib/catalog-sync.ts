@@ -39,6 +39,11 @@ export async function syncCatalogFromServer(): Promise<void> {
     page += 1
   } while (prods.length < totalCount)
 
+  if (prods.length === 0) {
+    console.warn('[catalog-sync] Server returned 0 products; keeping existing local cache.')
+    return
+  }
+
   page = 1
   totalCount = 0
   const cats: CategoryRow[] = []

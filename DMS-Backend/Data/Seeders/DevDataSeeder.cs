@@ -37,12 +37,12 @@ public sealed class DevDataSeeder
 
             if (_options.SeedUsers)
             {
-                await SeedDemoUsersAsync();
                 await SeedDemoRolesAsync();
+                await SeedDemoUsersAsync();
             }
 
             await SeedShowroomOpenStockAsync();
-            
+            await EnsurePosCatalogReadyAsync();
             _logger.LogInformation("Dev data seed completed successfully");
         }
         catch (Exception ex)
@@ -260,66 +260,133 @@ public sealed class DevDataSeeder
 
     private async Task SeedDemoRolesAsync()
     {
-        // Check if Manager role exists
-        if (await _context.Roles.AnyAsync(r => r.Name == "Manager"))
+        if (!await _context.Roles.AnyAsync(r => r.Name == "Manager"))
         {
-            _logger.LogInformation("Demo roles already exist, skipping");
-            return;
+            _context.Roles.Add(new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = "Manager",
+                Description = "Demo manager role with POS permissions",
+                IsSystemRole = false,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            });
         }
 
-        // Get some permissions for demo roles
-        var viewPermissions = await _context.Permissions
-            .Where(p => p.Code.Contains("view"))
-            .Take(5)
+        if (!await _context.Roles.AnyAsync(r => r.Name == "Operator"))
+        {
+            _context.Roles.Add(new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = "Operator",
+                Description = "Demo operator role with POS permissions",
+                IsSystemRole = false,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            });
+        }
+
+        await _context.SaveChangesAsync();
+        await EnsurePosRolePermissionsAsync("Manager");
+        await EnsurePosRolePermissionsAsync("Operator");
+        _logger.LogInformation("Demo roles ready with POS permissions");
+    }
+
+    private static readonly string[] PosRolePermissionCodes =
+    [
+        "products:view",
+        "categories:view",
+        "showroom:view",
+        "pos:sale:view",
+        "pos:sale:create",
+    ];
+
+    private async Task EnsurePosCatalogReadyAsync()
+    {
+        var hiddenProducts = await _context.Products
+            .Where(p => !p.DisplayInPOS)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.DisplayInPOS, true));
+
+        var hiddenCategories = await _context.Categories
+            .Where(c => !c.DisplayInPOS)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.DisplayInPOS, true));
+
+        if (hiddenProducts > 0 || hiddenCategories > 0)
+        {
+            _logger.LogInformation(
+                "POS catalog visibility fixed: {ProductCount} products, {CategoryCount} categories set DisplayInPOS=true",
+                hiddenProducts,
+                hiddenCategories);
+        }
+
+        await EnsurePosRolePermissionsAsync("Manager");
+        await EnsurePosRolePermissionsAsync("Operator");
+        await EnsureDemoUserRoleAssignmentsAsync();
+    }
+
+    private async Task EnsureDemoUserRoleAssignmentsAsync()
+    {
+        var managerRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Manager");
+        var operatorRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Operator");
+        if (managerRole == null || operatorRole == null) return;
+
+        var manager = await _context.Users.FirstOrDefaultAsync(u => u.Email == "manager@donandson.com");
+        if (manager != null && !await _context.UserRoles.AnyAsync(ur => ur.UserId == manager.Id))
+        {
+            _context.UserRoles.Add(new UserRole
+            {
+                Id = Guid.NewGuid(),
+                UserId = manager.Id,
+                RoleId = managerRole.Id,
+                AssignedAt = DateTime.UtcNow,
+            });
+        }
+
+        var operatorUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == "operator@donandson.com");
+        if (operatorUser != null && !await _context.UserRoles.AnyAsync(ur => ur.UserId == operatorUser.Id))
+        {
+            _context.UserRoles.Add(new UserRole
+            {
+                Id = Guid.NewGuid(),
+                UserId = operatorUser.Id,
+                RoleId = operatorRole.Id,
+                AssignedAt = DateTime.UtcNow,
+            });
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task EnsurePosRolePermissionsAsync(string roleName)
+    {
+        var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+        if (role == null) return;
+
+        var permissions = await _context.Permissions
+            .Where(p => PosRolePermissionCodes.Contains(p.Code))
             .ToListAsync();
 
-        var managerRole = new Role
-        {
-            Id = Guid.NewGuid(),
-            Name = "Manager",
-            Description = "Demo manager role with extended permissions",
-            IsSystemRole = false,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+        var existing = await _context.RolePermissions
+            .Where(rp => rp.RoleId == role.Id)
+            .Select(rp => rp.PermissionId)
+            .ToListAsync();
 
-        var operatorRole = new Role
+        foreach (var permission in permissions)
         {
-            Id = Guid.NewGuid(),
-            Name = "Operator",
-            Description = "Demo operator role with basic permissions",
-            IsSystemRole = false,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _context.Roles.AddRange(managerRole, operatorRole);
-        await _context.SaveChangesAsync();
-
-        // Assign permissions
-        foreach (var permission in viewPermissions)
-        {
-            _context.RolePermissions.Add(new RolePermission
-            {
-                Id = Guid.NewGuid(),
-                RoleId = managerRole.Id,
-                PermissionId = permission.Id,
-                GrantedAt = DateTime.UtcNow
-            });
+            if (existing.Contains(permission.Id)) continue;
 
             _context.RolePermissions.Add(new RolePermission
             {
                 Id = Guid.NewGuid(),
-                RoleId = operatorRole.Id,
+                RoleId = role.Id,
                 PermissionId = permission.Id,
-                GrantedAt = DateTime.UtcNow
+                GrantedAt = DateTime.UtcNow,
             });
         }
 
         await _context.SaveChangesAsync();
-        _logger.LogInformation("Demo roles seeded: Manager, Operator");
     }
 
     private async Task SeedShowroomOpenStockAsync()

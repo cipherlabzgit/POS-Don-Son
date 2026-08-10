@@ -12,6 +12,24 @@ Delivery Management System and Point of Sale for Don & Sons (Pvt) Ltd.
 | **DMS-Frontend** | Next.js 16 / React 19 | `3000` (or `3001`) |
 | **DMS-POS** | Vite + Electron | `5173` (web), desktop via Electron |
 
+## Client server deployment (Windows)
+
+**Start here for Don & Sons production server:**
+
+| Guide | Use |
+|-------|-----|
+| **[CLIENT-SERVER.md](CLIENT-SERVER.md)** | Full setup: pgAdmin DB + Docker + POS installer |
+| **[PGADMIN-LOCAL.md](PGADMIN-LOCAL.md)** | PostgreSQL 18 + Docker (no Docker postgres) |
+| **[DOCKER.md](DOCKER.md)** | Docker-only deploy |
+
+Quick start:
+
+```powershell
+Copy-Item .env.client-ready .env   # edit if needed
+.\scripts\deploy-client-local-pg.ps1
+.\scripts\build-pos-installer.ps1 -NoPrompt
+```
+
 ## Client server deployment (Docker)
 
 **Deploy everything on the client's machine in one step:**

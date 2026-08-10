@@ -123,6 +123,21 @@ git pull
 
 ---
 
+## Build POS desktop installer (cashier PCs)
+
+Requires **Node.js 22+** on the server. Uses **VITE_API_URL** from repo root `.env`.
+
+```powershell
+cd D:\DMS\POS-Don-Son
+.\scripts\build-pos-installer.ps1 -NoPrompt
+```
+
+Installer: `DMS-POS\release\Don & Sons POS Setup 2.0.0.exe`
+
+See **[CLIENT-SERVER.md](CLIENT-SERVER.md)** for the full client workflow.
+
+---
+
 ## Troubleshooting
 
 | Problem | Fix |

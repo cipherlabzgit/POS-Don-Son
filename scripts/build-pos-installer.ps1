@@ -12,7 +12,8 @@ Write-Host "==================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Navigate to POS directory
-$posDir = Join-Path $PSScriptRoot "DMS-POS"
+$Root = Split-Path -Parent $PSScriptRoot
+$posDir = Join-Path $Root "DMS-POS"
 Set-Location $posDir
 
 Write-Host "[1/5] Cleaning previous build..." -ForegroundColor Yellow

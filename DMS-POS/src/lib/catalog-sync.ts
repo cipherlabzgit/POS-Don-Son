@@ -69,8 +69,8 @@ export async function syncCatalogFromServer(): Promise<void> {
   }
 
   if (prods.length === 0) {
-    const existing = await offlineDb.products.count()
-    if (existing > 0) {
+    const existingProducts = await offlineDb.products.toArray()
+    if (existingProducts.length > 0) {
       console.warn('[catalog-sync] Server returned 0 products; keeping existing local cache.')
       return
     }

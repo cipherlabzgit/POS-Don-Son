@@ -4,11 +4,6 @@ import { offlineDb, replaceOfflineCatalog } from './offline-db'
 import { useSettingsStore } from './settings-store'
 import type { CategoryRow, ProductRow } from './types'
 
-function readList<T>(payload: Record<string, unknown>, camel: string, pascal: string): T[] {
-  const value = payload[camel] ?? payload[pascal]
-  return Array.isArray(value) ? (value as T[]) : []
-}
-
 function mapProduct(p: Record<string, unknown>): ProductRow {
   const ros = p.requireOpenStock ?? p.RequireOpenStock
   return {
@@ -32,25 +27,40 @@ function mapCategory(c: Record<string, unknown>): CategoryRow {
   }
 }
 
+/**
+ * Download full catalogue from live API (dms_erp_db via backend).
+ * Pagination uses server totalCount + raw page size so DisplayInPOS filtering
+ * cannot stop the loop early.
+ */
 export async function syncCatalogFromServer(): Promise<void> {
   const pageSize = 200
   const maxPages = 50
 
   let page = 1
+  let totalCount = 0
+  let fetchedRaw = 0
   const prods: ProductRow[] = []
   try {
     do {
-      const res = await fetchProductsPage(page, pageSize) as Record<string, unknown>
-      const batch = readList<Record<string, unknown>>(res, 'products', 'Products').map(mapProduct)
-      if (page === 1 && batch.length === 0) {
+      const res = await fetchProductsPage(page, pageSize)
+      totalCount = Number(res.totalCount ?? 0)
+      const batch = (res.products as Record<string, unknown>[]).map(mapProduct)
+      const rawCount = Number(res.rawCount ?? batch.length)
+      fetchedRaw += rawCount
+
+      if (page === 1 && rawCount === 0) {
         throw new Error(
-          'Server returned no products. Check login, Server URL, and run fix-pos-catalog.ps1 on the server.',
+          'Server returned no products. Check login, Server URL (http://123.231.10.22:5126), and run fix-pos-catalog.ps1 on the server.',
         )
       }
+
       prods.push(...batch)
-      if (batch.length < pageSize) break
+
+      // Stop when API page is short, or we have walked all server rows
+      if (rawCount < pageSize || fetchedRaw >= totalCount) break
       page += 1
     } while (page <= maxPages)
+
     if (prods.length === 0) {
       throw new Error(
         'No POS products downloaded. Run .\\scripts\\fix-pos-catalog.ps1 on the server then re-sync.',
@@ -61,13 +71,18 @@ export async function syncCatalogFromServer(): Promise<void> {
   }
 
   page = 1
+  totalCount = 0
+  fetchedRaw = 0
   const cats: CategoryRow[] = []
   try {
     do {
-      const res = await fetchCategoriesPage(page, pageSize) as Record<string, unknown>
-      const batch = readList<Record<string, unknown>>(res, 'categories', 'Categories').map(mapCategory)
+      const res = await fetchCategoriesPage(page, pageSize)
+      totalCount = Number(res.totalCount ?? 0)
+      const batch = (res.categories as Record<string, unknown>[]).map(mapCategory)
+      const rawCount = Number(res.rawCount ?? batch.length)
+      fetchedRaw += rawCount
       cats.push(...batch)
-      if (batch.length < pageSize) break
+      if (rawCount < pageSize || fetchedRaw >= totalCount) break
       page += 1
     } while (page <= maxPages)
   } catch (err) {
@@ -88,6 +103,9 @@ export async function syncCatalogFromServer(): Promise<void> {
   await replaceOfflineCatalog(prods, cats)
 
   useSettingsStore.getState().setCacheUpdatedAt(Date.now())
+  console.log(
+    `[catalog-sync] Synced ${prods.length} products, ${cats.length} categories from ${useSettingsStore.getState().apiBaseUrl}`,
+  )
 }
 
 export async function loadProductsIntoDb(): Promise<ProductRow[]> {

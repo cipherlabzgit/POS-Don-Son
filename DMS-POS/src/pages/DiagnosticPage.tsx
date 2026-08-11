@@ -105,8 +105,9 @@ export function DiagnosticPage({ onClose }: { onClose: () => void }) {
                   {cacheUpdatedAt ? new Date(cacheUpdatedAt).toLocaleString() : 'never'}
                 </p>
                 <p className="mt-2 text-xs text-amber-800">
-                  POS shows products from this PC&apos;s local cache. All tills must use the same Server URL
-                  (http://123.231.10.22:5126) and re-sync after server updates.
+                  POS downloads products from the live server API into this PC&apos;s local cache.
+                  All tills must use the same Server URL ({apiBaseUrl || 'not set'}) and
+                  Clear and Re-sync after server product updates.
                 </p>
               </div>
 

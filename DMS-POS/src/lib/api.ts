@@ -107,7 +107,8 @@ export async function fetchProductsPage(page: number, pageSize: number) {
     const d = r.displayInPOS ?? r.DisplayInPOS
     return d === undefined || d === null || Boolean(d)
   })
-  return { products, totalCount }
+  // rawCount = unfiltered page size from API (for pagination; do not use filtered length)
+  return { products, totalCount, rawCount: items.length }
 }
 
 export async function fetchCategoriesPage(page: number, pageSize: number) {
@@ -123,7 +124,7 @@ export async function fetchCategoriesPage(page: number, pageSize: number) {
     const d = r.displayInPOS ?? r.DisplayInPOS
     return d === undefined || d === null || Boolean(d)
   })
-  return { categories, totalCount }
+  return { categories, totalCount, rawCount: items.length }
 }
 
 export async function fetchOutletsPage(page: number, pageSize: number) {

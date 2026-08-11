@@ -128,11 +128,14 @@ export async function fetchCategoriesPage(page: number, pageSize: number) {
 }
 
 export async function fetchOutletsPage(page: number, pageSize: number) {
-  const { data } = await api.get<ApiEnvelope<{ outlets: unknown[]; totalCount: number }>>(
-    '/api/outlets',
-    { params: { page, pageSize, activeOnly: true } },
-  )
-  return unwrap(data)
+  const { data } = await api.get('/api/outlets', {
+    params: { page, pageSize, activeOnly: true },
+  })
+  const { items, totalCount } = readPagedPayload(data, ['outlets', 'Outlets'], [
+    'totalCount',
+    'TotalCount',
+  ])
+  return { outlets: items, totalCount }
 }
 
 export async function fetchDeliveryTurnsPage(page: number, pageSize: number) {

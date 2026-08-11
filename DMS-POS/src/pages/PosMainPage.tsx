@@ -166,14 +166,20 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
       try {
         const data = await fetchOutletsPage(1, 100)
         const rows = (data.outlets as Record<string, unknown>[]).map((o) => ({
-          id: String(o.id), 
-          code: String(o.code ?? ''), 
-          name: String(o.name ?? ''),
-          address: String(o.address ?? ''),
-          phone: String(o.phone ?? ''),
-        }))
+          id: String(o.id ?? o.Id ?? ''),
+          code: String(o.code ?? o.Code ?? ''),
+          name: String(o.name ?? o.Name ?? ''),
+          address: String(o.address ?? o.Address ?? ''),
+          phone: String(o.phone ?? o.Phone ?? ''),
+        })).filter((o) => o.id)
         setOutlets(rows)
         if (!outletId && rows.length === 1) setOutlet(rows[0].id, rows[0].name || rows[0].code)
+        if (!outletId && rows.length > 1) {
+          // Prefer City Outlet / first showroom so payments are not blocked after login
+          const preferred =
+            rows.find((o) => /city/i.test(o.name) || /city/i.test(o.code)) ?? rows[0]
+          setOutlet(preferred.id, preferred.name || preferred.code)
+        }
       } catch { /* offline */ }
     })()
   }, [accessToken, outletId, setOutlet])

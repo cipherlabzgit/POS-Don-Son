@@ -71,6 +71,11 @@ Write-Step "3/5 Rebuild Docker (backend, DMS web, browser POS)"
 & "$Root\scripts\deploy-client-local-pg.ps1"
 if ($LASTEXITCODE -ne 0) { throw "deploy-client-local-pg.ps1 failed." }
 
+# Force browser POS image without cache so catalog-sync fixes are not skipped by Docker layer cache
+Write-Step "3b/5 Force-rebuild browser POS image (no cache)"
+& "$Root\scripts\rebuild-browser-pos.ps1"
+if ($LASTEXITCODE -ne 0) { throw "rebuild-browser-pos.ps1 failed." }
+
 if (-not $SkipCatalogFix) {
     Write-Step "4/5 Fix POS catalog (DisplayInPOS + API test)"
     & "$Root\scripts\fix-pos-catalog.ps1"

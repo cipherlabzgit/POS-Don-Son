@@ -42,9 +42,48 @@ $ErrorActionPreference = "Continue"
 & docker compose -f docker-compose.yml -f docker-compose.local-pg.yml up -d --build backend 2>&1 | ForEach-Object { Write-Host $_ }
 $ErrorActionPreference = $prev
 
+Start-Sleep -Seconds 8
+
+$apiUrl = Get-EnvValue "VITE_API_URL" ""
+if (-not $apiUrl) { $apiUrl = Get-EnvValue "NEXT_PUBLIC_API_URL" "http://127.0.0.1:5126" }
+$apiUrl = $apiUrl.TrimEnd('/')
+$adminEmail = Get-EnvValue "SUPERADMIN_EMAIL" "admin@donandson.com"
+$adminPass = Get-EnvValue "SUPERADMIN_PASSWORD" "SuperAdmin@2026!Dev"
+
+Write-Host ""
+Write-Host "Testing POS products API at $apiUrl ..." -ForegroundColor Cyan
+try {
+    $loginBody = @{ email = $adminEmail; password = $adminPass } | ConvertTo-Json
+    $login = Invoke-RestMethod -Uri "$apiUrl/api/auth/login" -Method POST -Body $loginBody -ContentType "application/json" -TimeoutSec 30
+    $token = $login.accessToken
+    if (-not $token) { throw "Login succeeded but no accessToken returned." }
+
+    $headers = @{ Authorization = "Bearer $token"; Accept = "application/json" }
+    $productsUrl = "$apiUrl/api/products?page=1&pageSize=5&activeOnly=true&displayInPosOnly=true"
+    $resp = Invoke-RestMethod -Uri $productsUrl -Method GET -Headers $headers -TimeoutSec 30
+
+    $total = $resp.data.totalCount
+    if ($null -eq $total) { $total = $resp.data.TotalCount }
+    $count = 0
+    if ($resp.data.products) { $count = @($resp.data.products).Count }
+    elseif ($resp.data.Products) { $count = @($resp.data.Products).Count }
+
+    Write-Host "  API totalCount (displayInPosOnly): $total" -ForegroundColor $(if ($total -gt 0) { "Green" } else { "Red" })
+    if ($total -gt 0 -and $count -gt 0) {
+        $sample = $resp.data.products[0]
+        if (-not $sample) { $sample = $resp.data.Products[0] }
+        Write-Host "  Sample: $($sample.code) - $($sample.name)" -ForegroundColor Green
+    }
+    if ($total -eq 0) {
+        Write-Host "  WARNING: API returned 0 products. Check DB seed data and DisplayInPOS." -ForegroundColor Red
+    }
+} catch {
+    Write-Host "  API test failed: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "  Ensure backend is healthy: docker compose -f docker-compose.yml -f docker-compose.local-pg.yml ps" -ForegroundColor Yellow
+}
+
 Write-Host ""
 Write-Host "Done." -ForegroundColor Green
-Write-Host "1. Open POS -> user menu -> Refresh cache" -ForegroundColor Yellow
-Write-Host "2. Or close and reopen POS" -ForegroundColor Yellow
-Write-Host "3. Login as admin@donandson.com or operator@donandson.com" -ForegroundColor Yellow
-Write-Host "4. If still empty, rebuild POS installer: .\scripts\build-pos-installer.ps1 -NoPrompt" -ForegroundColor Yellow
+Write-Host "1. In POS: log OUT then log IN again (fresh token with POS permissions)" -ForegroundColor Yellow
+Write-Host "2. Open POS Diagnostic -> Clear & Re-sync" -ForegroundColor Yellow
+Write-Host "3. If still empty, rebuild POS: .\scripts\build-pos-installer.ps1 -NoPrompt" -ForegroundColor Yellow

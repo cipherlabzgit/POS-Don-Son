@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
+import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { registerSqliteIpc, closeSqliteDb } from './sqlite-ipc.mjs'
@@ -8,6 +9,31 @@ const isDev = Boolean(process.env.VITE_DEV_SERVER_URL)
 
 /** @type {BrowserWindow | null} */
 let mainWin = null
+
+/** @type {{ apiBaseUrl?: string; configPath?: string } | null} */
+let posConfig = null
+
+function readPosConfig() {
+  const candidates = []
+  if (app.isPackaged) {
+    candidates.push(path.join(path.dirname(process.execPath), 'pos-config.json'))
+  }
+  candidates.push(path.join(app.getPath('userData'), 'pos-config.json'))
+
+  for (const configPath of candidates) {
+    try {
+      if (!fs.existsSync(configPath)) continue
+      const raw = fs.readFileSync(configPath, 'utf8')
+      const json = JSON.parse(raw)
+      if (json && typeof json === 'object') {
+        return { ...json, configPath }
+      }
+    } catch (err) {
+      console.error('[pos-config] Failed to read', configPath, err)
+    }
+  }
+  return null
+}
 
 function createMainWindow() {
   mainWin = new BrowserWindow({
@@ -82,6 +108,8 @@ function createMainWindow() {
 // ─── IPC: app-level actions exposed to renderer via preload ───────────────────
 
 ipcMain.handle('app:version', () => app.getVersion())
+
+ipcMain.handle('app:get-config', () => posConfig)
 
 ipcMain.handle('app:shutdown', async () => {
   if (!mainWin || mainWin.isDestroyed()) {
@@ -227,6 +255,10 @@ ipcMain.handle('app:print-silent', async (event, html) => {
 // ─── App lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
+  posConfig = readPosConfig()
+  if (posConfig?.configPath) {
+    console.log('[pos-config] Loaded from', posConfig.configPath)
+  }
   registerSqliteIpc()
   createMainWindow()
 

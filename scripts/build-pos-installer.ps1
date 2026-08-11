@@ -109,6 +109,16 @@ if ($installerPath) {
     Write-Host "Installer:" -ForegroundColor Cyan
     Write-Host "  $($installerPath.FullName)" -ForegroundColor White
     Write-Host "  Size: $([math]::Round($installerPath.Length / 1MB, 2)) MB" -ForegroundColor Cyan
+
+    $configDest = Join-Path $installerPath.DirectoryName "pos-config.json"
+    if (-not (Test-Path $configDest)) {
+        @{ apiBaseUrl = $apiUrl } | ConvertTo-Json | Set-Content -Path $configDest -Encoding ASCII
+        Write-Host ""
+        Write-Host "Created pos-config.json next to installer:" -ForegroundColor Cyan
+        Write-Host "  $configDest" -ForegroundColor White
+        Write-Host "Copy pos-config.json with the installer to each POS PC (same folder as Setup.exe)." -ForegroundColor Yellow
+    }
+
     Write-Host ""
     Write-Host "Copy this .exe to cashier PCs and run to install." -ForegroundColor Yellow
     Write-Host "Backend must be reachable at: $apiUrl" -ForegroundColor Yellow

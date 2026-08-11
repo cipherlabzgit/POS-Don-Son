@@ -1,17 +1,28 @@
 import { fetchCategoriesPage, fetchProductsPage } from './api'
+import { formatSubmitError } from './api-errors'
 import { offlineDb, replaceOfflineCatalog } from './offline-db'
 import { useSettingsStore } from './settings-store'
 import type { CategoryRow, ProductRow } from './types'
 
+function readList<T>(payload: Record<string, unknown>, camel: string, pascal: string): T[] {
+  const value = payload[camel] ?? payload[pascal]
+  return Array.isArray(value) ? (value as T[]) : []
+}
+
+function readCount(payload: Record<string, unknown>, camel: string, pascal: string): number {
+  const value = payload[camel] ?? payload[pascal]
+  return typeof value === 'number' ? value : Number(value ?? 0)
+}
+
 function mapProduct(p: Record<string, unknown>): ProductRow {
   const ros = p.requireOpenStock ?? p.RequireOpenStock
   return {
-    id: String(p.id),
-    code: String(p.code ?? ''),
-    name: String(p.name ?? ''),
-    unitPrice: Number(p.unitPrice ?? 0),
-    categoryId: String(p.categoryId ?? ''),
-    categoryName: String(p.categoryName ?? ''),
+    id: String(p.id ?? p.Id ?? ''),
+    code: String(p.code ?? p.Code ?? ''),
+    name: String(p.name ?? p.Name ?? ''),
+    unitPrice: Number(p.unitPrice ?? p.UnitPrice ?? 0),
+    categoryId: String(p.categoryId ?? p.CategoryId ?? ''),
+    categoryName: String(p.categoryName ?? p.CategoryName ?? ''),
     sortOrder: Number(p.sortOrder ?? p.SortOrder ?? 0),
     requireOpenStock: ros === undefined || ros === null ? true : Boolean(ros),
   }
@@ -19,10 +30,10 @@ function mapProduct(p: Record<string, unknown>): ProductRow {
 
 function mapCategory(c: Record<string, unknown>): CategoryRow {
   return {
-    id: String(c.id),
-    name: String(c.name ?? ''),
-    code: c.code != null ? String(c.code) : undefined,
-    sortOrder: Number(c.sortOrder ?? 0),
+    id: String(c.id ?? c.Id ?? ''),
+    name: String(c.name ?? c.Name ?? ''),
+    code: c.code != null ? String(c.code) : c.Code != null ? String(c.Code) : undefined,
+    sortOrder: Number(c.sortOrder ?? c.SortOrder ?? 0),
   }
 }
 
@@ -32,27 +43,41 @@ export async function syncCatalogFromServer(): Promise<void> {
   let page = 1
   let totalCount = 0
   const prods: ProductRow[] = []
-  do {
-    const res = await fetchProductsPage(page, pageSize)
-    totalCount = res.totalCount
-    prods.push(...(res.products as Record<string, unknown>[]).map(mapProduct))
-    page += 1
-  } while (prods.length < totalCount)
-
-  if (prods.length === 0) {
-    console.warn('[catalog-sync] Server returned 0 products; keeping existing local cache.')
-    return
+  try {
+    do {
+      const res = await fetchProductsPage(page, pageSize) as Record<string, unknown>
+      totalCount = readCount(res, 'totalCount', 'TotalCount')
+      prods.push(...readList<Record<string, unknown>>(res, 'products', 'Products').map(mapProduct))
+      page += 1
+    } while (prods.length < totalCount)
+  } catch (err) {
+    throw new Error(formatSubmitError(err))
   }
 
   page = 1
   totalCount = 0
   const cats: CategoryRow[] = []
-  do {
-    const res = await fetchCategoriesPage(page, pageSize)
-    totalCount = res.totalCount
-    cats.push(...(res.categories as Record<string, unknown>[]).map(mapCategory))
-    page += 1
-  } while (cats.length < totalCount)
+  try {
+    do {
+      const res = await fetchCategoriesPage(page, pageSize) as Record<string, unknown>
+      totalCount = readCount(res, 'totalCount', 'TotalCount')
+      cats.push(...readList<Record<string, unknown>>(res, 'categories', 'Categories').map(mapCategory))
+      page += 1
+    } while (cats.length < totalCount)
+  } catch (err) {
+    throw new Error(formatSubmitError(err))
+  }
+
+  if (prods.length === 0) {
+    const existing = await offlineDb.products.count()
+    if (existing > 0) {
+      console.warn('[catalog-sync] Server returned 0 products; keeping existing local cache.')
+      return
+    }
+    throw new Error(
+      'Server returned 0 products. On the server run: .\\scripts\\fix-pos-catalog.ps1 then log out and log in again.',
+    )
+  }
 
   await replaceOfflineCatalog(prods, cats)
 

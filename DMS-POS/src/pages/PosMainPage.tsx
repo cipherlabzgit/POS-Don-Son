@@ -127,13 +127,27 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   const loadData = useCallback(async () => {
     setLoadErr('')
     try {
-      if (online) await syncCatalogFromServer()
+      if (online) {
+        await syncCatalogFromServer()
+      } else if (accessToken) {
+        // Health ping may lag after login — try sync once; login flow also syncs.
+        try {
+          await syncCatalogFromServer()
+        } catch {
+          /* offline or transient; fall back to local cache */
+        }
+      }
       const p = await offlineDb.products.toArray()
       const c = await offlineDb.categories.toArray()
       setProducts(p)
       setCategories(c)
-      if (p.length === 0)
-        setLoadErr('No products in cache. Connect online to download the catalogue.')
+      if (p.length === 0) {
+        setLoadErr(
+          online
+            ? 'No products in cache. Open POS Diagnostic → Re-sync from Server.'
+            : 'No products in cache. Connect online to download the catalogue.',
+        )
+      }
     } catch (e) {
       setLoadErr((e as Error).message)
       const p = await offlineDb.products.toArray()
@@ -141,7 +155,7 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
       setProducts(p)
       setCategories(c)
     }
-  }, [online])
+  }, [online, accessToken])
 
   useEffect(() => { void loadData() }, [loadData])
 

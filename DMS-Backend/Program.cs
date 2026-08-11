@@ -302,6 +302,9 @@ using (var scope = app.Services.CreateScope())
         // Seed auto-approval configurations
         await autoApprovalConfigSeeder.SeedAsync();
 
+        // Always ensure POS catalog visibility and role permissions (DisplayInPOS, products:view, etc.)
+        await devDataSeeder.EnsurePosCatalogReadyAsync();
+
         // Seed dev data if enabled
         if (devSeedOptions?.Enabled == true)
         {

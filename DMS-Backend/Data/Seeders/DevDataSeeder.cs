@@ -303,7 +303,11 @@ public sealed class DevDataSeeder
         "pos:sale:create",
     ];
 
-    private async Task EnsurePosCatalogReadyAsync()
+    /// <summary>
+    /// Ensures products/categories are visible in POS and POS roles have catalog permissions.
+    /// Runs on every backend startup (not only when dev seed is enabled).
+    /// </summary>
+    public async Task EnsurePosCatalogReadyAsync()
     {
         var hiddenProducts = await _context.Products
             .Where(p => !p.DisplayInPOS)

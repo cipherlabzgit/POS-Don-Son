@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { loginRequest } from '../lib/api'
 import { useAuthStore } from '../lib/auth-store'
+import { syncCatalogFromServer } from '../lib/catalog-sync'
 import { useSettingsStore } from '../lib/settings-store'
+import { normalizeApiBaseUrl } from '../lib/api-url'
 
 export function LoginPage() {
   const login = useAuthStore((s) => s.login)
   const apiBaseUrl = useSettingsStore((s) => s.apiBaseUrl)
+  const setApiBaseUrl = useSettingsStore((s) => s.setApiBaseUrl)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,6 +33,12 @@ export function LoginPage() {
         permissions: res.user.permissions ?? [],
         roles: res.user.roles ?? [],
       })
+      // Login succeeded — server is reachable; download catalogue before opening the till.
+      try {
+        await syncCatalogFromServer()
+      } catch (syncErr) {
+        console.warn('[login] Catalog sync failed; POS will retry when online:', syncErr)
+      }
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'message' in err
@@ -110,6 +119,23 @@ export function LoginPage() {
                   {showPw ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+            </div>
+
+            {/* Server URL */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+                Server URL
+              </label>
+              <input
+                type="url"
+                value={apiBaseUrl}
+                onChange={(e) => setApiBaseUrl(normalizeApiBaseUrl(e.target.value))}
+                placeholder="http://123.231.10.22:5126"
+                className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 font-mono text-sm text-[var(--foreground)] placeholder:text-[var(--neutral-400)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
+              />
+              <p className="text-[11px] text-[var(--muted-foreground)]">
+                Central server address (not localhost on remote POS terminals).
+              </p>
             </div>
 
             {/* Error */}

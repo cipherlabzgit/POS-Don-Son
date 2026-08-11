@@ -74,6 +74,12 @@ services:
       # localhost and 127.0.0.1 are different browser origins
       Cors__AllowedOrigins__4: http://localhost:${FRONTEND_PORT:-3000}
       Cors__AllowedOrigins__5: http://localhost:${POS_PORT:-5174}
+      # Electron desktop POS (Vite dev port 5173; main.mjs injects this Origin header)
+      Cors__AllowedOrigins__6: http://127.0.0.1:5173
+      Cors__AllowedOrigins__7: http://localhost:5173
+      # Optional LAN URLs when cashiers use office IP instead of public IP
+      Cors__AllowedOrigins__8: ${LAN_FRONTEND_URL:-http://127.0.0.1:3000}
+      Cors__AllowedOrigins__9: ${LAN_POS_URL:-http://127.0.0.1:5174}
       TZ: UTC
     ports:
       - "${BACKEND_PORT:-5126}:8080"

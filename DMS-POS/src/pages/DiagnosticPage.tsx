@@ -10,6 +10,7 @@ export function DiagnosticPage({ onClose }: { onClose: () => void }) {
   const [categories, setCategories] = useState<CategoryRow[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const [syncError, setSyncError] = useState<string | null>(null)
 
   async function loadData() {
     try {
@@ -33,6 +34,7 @@ export function DiagnosticPage({ onClose }: { onClose: () => void }) {
   async function handleClearAndSync() {
     if (!confirm('Clear all cached products and re-sync from server?')) return
     setSyncing(true)
+    setSyncError(null)
     try {
       await offlineDb.products.clear()
       await offlineDb.categories.clear()
@@ -41,7 +43,9 @@ export function DiagnosticPage({ onClose }: { onClose: () => void }) {
       toast('Catalog synced successfully!', 'success')
       await loadData()
     } catch (e) {
-      toast((e as Error).message, 'error')
+      const msg = (e as Error).message
+      setSyncError(msg)
+      toast(msg, 'error')
     } finally {
       setSyncing(false)
     }
@@ -49,12 +53,15 @@ export function DiagnosticPage({ onClose }: { onClose: () => void }) {
 
   async function handleResync() {
     setSyncing(true)
+    setSyncError(null)
     try {
       await syncCatalogFromServer()
       toast('Catalog synced successfully!', 'success')
       await loadData()
     } catch (e) {
-      toast((e as Error).message, 'error')
+      const msg = (e as Error).message
+      setSyncError(msg)
+      toast(msg, 'error')
     } finally {
       setSyncing(false)
     }
@@ -120,6 +127,13 @@ export function DiagnosticPage({ onClose }: { onClose: () => void }) {
                   Clear & Re-sync
                 </button>
               </div>
+
+              {syncError ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+                  <p className="font-semibold">Sync failed</p>
+                  <p className="mt-1">{syncError}</p>
+                </div>
+              ) : null}
 
               {/* Sample Products */}
               {products.length > 0 ? (

@@ -42,10 +42,24 @@ $ErrorActionPreference = "Continue"
 & docker compose -f docker-compose.yml -f docker-compose.local-pg.yml up -d --build backend 2>&1 | ForEach-Object { Write-Host $_ }
 $ErrorActionPreference = $prev
 
-Start-Sleep -Seconds 8
+$backendPort = [int](Get-EnvValue "BACKEND_PORT" "5126")
+$localApi = "http://127.0.0.1:$backendPort"
+Write-Host "Waiting for backend health ($localApi/health) ..." -ForegroundColor Cyan
+$healthy = $false
+for ($i = 1; $i -le 30; $i++) {
+    try {
+        $r = Invoke-WebRequest -Uri "$localApi/health" -UseBasicParsing -TimeoutSec 5
+        if ($r.StatusCode -eq 200) { $healthy = $true; break }
+    } catch { Start-Sleep -Seconds 2 }
+}
+if ($healthy) {
+    Write-Host "Backend is healthy." -ForegroundColor Green
+} else {
+    Write-Host "Backend not healthy yet. API test may fail — check: docker compose -f docker-compose.yml -f docker-compose.local-pg.yml logs backend" -ForegroundColor Yellow
+}
 
 $apiUrl = Get-EnvValue "VITE_API_URL" ""
-if (-not $apiUrl) { $apiUrl = Get-EnvValue "NEXT_PUBLIC_API_URL" "http://127.0.0.1:5126" }
+if (-not $apiUrl) { $apiUrl = Get-EnvValue "NEXT_PUBLIC_API_URL" $localApi }
 $apiUrl = $apiUrl.TrimEnd('/')
 $adminEmail = Get-EnvValue "SUPERADMIN_EMAIL" "admin@donandson.com"
 $adminPass = Get-EnvValue "SUPERADMIN_PASSWORD" "SuperAdmin@2026!Dev"

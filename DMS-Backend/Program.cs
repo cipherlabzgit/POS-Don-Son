@@ -336,6 +336,50 @@ app.UseMiddleware<ApiRequestLoggingMiddleware>();
 // Liveness — no auth; keep before OpenAPI for predictable probe behaviour
 app.MapHealthChecks("/health");
 
+// Friendly landing page at / so opening http://SERVER:5126 in a browser is not a blank 404.
+// Port 5126 is the API (not DMS Web :3000 or browser POS :5174).
+app.MapGet("/", (HttpRequest req) =>
+{
+    var host = req.Host.Host;
+    var web = $"http://{host}:3000";
+    var pos = $"http://{host}:5174";
+    var api = $"{req.Scheme}://{req.Host}";
+    var html = $"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Don &amp; Sons DMS API</title>
+          <style>
+            body {{ font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; color: #1a1a1a; }}
+            h1 {{ color: #b91c1c; font-size: 1.5rem; }}
+            code {{ background: #f3f4f6; padding: 0.1rem 0.35rem; border-radius: 4px; }}
+            a {{ color: #b91c1c; }}
+            .box {{ border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; background: #fafafa; }}
+            ul {{ line-height: 1.7; }}
+          </style>
+        </head>
+        <body>
+          <h1>Don &amp; Sons — DMS API</h1>
+          <p>This port (<code>5126</code>) is the <strong>backend API</strong>, not a website UI.</p>
+          <div class="box">
+            <p><strong>Open these instead:</strong></p>
+            <ul>
+              <li>DMS Web: <a href="{web}">{web}</a></li>
+              <li>Browser POS: <a href="{pos}">{pos}</a></li>
+              <li>API health: <a href="/health">/health</a></li>
+              <li>API docs: <a href="/scalar/v1">/scalar/v1</a></li>
+            </ul>
+          </div>
+          <p>Desktop POS apps must use this address as <strong>Server URL</strong>:
+            <code>{api}</code></p>
+        </body>
+        </html>
+        """;
+    return Results.Content(html, "text/html; charset=utf-8");
+}).AllowAnonymous();
+
 // Map OpenAPI endpoint and enable Scalar UI
 app.MapOpenApi();
 app.MapScalarApiReference(options =>

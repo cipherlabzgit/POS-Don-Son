@@ -107,7 +107,7 @@ try {
         "Accept" = "application/json"
     }
     
-    $apiUrl = "$BackendUrl/api/products?page=1&pageSize=5&activeOnly=true&displayInPosOnly=true"
+    $apiUrl = '{0}/api/products?page=1&pageSize=5&activeOnly=true&displayInPosOnly=true' -f $BackendUrl
     $response = Invoke-RestMethod -Uri $apiUrl -Method Get -Headers $headers -TimeoutSec 10 -ErrorAction Stop
     
     if ($response.success -and $response.data.products) {

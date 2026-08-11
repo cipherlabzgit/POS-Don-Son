@@ -71,7 +71,7 @@ try {
         "Content-Type" = "application/json"
     }
 
-    $outletsResponse = Invoke-RestMethod -Uri "$ApiUrl/api/outlets/paginated?page=1&pageSize=100" `
+    $outletsResponse = Invoke-RestMethod -Uri ('{0}/api/outlets/paginated?page=1&pageSize=100' -f $ApiUrl) `
         -Method Get `
         -Headers $headers `
         -TimeoutSec 10

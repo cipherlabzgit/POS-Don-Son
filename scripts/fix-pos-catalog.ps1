@@ -73,7 +73,7 @@ try {
     if (-not $token) { throw "Login succeeded but no accessToken returned." }
 
     $headers = @{ Authorization = "Bearer $token"; Accept = "application/json" }
-    $productsUrl = "$apiUrl/api/products?page=1&pageSize=5&activeOnly=true&displayInPosOnly=true"
+    $productsUrl = '{0}/api/products?page=1&pageSize=5&activeOnly=true&displayInPosOnly=true' -f $apiUrl
     $resp = Invoke-RestMethod -Uri $productsUrl -Method GET -Headers $headers -TimeoutSec 30
 
     $total = $resp.data.totalCount
@@ -99,5 +99,5 @@ try {
 Write-Host ""
 Write-Host "Done." -ForegroundColor Green
 Write-Host "1. In POS: log OUT then log IN again (fresh token with POS permissions)" -ForegroundColor Yellow
-Write-Host "2. Open POS Diagnostic -> Clear & Re-sync" -ForegroundColor Yellow
+Write-Host '2. Open POS Diagnostic -> Clear and Re-sync' -ForegroundColor Yellow
 Write-Host "3. If still empty, rebuild POS: .\scripts\build-pos-installer.ps1 -NoPrompt" -ForegroundColor Yellow

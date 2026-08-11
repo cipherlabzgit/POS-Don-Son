@@ -39,6 +39,7 @@ function mapCategory(c: Record<string, unknown>): CategoryRow {
 
 export async function syncCatalogFromServer(): Promise<void> {
   const pageSize = 200
+  const maxPages = 50
 
   let page = 1
   let totalCount = 0
@@ -47,9 +48,20 @@ export async function syncCatalogFromServer(): Promise<void> {
     do {
       const res = await fetchProductsPage(page, pageSize) as Record<string, unknown>
       totalCount = readCount(res, 'totalCount', 'TotalCount')
-      prods.push(...readList<Record<string, unknown>>(res, 'products', 'Products').map(mapProduct))
+      const batch = readList<Record<string, unknown>>(res, 'products', 'Products').map(mapProduct)
+      if (totalCount > 0 && batch.length === 0) {
+        throw new Error(
+          'Server reported products but returned an empty page. Log out, check Server URL, and try again.',
+        )
+      }
+      prods.push(...batch)
       page += 1
-    } while (prods.length < totalCount)
+    } while (prods.length < totalCount && page <= maxPages)
+    if (prods.length < totalCount) {
+      throw new Error(
+        `Catalogue download incomplete (${prods.length} of ${totalCount}). Check network and re-sync.`,
+      )
+    }
   } catch (err) {
     throw new Error(formatSubmitError(err))
   }
@@ -61,9 +73,20 @@ export async function syncCatalogFromServer(): Promise<void> {
     do {
       const res = await fetchCategoriesPage(page, pageSize) as Record<string, unknown>
       totalCount = readCount(res, 'totalCount', 'TotalCount')
-      cats.push(...readList<Record<string, unknown>>(res, 'categories', 'Categories').map(mapCategory))
+      const batch = readList<Record<string, unknown>>(res, 'categories', 'Categories').map(mapCategory)
+      if (totalCount > 0 && batch.length === 0) {
+        throw new Error(
+          'Server reported categories but returned an empty page. Log out, check Server URL, and try again.',
+        )
+      }
+      cats.push(...batch)
       page += 1
-    } while (cats.length < totalCount)
+    } while (cats.length < totalCount && page <= maxPages)
+    if (cats.length < totalCount) {
+      throw new Error(
+        `Category download incomplete (${cats.length} of ${totalCount}). Check network and re-sync.`,
+      )
+    }
   } catch (err) {
     throw new Error(formatSubmitError(err))
   }

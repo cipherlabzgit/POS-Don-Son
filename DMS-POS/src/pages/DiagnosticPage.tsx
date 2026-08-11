@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { X, RefreshCw, Trash2 } from 'lucide-react'
 import { offlineDb } from '../lib/offline-db'
 import { syncCatalogFromServer } from '../lib/catalog-sync'
+import { useSettingsStore } from '../lib/settings-store'
 import { toast } from '../lib/toast-store'
 import type { ProductRow, CategoryRow } from '../lib/types'
 
 export function DiagnosticPage({ onClose }: { onClose: () => void }) {
+  const apiBaseUrl = useSettingsStore((s) => s.apiBaseUrl)
+  const cacheUpdatedAt = useSettingsStore((s) => s.cacheUpdatedAt)
   const [products, setProducts] = useState<ProductRow[]>([])
   const [categories, setCategories] = useState<CategoryRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -94,6 +97,19 @@ export function DiagnosticPage({ onClose }: { onClose: () => void }) {
             </div>
           ) : (
             <>
+              <div className="rounded-lg border border-[var(--border)] bg-white p-4 text-sm">
+                <p className="font-semibold text-[var(--foreground)]">Server connection</p>
+                <p className="mt-1 font-mono text-xs text-[var(--muted-foreground)]">{apiBaseUrl}</p>
+                <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+                  Last catalogue sync:{' '}
+                  {cacheUpdatedAt ? new Date(cacheUpdatedAt).toLocaleString() : 'never'}
+                </p>
+                <p className="mt-2 text-xs text-amber-800">
+                  POS shows products from this PC&apos;s local cache. All tills must use the same Server URL
+                  (http://123.231.10.22:5126) and re-sync after server updates.
+                </p>
+              </div>
+
               {/* Summary */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] p-4">

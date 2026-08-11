@@ -40,7 +40,14 @@ export default function App() {
     }
   }, [token, online])
 
-  if (!token) return <LoginPage />
+  if (!token) {
+    return (
+      <>
+        <ToastHost />
+        <LoginPage />
+      </>
+    )
+  }
 
   return (
     <>

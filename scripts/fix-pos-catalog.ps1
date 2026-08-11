@@ -55,7 +55,7 @@ for ($i = 1; $i -le 30; $i++) {
 if ($healthy) {
     Write-Host "Backend is healthy." -ForegroundColor Green
 } else {
-    Write-Host "Backend not healthy yet. API test may fail — check: docker compose -f docker-compose.yml -f docker-compose.local-pg.yml logs backend" -ForegroundColor Yellow
+    Write-Host 'Backend not healthy yet. API test may fail - check docker compose logs backend' -ForegroundColor Yellow
 }
 
 $apiUrl = Get-EnvValue "VITE_API_URL" ""
@@ -93,11 +93,11 @@ try {
     }
 } catch {
     Write-Host "  API test failed: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "  Ensure backend is healthy: docker compose -f docker-compose.yml -f docker-compose.local-pg.yml ps" -ForegroundColor Yellow
+    Write-Host '  Ensure backend is healthy: docker compose ps' -ForegroundColor Yellow
 }
 
 Write-Host ""
 Write-Host "Done." -ForegroundColor Green
-Write-Host "1. In POS: log OUT then log IN again (fresh token with POS permissions)" -ForegroundColor Yellow
+Write-Host '1. In POS: log OUT then log IN again (fresh token with POS permissions)' -ForegroundColor Yellow
 Write-Host '2. Open POS Diagnostic -> Clear and Re-sync' -ForegroundColor Yellow
-Write-Host "3. If still empty, rebuild POS: .\scripts\build-pos-installer.ps1 -NoPrompt" -ForegroundColor Yellow
+Write-Host '3. If still empty, rebuild POS: scripts\build-pos-installer.ps1 -NoPrompt' -ForegroundColor Yellow

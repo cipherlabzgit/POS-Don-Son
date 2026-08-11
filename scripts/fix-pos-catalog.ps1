@@ -72,22 +72,25 @@ try {
     $loginBody = @{ email = $adminEmail; password = $adminPass } | ConvertTo-Json
     $login = Invoke-RestMethod -Uri "$testApiUrl/api/auth/login" -Method POST -Body $loginBody -ContentType "application/json" -TimeoutSec 30
     $token = $login.accessToken
+    if (-not $token) { $token = $login.data.accessToken }
     if (-not $token) { throw "Login succeeded but no accessToken returned." }
 
     $headers = @{ Authorization = "Bearer $token"; Accept = "application/json" }
-    $productsUrl = '{0}/api/products?page=1&pageSize=5&activeOnly=true&displayInPosOnly=true' -f $testApiUrl
+    $productsUrl = '{0}/api/products?page=1&pageSize=5&activeOnly=true' -f $testApiUrl
     $resp = Invoke-RestMethod -Uri $productsUrl -Method GET -Headers $headers -TimeoutSec 30
 
-    $total = $resp.data.totalCount
-    if ($null -eq $total) { $total = $resp.data.TotalCount }
+    $payload = $resp.data
+    if (-not $payload) { $payload = $resp }
+    $total = $payload.totalCount
+    if ($null -eq $total) { $total = $payload.TotalCount }
     $count = 0
-    if ($resp.data.products) { $count = @($resp.data.products).Count }
-    elseif ($resp.data.Products) { $count = @($resp.data.Products).Count }
+    if ($payload.products) { $count = @($payload.products).Count }
+    elseif ($payload.Products) { $count = @($payload.Products).Count }
 
     Write-Host "  API totalCount (displayInPosOnly): $total" -ForegroundColor $(if ($total -gt 0) { "Green" } else { "Red" })
     if ($total -gt 0 -and $count -gt 0) {
-        $sample = $resp.data.products[0]
-        if (-not $sample) { $sample = $resp.data.Products[0] }
+        $sample = $payload.products[0]
+        if (-not $sample) { $sample = $payload.Products[0] }
         Write-Host "  Sample: $($sample.code) - $($sample.name)" -ForegroundColor Green
     }
     if ($total -eq 0) {

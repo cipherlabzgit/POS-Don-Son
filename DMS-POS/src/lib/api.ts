@@ -46,15 +46,44 @@ api.interceptors.response.use(
   },
 )
 
-export function unwrap<T>(env: ApiEnvelope<T>): T {
-  if (!env?.success) {
+export function unwrap<T>(env: ApiEnvelope<T> | Record<string, unknown>): T {
+  const root = env as Record<string, unknown>
+  const success = root.success ?? root.Success
+  if (success === false) {
+    const err = root.error ?? root.Error
     const msg =
-      env?.error && typeof env.error === 'object' && 'message' in env.error
-        ? String((env.error as { message?: string }).message ?? '')
+      err && typeof err === 'object' && 'message' in (err as object)
+        ? String((err as { message?: string }).message ?? '')
         : ''
     throw new Error(msg || 'Request failed')
   }
-  return env.data
+  const data = root.data ?? root.Data
+  return data as T
+}
+
+/** Parse { success, data: { products/Products, totalCount/TotalCount } } like DMS Web does. */
+export function readPagedPayload(
+  body: unknown,
+  listKeys: [string, string],
+  countKeys: [string, string],
+): { items: unknown[]; totalCount: number } {
+  const root = (body ?? {}) as Record<string, unknown>
+  const success = root.success ?? root.Success
+  if (success === false) {
+    const err = root.error ?? root.Error
+    const msg =
+      err && typeof err === 'object' && 'message' in (err as object)
+        ? String((err as { message?: string }).message ?? '')
+        : ''
+    throw new Error(msg || 'Request failed')
+  }
+  const payload = (root.data ?? root.Data ?? root) as Record<string, unknown>
+  const rawList = payload[listKeys[0]] ?? payload[listKeys[1]]
+  const items = Array.isArray(rawList) ? rawList : []
+  const countRaw = payload[countKeys[0]] ?? payload[countKeys[1]]
+  const totalCount =
+    typeof countRaw === 'number' ? countRaw : Number(countRaw ?? items.length)
+  return { items, totalCount }
 }
 
 export async function loginRequest(email: string, password: string): Promise<LoginResponse> {
@@ -66,19 +95,35 @@ export async function loginRequest(email: string, password: string): Promise<Log
 }
 
 export async function fetchProductsPage(page: number, pageSize: number) {
-  const { data } = await api.get<ApiEnvelope<{ products: unknown[]; totalCount: number }>>(
-    '/api/products',
-    { params: { page, pageSize, activeOnly: true, displayInPosOnly: true } },
-  )
-  return unwrap(data)
+  const { data } = await api.get('/api/products', {
+    params: { page, pageSize, activeOnly: true },
+  })
+  const { items, totalCount } = readPagedPayload(data, ['products', 'Products'], [
+    'totalCount',
+    'TotalCount',
+  ])
+  const products = items.filter((p) => {
+    const r = p as Record<string, unknown>
+    const d = r.displayInPOS ?? r.DisplayInPOS
+    return d === undefined || d === null || Boolean(d)
+  })
+  return { products, totalCount }
 }
 
 export async function fetchCategoriesPage(page: number, pageSize: number) {
-  const { data } = await api.get<ApiEnvelope<{ categories: unknown[]; totalCount: number }>>(
-    '/api/categories',
-    { params: { page, pageSize, activeOnly: true, displayInPosOnly: true } },
-  )
-  return unwrap(data)
+  const { data } = await api.get('/api/categories', {
+    params: { page, pageSize, activeOnly: true },
+  })
+  const { items, totalCount } = readPagedPayload(data, ['categories', 'Categories'], [
+    'totalCount',
+    'TotalCount',
+  ])
+  const categories = items.filter((c) => {
+    const r = c as Record<string, unknown>
+    const d = r.displayInPOS ?? r.DisplayInPOS
+    return d === undefined || d === null || Boolean(d)
+  })
+  return { categories, totalCount }
 }
 
 export async function fetchOutletsPage(page: number, pageSize: number) {

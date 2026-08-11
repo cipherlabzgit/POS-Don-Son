@@ -9,11 +9,6 @@ function readList<T>(payload: Record<string, unknown>, camel: string, pascal: st
   return Array.isArray(value) ? (value as T[]) : []
 }
 
-function readCount(payload: Record<string, unknown>, camel: string, pascal: string): number {
-  const value = payload[camel] ?? payload[pascal]
-  return typeof value === 'number' ? value : Number(value ?? 0)
-}
-
 function mapProduct(p: Record<string, unknown>): ProductRow {
   const ros = p.requireOpenStock ?? p.RequireOpenStock
   return {
@@ -42,24 +37,23 @@ export async function syncCatalogFromServer(): Promise<void> {
   const maxPages = 50
 
   let page = 1
-  let totalCount = 0
   const prods: ProductRow[] = []
   try {
     do {
       const res = await fetchProductsPage(page, pageSize) as Record<string, unknown>
-      totalCount = readCount(res, 'totalCount', 'TotalCount')
       const batch = readList<Record<string, unknown>>(res, 'products', 'Products').map(mapProduct)
-      if (totalCount > 0 && batch.length === 0) {
+      if (page === 1 && batch.length === 0) {
         throw new Error(
-          'Server reported products but returned an empty page. Log out, check Server URL, and try again.',
+          'Server returned no products. Check login, Server URL, and run fix-pos-catalog.ps1 on the server.',
         )
       }
       prods.push(...batch)
+      if (batch.length < pageSize) break
       page += 1
-    } while (prods.length < totalCount && page <= maxPages)
-    if (prods.length < totalCount) {
+    } while (page <= maxPages)
+    if (prods.length === 0) {
       throw new Error(
-        `Catalogue download incomplete (${prods.length} of ${totalCount}). Check network and re-sync.`,
+        'No POS products downloaded. Run .\\scripts\\fix-pos-catalog.ps1 on the server then re-sync.',
       )
     }
   } catch (err) {
@@ -67,26 +61,15 @@ export async function syncCatalogFromServer(): Promise<void> {
   }
 
   page = 1
-  totalCount = 0
   const cats: CategoryRow[] = []
   try {
     do {
       const res = await fetchCategoriesPage(page, pageSize) as Record<string, unknown>
-      totalCount = readCount(res, 'totalCount', 'TotalCount')
       const batch = readList<Record<string, unknown>>(res, 'categories', 'Categories').map(mapCategory)
-      if (totalCount > 0 && batch.length === 0) {
-        throw new Error(
-          'Server reported categories but returned an empty page. Log out, check Server URL, and try again.',
-        )
-      }
       cats.push(...batch)
+      if (batch.length < pageSize) break
       page += 1
-    } while (cats.length < totalCount && page <= maxPages)
-    if (cats.length < totalCount) {
-      throw new Error(
-        `Category download incomplete (${cats.length} of ${totalCount}). Check network and re-sync.`,
-      )
-    }
+    } while (page <= maxPages)
   } catch (err) {
     throw new Error(formatSubmitError(err))
   }

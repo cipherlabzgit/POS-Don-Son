@@ -142,7 +142,7 @@ SELECT COUNT(*) AS remaining_products FROM products;
     Write-Host "Next on client server:" -ForegroundColor Yellow
     Write-Host "  .\scripts\deploy-client-local-pg.ps1"
     Write-Host "  .\scripts\fix-pos-catalog.ps1"
-    Write-Host "  On POS: log out, log in, Clear & Re-sync"
+    Write-Host "  On POS: log out, log in, Clear and Re-sync"
 }
 
 Write-Host ""

@@ -144,7 +144,7 @@ services:
         # MUST come from build-args, not runtime env.
         # In production set this to the public backend URL, e.g.:
         #   https://api.donandson.com
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:5126}
+        VITE_API_URL: ${VITE_API_URL:-http://123.231.10.22:5126}
     environment:
       TZ: UTC
     ports:

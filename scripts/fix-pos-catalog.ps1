@@ -61,19 +61,21 @@ if ($healthy) {
 $apiUrl = Get-EnvValue "VITE_API_URL" ""
 if (-not $apiUrl) { $apiUrl = Get-EnvValue "NEXT_PUBLIC_API_URL" $localApi }
 $apiUrl = $apiUrl.TrimEnd('/')
+# API test runs ON the server — use localhost (public IP often fails hairpin from same host).
+$testApiUrl = $localApi
 $adminEmail = Get-EnvValue "SUPERADMIN_EMAIL" "admin@donandson.com"
 $adminPass = Get-EnvValue "SUPERADMIN_PASSWORD" "SuperAdmin@2026!Dev"
 
 Write-Host ""
-Write-Host "Testing POS products API at $apiUrl ..." -ForegroundColor Cyan
+Write-Host "Testing POS products API at $testApiUrl (local; clients use $apiUrl) ..." -ForegroundColor Cyan
 try {
     $loginBody = @{ email = $adminEmail; password = $adminPass } | ConvertTo-Json
-    $login = Invoke-RestMethod -Uri "$apiUrl/api/auth/login" -Method POST -Body $loginBody -ContentType "application/json" -TimeoutSec 30
+    $login = Invoke-RestMethod -Uri "$testApiUrl/api/auth/login" -Method POST -Body $loginBody -ContentType "application/json" -TimeoutSec 30
     $token = $login.accessToken
     if (-not $token) { throw "Login succeeded but no accessToken returned." }
 
     $headers = @{ Authorization = "Bearer $token"; Accept = "application/json" }
-    $productsUrl = '{0}/api/products?page=1&pageSize=5&activeOnly=true&displayInPosOnly=true' -f $apiUrl
+    $productsUrl = '{0}/api/products?page=1&pageSize=5&activeOnly=true&displayInPosOnly=true' -f $testApiUrl
     $resp = Invoke-RestMethod -Uri $productsUrl -Method GET -Headers $headers -TimeoutSec 30
 
     $total = $resp.data.totalCount

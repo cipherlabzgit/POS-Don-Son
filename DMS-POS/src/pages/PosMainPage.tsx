@@ -572,6 +572,14 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             <button type="button" className="pos-tap px-2 text-white" onClick={() => setZoom(zoomPercent + 10)} aria-label="Screen zoom in"><Plus className="h-4 w-4" /></button>
           </div>
 
+          {/* Product button size (catalogue cards only) */}
+          <div className="flex items-center gap-0.5 rounded-lg border border-white/30 bg-white/10 px-0.5" title="Product button size">
+            <span className="hidden pl-1.5 text-[9px] font-bold uppercase tracking-wide text-white/70 sm:inline">Buttons</span>
+            <button type="button" className="pos-tap px-2 text-white" onClick={() => setProductTilePercent(productTilePercent - 10)} aria-label="Smaller product buttons"><Minus className="h-4 w-4" /></button>
+            <span className="min-w-[2.75rem] text-center text-[11px] font-semibold text-white">{productTilePercent}%</span>
+            <button type="button" className="pos-tap px-2 text-white" onClick={() => setProductTilePercent(productTilePercent + 10)} aria-label="Larger product buttons"><Plus className="h-4 w-4" /></button>
+          </div>
+
           <div className="relative">
             <OnlineBadge
               online={online}
@@ -814,42 +822,13 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             </button>
           </div>
 
-          {/* Count + product button size (catalogue only — not screen zoom) + Top */}
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--muted-foreground)]">
+          {/* Count + Top */}
+          <div className="mb-2 flex items-center justify-between text-xs text-[var(--muted-foreground)]">
             <span>{filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}</span>
-            <div className="flex items-center gap-2">
-              <div
-                className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] bg-white px-0.5 shadow-sm"
-                title="Product button size (catalogue only)"
-              >
-                <span className="hidden pl-1.5 text-[9px] font-bold uppercase tracking-wide text-[var(--muted-foreground)] sm:inline">
-                  Buttons
-                </span>
-                <button
-                  type="button"
-                  className="pos-tap px-2 py-1 text-[var(--foreground)]"
-                  onClick={() => setProductTilePercent(productTilePercent - 10)}
-                  aria-label="Smaller product buttons"
-                >
-                  <Minus className="h-3.5 w-3.5" />
-                </button>
-                <span className="min-w-[2.5rem] text-center text-[11px] font-semibold tabular-nums text-[var(--foreground)]">
-                  {productTilePercent}%
-                </span>
-                <button
-                  type="button"
-                  className="pos-tap px-2 py-1 text-[var(--foreground)]"
-                  onClick={() => setProductTilePercent(productTilePercent + 10)}
-                  aria-label="Larger product buttons"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <button type="button" className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-white px-2.5 py-1.5 text-xs font-medium hover:bg-[var(--neutral-100)]"
-                onClick={() => catalogScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
-                <ChevronUp className="h-3.5 w-3.5" /> Top
-              </button>
-            </div>
+            <button type="button" className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-white px-2.5 py-1.5 text-xs font-medium hover:bg-[var(--neutral-100)]"
+              onClick={() => catalogScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <ChevronUp className="h-3.5 w-3.5" /> Top
+            </button>
           </div>
 
           {/* Product grid — auto-fill columns, uniform aspect tiles, rows do not stretch */}

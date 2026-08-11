@@ -22,6 +22,8 @@ interface SettingsState {
   outletId: string | null
   outletLabel: string
   zoomPercent: number
+  /** Product card/button size in catalogue only (not whole dashboard zoom). */
+  productTilePercent: number
   cacheUpdatedAt: number | null
   /** When true, print receipt automatically after a successful payment */
   autoPrint: boolean
@@ -31,6 +33,7 @@ interface SettingsState {
   setApiBaseUrl: (url: string) => void
   setOutlet: (id: string | null, label: string) => void
   setZoomPercent: (p: number) => void
+  setProductTilePercent: (p: number) => void
   setCacheUpdatedAt: (t: number | null) => void
   setAutoPrint: (v: boolean) => void
   setReceiptPhone: (v: string) => void
@@ -46,6 +49,7 @@ export const useSettingsStore = create<SettingsState>()(
       outletId: null,
       outletLabel: 'Showroom',
       zoomPercent: 100,
+      productTilePercent: 100,
       cacheUpdatedAt: null,
       autoPrint: false,
       receiptPhone: '',
@@ -56,6 +60,10 @@ export const useSettingsStore = create<SettingsState>()(
       setOutlet: (outletId, outletLabel) => set({ outletId, outletLabel }),
       setZoomPercent: (zoomPercent) =>
         set({ zoomPercent: Math.min(120, Math.max(70, Math.round(zoomPercent))) }),
+      setProductTilePercent: (productTilePercent) =>
+        set({
+          productTilePercent: Math.min(160, Math.max(70, Math.round(productTilePercent / 10) * 10)),
+        }),
       setCacheUpdatedAt: (cacheUpdatedAt) => set({ cacheUpdatedAt }),
       setAutoPrint: (autoPrint) => set({ autoPrint }),
       setReceiptPhone: (receiptPhone) => set({ receiptPhone: receiptPhone }),
@@ -121,7 +129,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'dms-pos-settings',
-      version: 7,
+      version: 8,
       migrate: (persisted: unknown, version: number) => {
         const wrongPorts = ['http://localhost:5000', 'http://127.0.0.1:5000']
         if (version < 2 && persisted && typeof persisted === 'object' && 'state' in persisted) {
@@ -168,6 +176,16 @@ export const useSettingsStore = create<SettingsState>()(
               ...(persisted as object),
               state: { ...s, apiBaseUrl: DEFAULT_API_BASE_URL },
             }
+          }
+        }
+        if (version < 8 && persisted && typeof persisted === 'object' && 'state' in persisted) {
+          const s = (persisted as { state: Partial<SettingsState> }).state
+          return {
+            ...(persisted as object),
+            state: {
+              ...s,
+              productTilePercent: s.productTilePercent ?? 100,
+            },
           }
         }
         return persisted

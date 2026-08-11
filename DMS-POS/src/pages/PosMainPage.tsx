@@ -71,6 +71,8 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   const setApiBaseUrl = useSettingsStore((s) => s.setApiBaseUrl)
   const zoomPercent = useSettingsStore((s) => s.zoomPercent)
   const setZoom     = useSettingsStore((s) => s.setZoomPercent)
+  const productTilePercent = useSettingsStore((s) => s.productTilePercent)
+  const setProductTilePercent = useSettingsStore((s) => s.setProductTilePercent)
   const cacheUpdatedAt = useSettingsStore((s) => s.cacheUpdatedAt)
   const autoPrint   = useSettingsStore((s) => s.autoPrint)
   const setAutoPrint = useSettingsStore((s) => s.setAutoPrint)
@@ -562,11 +564,12 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
 
         {/* Right: zoom · online badge · showroom · user */}
         <div className="flex flex-wrap items-center justify-end gap-1.5">
-          {/* Zoom */}
-          <div className="flex items-center gap-0.5 rounded-lg border border-white/30 bg-white/10 px-0.5">
-            <button type="button" className="pos-tap px-2 text-white" onClick={() => setZoom(zoomPercent - 10)} aria-label="Zoom out"><Minus className="h-4 w-4" /></button>
+          {/* Screen zoom (whole dashboard) */}
+          <div className="flex items-center gap-0.5 rounded-lg border border-white/30 bg-white/10 px-0.5" title="Screen zoom">
+            <span className="hidden pl-1.5 text-[9px] font-bold uppercase tracking-wide text-white/70 sm:inline">Screen</span>
+            <button type="button" className="pos-tap px-2 text-white" onClick={() => setZoom(zoomPercent - 10)} aria-label="Screen zoom out"><Minus className="h-4 w-4" /></button>
             <span className="min-w-[2.75rem] text-center text-[11px] font-semibold text-white">{zoomPercent}%</span>
-            <button type="button" className="pos-tap px-2 text-white" onClick={() => setZoom(zoomPercent + 10)} aria-label="Zoom in"><Plus className="h-4 w-4" /></button>
+            <button type="button" className="pos-tap px-2 text-white" onClick={() => setZoom(zoomPercent + 10)} aria-label="Screen zoom in"><Plus className="h-4 w-4" /></button>
           </div>
 
           <div className="relative">
@@ -636,12 +639,22 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
                   <p className="text-[10px] font-semibold uppercase text-[var(--muted-foreground)]">Logged in as</p>
                   <p className="text-sm font-semibold text-[var(--foreground)]">{user?.firstName} {user?.lastName}</p>
                 </div>
-                <div className="border-b border-[var(--border)] px-3 py-2">
-                  <p className="mb-1 text-[10px] font-semibold uppercase text-[var(--muted-foreground)]">Zoom</p>
-                  <div className="flex items-center gap-1">
-                    <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => setZoom(zoomPercent - 10)}>-</button>
-                    <span className="flex-1 text-center text-sm font-semibold">{zoomPercent}%</span>
-                    <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => setZoom(zoomPercent + 10)}>+</button>
+                <div className="border-b border-[var(--border)] px-3 py-2 space-y-2">
+                  <div>
+                    <p className="mb-1 text-[10px] font-semibold uppercase text-[var(--muted-foreground)]">Screen zoom</p>
+                    <div className="flex items-center gap-1">
+                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => setZoom(zoomPercent - 10)}>-</button>
+                      <span className="flex-1 text-center text-sm font-semibold">{zoomPercent}%</span>
+                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => setZoom(zoomPercent + 10)}>+</button>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[10px] font-semibold uppercase text-[var(--muted-foreground)]">Product button size</p>
+                    <div className="flex items-center gap-1">
+                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => setProductTilePercent(productTilePercent - 10)}>-</button>
+                      <span className="flex-1 text-center text-sm font-semibold">{productTilePercent}%</span>
+                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => setProductTilePercent(productTilePercent + 10)}>+</button>
+                    </div>
                   </div>
                 </div>
                 <nav className="px-2 pt-1">
@@ -801,19 +814,53 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             </button>
           </div>
 
-          {/* Scroll-to-top + count */}
-          <div className="mb-2 flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+          {/* Count + product button size (catalogue only — not screen zoom) + Top */}
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--muted-foreground)]">
             <span>{filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}</span>
-            <button type="button" className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-white px-2.5 py-1.5 text-xs font-medium hover:bg-[var(--neutral-100)]"
-              onClick={() => catalogScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
-              <ChevronUp className="h-3.5 w-3.5" /> Top
-            </button>
+            <div className="flex items-center gap-2">
+              <div
+                className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] bg-white px-0.5 shadow-sm"
+                title="Product button size (catalogue only)"
+              >
+                <span className="hidden pl-1.5 text-[9px] font-bold uppercase tracking-wide text-[var(--muted-foreground)] sm:inline">
+                  Buttons
+                </span>
+                <button
+                  type="button"
+                  className="pos-tap px-2 py-1 text-[var(--foreground)]"
+                  onClick={() => setProductTilePercent(productTilePercent - 10)}
+                  aria-label="Smaller product buttons"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <span className="min-w-[2.5rem] text-center text-[11px] font-semibold tabular-nums text-[var(--foreground)]">
+                  {productTilePercent}%
+                </span>
+                <button
+                  type="button"
+                  className="pos-tap px-2 py-1 text-[var(--foreground)]"
+                  onClick={() => setProductTilePercent(productTilePercent + 10)}
+                  aria-label="Larger product buttons"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <button type="button" className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-white px-2.5 py-1.5 text-xs font-medium hover:bg-[var(--neutral-100)]"
+                onClick={() => catalogScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
+                <ChevronUp className="h-3.5 w-3.5" /> Top
+              </button>
+            </div>
           </div>
 
           {/* Product grid — auto-fill columns, uniform aspect tiles, rows do not stretch */}
           <div
             ref={catalogScrollRef}
-            className="pos-scroll pos-product-grid grid min-h-0 flex-1 gap-3 overflow-y-auto p-0.5"
+            className="pos-scroll pos-product-grid grid min-h-0 flex-1 overflow-y-auto p-0.5"
+            style={{
+              ['--pos-tile-min' as string]: `${Math.round(140 * (productTilePercent / 100))}px`,
+              ['--pos-tile-font' as string]: `${(0.875 * (productTilePercent / 100)).toFixed(3)}rem`,
+              ['--pos-tile-gap' as string]: `${Math.max(0.35, 0.75 * (productTilePercent / 100)).toFixed(2)}rem`,
+            }}
           >
             {filteredProducts.length === 0 ? (
               <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border)] px-6 py-16 text-center">
@@ -872,7 +919,7 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
                     </h3>
                   </div>
                   <div className="flex shrink-0 flex-col gap-1.5 border-t border-stone-200/80 pt-2.5">
-                    <span className="text-base font-bold tabular-nums text-stone-900">
+                    <span className="product-tile-price text-base font-bold tabular-nums text-stone-900">
                       Rs {p.unitPrice.toFixed(2)}
                     </span>
                     <span className="truncate font-mono text-[10px] font-medium text-stone-500">
@@ -954,6 +1001,15 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
                     <input value={apiBaseUrl} onChange={(e) => setApiBaseUrl(e.target.value)}
                       className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-2 py-1.5 font-mono text-[11px] text-[var(--foreground)]" />
                   </label>
+                  <div>
+                    <p className="mb-1 font-semibold text-[var(--muted-foreground)]">Product button size</p>
+                    <div className="flex items-center gap-1">
+                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 py-1 text-[var(--foreground)]" onClick={() => setProductTilePercent(productTilePercent - 10)}>-</button>
+                      <span className="flex-1 text-center text-sm font-semibold tabular-nums">{productTilePercent}%</span>
+                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 py-1 text-[var(--foreground)]" onClick={() => setProductTilePercent(productTilePercent + 10)}>+</button>
+                    </div>
+                    <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">Catalogue cards only — does not change screen zoom.</p>
+                  </div>
                   <label className="flex cursor-pointer items-center gap-2">
                     <input type="checkbox" checked={autoPrint} onChange={(e) => setAutoPrint(e.target.checked)} className="h-4 w-4 rounded accent-[var(--brand-primary)]" />
                     <span className="font-semibold text-[var(--foreground)]">Auto-print receipt after payment</span>

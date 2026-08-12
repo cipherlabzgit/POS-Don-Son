@@ -2,7 +2,7 @@ import {
   useCallback, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react'
 import {
-  ChevronLeft, ChevronRight, ChevronUp,
+  ChevronRight, ChevronUp,
   Cloud, History, Inbox, LogOut, Menu,
   Minus, Package, Plus, Printer,
   Search, Settings2, Star, Truck, Undo2,
@@ -98,7 +98,6 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   const [userMenu, setUserMenu]       = useState(false)
   const [outletMenu, setOutletMenu]   = useState(false)
   const [search, setSearch]           = useState('')
-  const [catScroll, setCatScroll]     = useState(0)
   const [categoryId, setCategoryId]   = useState<string>('all')
   const [payOpen, setPayOpen]         = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -264,15 +263,8 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
     return cols
   }, [categories])
 
-  const CAT_PAGE = 8
-
   function selectCategory(id: string) {
     setCategoryId(id)
-    const idx = catRow.findIndex((c) => c.id === id)
-    if (idx < 0) return
-    const maxScroll = Math.max(0, catRow.length - CAT_PAGE)
-    const target = Math.min(Math.max(0, idx - CAT_PAGE + 1), maxScroll)
-    setCatScroll(target)
   }
 
   const sub = subtotal()
@@ -802,24 +794,18 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             ) : null}
           </div>
 
-          {/* Category pills row */}
-          <div className="mb-3 flex items-center gap-2">
-            <button type="button" className="pos-tap flex-shrink-0 rounded-xl border border-[var(--border)] bg-white p-2 shadow-sm hover:bg-[var(--neutral-100)]"
-              onClick={() => setCatScroll((s) => Math.max(0, s - 1))} aria-label="Previous categories">
-              <ChevronLeft className="h-5 w-5 text-[var(--neutral-600)]" />
-            </button>
-            <div className="flex flex-1 gap-2 overflow-x-hidden">
-              {catRow.slice(catScroll, catScroll + CAT_PAGE).map((c) => (
-                <button key={c.id} type="button" onClick={() => selectCategory(c.id)}
-                  className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-bold shadow transition whitespace-nowrap ${c.colour} ${categoryId === c.id ? 'ring-2 ring-[var(--brand-primary)] ring-offset-2' : 'opacity-90 hover:opacity-100'}`}>
-                  {c.name}
-                </button>
-              ))}
-            </div>
-            <button type="button" className="pos-tap flex-shrink-0 rounded-xl border border-[var(--border)] bg-white p-2 shadow-sm hover:bg-[var(--neutral-100)]"
-              onClick={() => setCatScroll((s) => Math.min(Math.max(0, catRow.length - CAT_PAGE), s + 1))} aria-label="Next categories">
-              <ChevronRight className="h-5 w-5 text-[var(--neutral-600)]" />
-            </button>
+          {/* Category pills — show all (no next/prev pager) */}
+          <div className="mb-3 flex flex-wrap gap-2">
+            {catRow.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => selectCategory(c.id)}
+                className={`rounded-xl px-4 py-2.5 text-sm font-bold shadow transition whitespace-nowrap ${c.colour} ${categoryId === c.id ? 'ring-2 ring-[var(--brand-primary)] ring-offset-2' : 'opacity-90 hover:opacity-100'}`}
+              >
+                {c.name}
+              </button>
+            ))}
           </div>
 
           {/* Count + Top */}

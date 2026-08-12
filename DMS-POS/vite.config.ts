@@ -6,7 +6,8 @@ export default defineConfig({
   base: './',
   server: {
     host: '127.0.0.1',
-    port: 5173,
+    // 5174 matches live CORS allow-list (remote API currently allows :5174, not :5173)
+    port: 5174,
     strictPort: true,
   },
 })

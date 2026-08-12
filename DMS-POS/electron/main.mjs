@@ -59,7 +59,7 @@ function createMainWindow() {
   // ASP.NET CORS policy accepts requests from the packaged app (file:// origin
   // is sent as "null" by Chromium, which most CORS policies reject).
   mainWin.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
-    details.requestHeaders['Origin'] = 'http://127.0.0.1:5173'
+    details.requestHeaders['Origin'] = 'http://127.0.0.1:5174'
     callback({ requestHeaders: details.requestHeaders })
   })
 
@@ -139,116 +139,104 @@ ipcMain.handle('app:toggle-fullscreen', () => {
 
 ipcMain.handle('app:is-fullscreen', () => mainWin?.isFullScreen() ?? false)
 
-ipcMain.handle('app:print-silent', async (event, html) => {
-  const log = (msg) => {
-    console.log(msg)
-    // Send logs to renderer console for debugging
-    if (mainWin && !mainWin.isDestroyed()) {
-      mainWin.webContents.executeJavaScript(`console.log("${msg.replace(/"/g, '\\"')}")`)
-    }
-  }
-  
-  log('[ELECTRON-PRINT] ========================================')
-  log('[ELECTRON-PRINT] Print request received!')
-  log('[ELECTRON-PRINT] HTML length: ' + (html?.length || 0))
-  log('[ELECTRON-PRINT] Main window exists: ' + !!mainWin)
-  log('[ELECTRON-PRINT] ========================================')
-  
-  if (!mainWin) {
-    console.error('[ELECTRON-PRINT] No main window available')
+ipcMain.handle('app:print-silent', async (_event, html) => {
+  if (!mainWin || mainWin.isDestroyed()) {
     return { success: false, error: 'No main window' }
   }
-  
+  if (typeof html !== 'string' || !html.trim()) {
+    return { success: false, error: 'Empty receipt' }
+  }
+
+  const tempPath = path.join(app.getPath('temp'), `dms-pos-receipt-${Date.now()}.html`)
+  /** @type {BrowserWindow | null} */
+  let printWin = null
+
+  const cleanup = () => {
+    try {
+      if (printWin && !printWin.isDestroyed()) printWin.close()
+    } catch {
+      /* ignore */
+    }
+    try {
+      if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath)
+    } catch {
+      /* ignore */
+    }
+  }
+
   try {
-    // Create a hidden window for printing
-    const printWin = new BrowserWindow({
+    fs.writeFileSync(tempPath, html, 'utf8')
+
+    // Visible (not hidden) window — on Windows, print dialogs from show:false
+    // windows often never appear, so Print looks broken.
+    printWin = new BrowserWindow({
+      parent: mainWin,
+      modal: true,
       show: false,
-      width: 400,
-      height: 600,
+      width: 420,
+      height: 720,
+      autoHideMenuBar: true,
+      title: 'Print Receipt',
       webPreferences: {
         contextIsolation: true,
         nodeIntegration: false,
+        sandbox: true,
       },
     })
 
-    console.log('[ELECTRON-PRINT] Loading HTML into print window...')
-    await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
-    
-    // Wait for content to be ready
-    await new Promise(resolve => {
-      if (printWin.webContents.isLoading()) {
-        printWin.webContents.once('did-finish-load', resolve)
-      } else {
-        resolve()
-      }
-    })
+    await printWin.loadFile(tempPath)
+    printWin.show()
+    printWin.focus()
+    await new Promise((r) => setTimeout(r, 250))
 
-    console.log('[ELECTRON-PRINT] Content loaded, waiting 200ms for rendering...')
-    await new Promise(resolve => setTimeout(resolve, 200))
-    
-    console.log('[ELECTRON-PRINT] Opening print dialog...')
-    return new Promise((resolve) => {
-      // Set a timeout in case the print callback never fires
+    const result = await new Promise((resolve) => {
       const timeout = setTimeout(() => {
-        console.error('[ELECTRON-PRINT] Print callback timeout - assuming user cancelled or print completed')
-        try {
-          printWin.close()
-        } catch (e) {
-          console.error('[ELECTRON-PRINT] Error closing window on timeout:', e)
-        }
-        resolve({ success: true }) // Assume success since dialog opened
-      }, 60000) // 60 second timeout
-      
+        console.warn('[ELECTRON-PRINT] Print dialog timed out')
+        resolve({ success: false, error: 'Print dialog timed out' })
+      }, 120_000)
+
       try {
         printWin.webContents.print(
           {
             silent: false,
             printBackground: true,
             color: false,
-            margins: {
-              marginType: 'none'
-            },
-            pageSize: 'A4'
+            margins: { marginType: 'printableArea' },
           },
-          (success, errorType) => {
+          (success, failureReason) => {
             clearTimeout(timeout)
-            console.log('[ELECTRON-PRINT] Print callback - success:', success, 'errorType:', errorType)
-            
-            setTimeout(() => {
-              console.log('[ELECTRON-PRINT] Closing print window')
-              try {
-                if (!printWin.isDestroyed()) {
-                  printWin.close()
-                }
-              } catch (e) {
-                console.error('[ELECTRON-PRINT] Error closing window:', e)
-              }
-            }, 100)
-            
-            if (success) {
-              console.log('[ELECTRON-PRINT] Print completed successfully')
-              resolve({ success: true })
-            } else {
-              console.error('[ELECTRON-PRINT] Print failed with error:', errorType)
-              resolve({ success: false, error: errorType || 'Print cancelled or failed' })
+            const cancelled =
+              !success &&
+              /cancel/i.test(String(failureReason ?? ''))
+            if (cancelled) {
+              resolve({ success: true, cancelled: true })
+              return
             }
-          }
+            if (success) {
+              resolve({ success: true })
+              return
+            }
+            resolve({
+              success: false,
+              error: failureReason || 'Print failed',
+            })
+          },
         )
-        console.log('[ELECTRON-PRINT] Print method called, waiting for callback...')
       } catch (printError) {
         clearTimeout(timeout)
-        console.error('[ELECTRON-PRINT] Exception calling print method:', printError)
-        try {
-          printWin.close()
-        } catch (e) {
-          // ignore
-        }
-        resolve({ success: false, error: printError.message })
+        resolve({
+          success: false,
+          error: printError?.message || String(printError),
+        })
       }
     })
+
+    cleanup()
+    return result
   } catch (error) {
     console.error('[ELECTRON-PRINT] Exception during print:', error)
-    return { success: false, error: error.message }
+    cleanup()
+    return { success: false, error: error?.message || String(error) }
   }
 })
 

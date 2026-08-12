@@ -140,8 +140,7 @@ export function LoginPage() {
                 className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 font-mono text-sm text-[var(--foreground)] placeholder:text-[var(--neutral-400)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
               />
               <p className="text-[11px] text-[var(--muted-foreground)]">
-                Live server API (same IP as DMS Web). Example: http://123.231.10.22:5126 —
-                not :3000 (web) and not localhost.
+                Central server address (not localhost on remote POS terminals).
               </p>
             </div>
 

@@ -22,22 +22,22 @@ function buildReceiptDocumentHtml(opts: PrintReceiptOpts): string {
       (l) =>
         `<tr>
           <td style="padding:4px 0">${escapeHtml(l.name)}</td>
-          <td style="text-align:right;padding:4px 8px">${l.unitPrice.toFixed(2)}</td>
-          <td style="text-align:center;padding:4px 8px">${l.qty}</td>
-          <td style="text-align:right;padding:4px 0">${l.amount.toFixed(2)}</td>
+          <td style="text-align:right;padding:4px 8px">${Number(l.unitPrice).toFixed(2)}</td>
+          <td style="text-align:center;padding:4px 8px">${Number(l.qty)}</td>
+          <td style="text-align:right;padding:4px 0">${Number(l.amount).toFixed(2)}</td>
         </tr>`,
     )
     .join('')
-  
+
   const totalItems = opts.lines.length
-  const totalQty = opts.lines.reduce((sum, l) => sum + l.qty, 0)
-  
+  const totalQty = opts.lines.reduce((sum, l) => sum + Number(l.qty || 0), 0)
+
   const extraFooter = (opts.footerLines ?? [])
     .map((l) => l.trim())
     .filter(Boolean)
     .map((l) => `<div style="text-align:center;font-size:10px;line-height:1.3;margin:2px 0">${escapeHtml(l)}</div>`)
     .join('')
-  
+
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Receipt</title>
 <style>
 @media print {
@@ -89,15 +89,15 @@ ${opts.saleNo ? `<div class="info-line">Bill No: ${escapeHtml(opts.saleNo)}</div
 <div class="totals">
   <div class="total-row main">
     <span>TOTAL</span>
-    <span>${opts.total.toFixed(2)}</span>
+    <span>${Number(opts.total).toFixed(2)}</span>
   </div>
   <div class="total-row">
     <span>CASH</span>
-    <span>${opts.cash.toFixed(2)}</span>
+    <span>${Number(opts.cash).toFixed(2)}</span>
   </div>
   <div class="total-row">
     <span>CHANGE</span>
-    <span>${opts.change.toFixed(2)}</span>
+    <span>${Number(opts.change).toFixed(2)}</span>
   </div>
 </div>
 <div class="divider"></div>
@@ -108,107 +108,93 @@ ${extraFooter}
 </body></html>`
 }
 
+function printViaIframe(html: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const iframe = document.createElement('iframe')
+    iframe.setAttribute('aria-hidden', 'true')
+    iframe.style.cssText =
+      'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none'
+    document.body.appendChild(iframe)
+
+    const win = iframe.contentWindow
+    const doc = iframe.contentDocument
+    if (!win || !doc) {
+      iframe.remove()
+      resolve(false)
+      return
+    }
+
+    doc.open()
+    doc.write(html)
+    doc.close()
+
+    const cleanup = () => {
+      iframe.remove()
+    }
+
+    let leakGuard: ReturnType<typeof setTimeout> | undefined
+    let settled = false
+    const finish = (ok: boolean) => {
+      if (settled) return
+      settled = true
+      if (leakGuard) clearTimeout(leakGuard)
+      cleanup()
+      resolve(ok)
+    }
+
+    const printNow = () => {
+      try {
+        win.focus()
+        win.print()
+        // Dialog opened — treat as success (cancel is still a successful open)
+        finish(true)
+      } catch {
+        finish(false)
+      }
+    }
+
+    win.addEventListener(
+      'afterprint',
+      () => {
+        if (leakGuard) clearTimeout(leakGuard)
+        cleanup()
+      },
+      { once: true },
+    )
+
+    leakGuard = setTimeout(() => {
+      leakGuard = undefined
+      cleanup()
+    }, 120_000)
+
+    const schedulePrint = () => setTimeout(printNow, 50)
+
+    if (doc.readyState === 'complete') {
+      schedulePrint()
+    } else {
+      win.addEventListener('load', schedulePrint, { once: true })
+    }
+  })
+}
+
 /**
- * Prints a receipt silently (direct to printer without dialog) when in Electron,
- * or opens the system print dialog in web/dev mode.
- *
- * Uses a hidden iframe instead of `window.open('')` so Electron’s
- * `setWindowOpenHandler` + `shell.openExternal` does not receive `about:blank`
- * (which triggers Windows “open this about link” errors).
+ * Prints a receipt: Electron uses a visible print window + system dialog;
+ * falls back to an iframe print dialog if that fails (or in browser mode).
  */
 export async function printReceiptHtml(opts: PrintReceiptOpts): Promise<boolean> {
   const html = buildReceiptDocumentHtml(opts)
 
-  console.log('[PRINT] Environment check - window.dmsPos:', !!window.dmsPos)
-  console.log('[PRINT] window.dmsPos.printSilent:', !!window.dmsPos?.printSilent)
-  console.log('[PRINT] window.dmsPos.mode:', window.dmsPos?.mode)
-
-  // Check if running in Electron with silent print capability
   if (window.dmsPos?.printSilent) {
     try {
-      console.log('[PRINT] Using Electron print...')
-      console.log('[PRINT] Receipt data:', { 
-        total: opts.total, 
-        cash: opts.cash, 
-        change: opts.change, 
-        lines: opts.lines.length 
-      })
       const result = await window.dmsPos.printSilent(html)
-      console.log('[PRINT] Electron print result:', result)
-      
-      if (!result || !result.success) {
-        console.error('[PRINT] Print failed or was cancelled:', result?.error)
-        alert('Print failed: ' + (result?.error || 'Unknown error. Check if a printer is configured.'))
-        return false
-      }
-      
-      return true
+      if (result?.success) return true
+      console.warn('[PRINT] Electron print failed, trying iframe fallback:', result?.error)
     } catch (error) {
-      console.error('[PRINT] Electron print exception:', error)
-      alert('Print error: ' + error)
-      return false
-    }
-  }
-  
-  // Fallback for browser/dev mode
-  console.log('[PRINT] Using browser print dialog')
-
-  // Fallback to regular print dialog (web mode or if silent print fails)
-  const iframe = document.createElement('iframe')
-  iframe.setAttribute('aria-hidden', 'true')
-  iframe.style.cssText =
-    'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none'
-  document.body.appendChild(iframe)
-
-  const win = iframe.contentWindow
-  const doc = iframe.contentDocument
-  if (!win || !doc) {
-    iframe.remove()
-    return false
-  }
-
-  doc.open()
-  doc.write(html)
-  doc.close()
-
-  const cleanup = () => {
-    iframe.remove()
-  }
-
-  let leakGuard: ReturnType<typeof setTimeout> | undefined
-
-  const printNow = () => {
-    try {
-      win.focus()
-      win.print()
-    } catch {
-      cleanup()
+      console.warn('[PRINT] Electron print exception, trying iframe fallback:', error)
     }
   }
 
-  win.addEventListener(
-    'afterprint',
-    () => {
-      if (leakGuard) clearTimeout(leakGuard)
-      cleanup()
-    },
-    { once: true },
-  )
-
-  leakGuard = setTimeout(() => {
-    leakGuard = undefined
-    cleanup()
-  }, 120_000)
-
-  const schedulePrint = () => setTimeout(printNow, 50)
-
-  if (doc.readyState === 'complete') {
-    schedulePrint()
-  } else {
-    win.addEventListener('load', schedulePrint, { once: true })
-  }
-
-  return true
+  return printViaIframe(html)
 }
 
 function escapeHtml(s: string) {

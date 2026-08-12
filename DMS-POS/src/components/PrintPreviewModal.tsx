@@ -8,11 +8,12 @@ type Props = {
 
 export function PrintPreviewModal({ opts, onClose }: Props) {
   async function handlePrint() {
-    await printReceiptHtml(opts)
+    const ok = await printReceiptHtml(opts)
+    if (ok) onClose()
   }
 
   const totalItems = opts.lines.length
-  const totalQty = opts.lines.reduce((sum, line) => sum + line.qty, 0)
+  const totalQty = opts.lines.reduce((sum, line) => sum + Number(line.qty || 0), 0)
 
   return (
     <div

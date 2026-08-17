@@ -612,7 +612,7 @@ function ProductsPageContent() {
               <SearchInput 
                 value={searchInput}
                 onChange={handleSearchChange}
-                placeholder="Search products..."
+                placeholder="Search category, code, name, price, UOM..."
                 inputRef={searchInputRef}
               />
             </div>

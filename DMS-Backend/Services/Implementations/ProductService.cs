@@ -58,11 +58,19 @@ public class ProductService : IProductService
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            var searchLower = searchTerm.ToLower();
+            var searchLower = searchTerm.Trim().ToLower();
+            // Match any of the Products list columns: Category, Code, Name, Unit Price, UOM
             query = query.Where(p =>
                 p.Code.ToLower().Contains(searchLower) ||
                 p.Name.ToLower().Contains(searchLower) ||
-                (p.Description != null && p.Description.ToLower().Contains(searchLower)));
+                (p.Description != null && p.Description.ToLower().Contains(searchLower)) ||
+                (p.Category != null && (
+                    p.Category.Name.ToLower().Contains(searchLower) ||
+                    p.Category.Code.ToLower().Contains(searchLower))) ||
+                (p.UnitOfMeasure != null && (
+                    p.UnitOfMeasure.Code.ToLower().Contains(searchLower) ||
+                    p.UnitOfMeasure.Description.ToLower().Contains(searchLower))) ||
+                p.UnitPrice.ToString().ToLower().Contains(searchLower));
         }
 
         var totalCount = await query.CountAsync(cancellationToken);

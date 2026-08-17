@@ -56,7 +56,7 @@ export const useSettingsStore = create<SettingsState>()(
       receiptAddress: '',
       themeColors: null,
 
-      setApiBaseUrl: (apiBaseUrl) => set({ apiBaseUrl }),
+      setApiBaseUrl: (apiBaseUrl) => set({ apiBaseUrl: normalizeApiBaseUrl(apiBaseUrl) }),
       setOutlet: (outletId, outletLabel) => set({ outletId, outletLabel }),
       setZoomPercent: (zoomPercent) =>
         set({ zoomPercent: Math.min(120, Math.max(70, Math.round(zoomPercent))) }),

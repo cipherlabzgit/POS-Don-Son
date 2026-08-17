@@ -160,12 +160,14 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
 
   useEffect(() => { void loadData() }, [loadData])
 
-  // ── Outlets load ────────────────────────────────────────────────────────────
+  // ── Outlets load (re-fetch when API URL / online changes — not only on login) ─
   useEffect(() => {
-    if (!accessToken) return
+    if (!accessToken || !online) return
+    let cancelled = false
     void (async () => {
       try {
         const data = await fetchOutletsPage(1, 100)
+        if (cancelled) return
         const rows = (data.outlets as Record<string, unknown>[]).map((o) => ({
           id: String(o.id ?? o.Id ?? ''),
           code: String(o.code ?? o.Code ?? ''),
@@ -174,16 +176,23 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
           phone: String(o.phone ?? o.Phone ?? ''),
         })).filter((o) => o.id)
         setOutlets(rows)
-        if (!outletId && rows.length === 1) setOutlet(rows[0].id, rows[0].name || rows[0].code)
-        if (!outletId && rows.length > 1) {
-          // Prefer City Outlet / first showroom so payments are not blocked after login
+        const current = useSettingsStore.getState().outletId
+        const stillValid = Boolean(current && rows.some((o) => o.id === current))
+        if (!stillValid && rows.length > 0) {
           const preferred =
             rows.find((o) => /city/i.test(o.name) || /city/i.test(o.code)) ?? rows[0]
           setOutlet(preferred.id, preferred.name || preferred.code)
         }
-      } catch { /* offline */ }
+      } catch (err) {
+        if (!cancelled) {
+          setOutlets([])
+          console.warn('[outlets] Failed to load showrooms:', err)
+          toast('Could not load showrooms from server. Check API URL and permissions.', 'error')
+        }
+      }
     })()
-  }, [accessToken, outletId, setOutlet])
+    return () => { cancelled = true }
+  }, [accessToken, online, apiBaseUrl, setOutlet])
 
   useEffect(() => {
     if (!accessToken) {
@@ -964,6 +973,8 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
                   <label className="block">
                     <span className="font-semibold text-[var(--muted-foreground)]">API base URL</span>
                     <input value={apiBaseUrl} onChange={(e) => setApiBaseUrl(e.target.value)}
+                      onBlur={() => setApiBaseUrl(apiBaseUrl)}
+                      placeholder="http://123.231.10.22:5126"
                       className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-2 py-1.5 font-mono text-[11px] text-[var(--foreground)]" />
                   </label>
                   <div>

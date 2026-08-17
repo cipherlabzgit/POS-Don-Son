@@ -344,7 +344,7 @@ app.MapGet("/", (HttpRequest req) =>
     var web = $"http://{host}:3000";
     var pos = $"http://{host}:5174";
     var api = $"{req.Scheme}://{req.Host}";
-    var html = $"""
+    var html = $$"""
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -352,12 +352,12 @@ app.MapGet("/", (HttpRequest req) =>
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <title>Don &amp; Sons DMS API</title>
           <style>
-            body {{ font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; color: #1a1a1a; }}
-            h1 {{ color: #b91c1c; font-size: 1.5rem; }}
-            code {{ background: #f3f4f6; padding: 0.1rem 0.35rem; border-radius: 4px; }}
-            a {{ color: #b91c1c; }}
-            .box {{ border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; background: #fafafa; }}
-            ul {{ line-height: 1.7; }}
+            body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; color: #1a1a1a; }
+            h1 { color: #b91c1c; font-size: 1.5rem; }
+            code { background: #f3f4f6; padding: 0.1rem 0.35rem; border-radius: 4px; }
+            a { color: #b91c1c; }
+            .box { border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; background: #fafafa; }
+            ul { line-height: 1.7; }
           </style>
         </head>
         <body>
@@ -366,14 +366,14 @@ app.MapGet("/", (HttpRequest req) =>
           <div class="box">
             <p><strong>Open these instead:</strong></p>
             <ul>
-              <li>DMS Web: <a href="{web}">{web}</a></li>
-              <li>Browser POS: <a href="{pos}">{pos}</a></li>
+              <li>DMS Web: <a href="{{web}}">{{web}}</a></li>
+              <li>Browser POS: <a href="{{pos}}">{{pos}}</a></li>
               <li>API health: <a href="/health">/health</a></li>
               <li>API docs: <a href="/scalar/v1">/scalar/v1</a></li>
             </ul>
           </div>
           <p>Desktop POS apps must use this address as <strong>Server URL</strong>:
-            <code>{api}</code></p>
+            <code>{{api}}</code></p>
         </body>
         </html>
         """;

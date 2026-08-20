@@ -26,7 +26,7 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 }
 
 Write-Host "=== Redeploy DMS (backend + frontend, host PostgreSQL) ===" -ForegroundColor Cyan
-Write-Host "Ensures API uses the same dms_erp_db you see in pgAdmin (not Docker Postgres volume)." -ForegroundColor DarkGray
+Write-Host "Ensures API uses the same dms_erp_db you see in pgAdmin (locked in docker-compose.override.yml)." -ForegroundColor DarkGray
 Write-Host ""
 
 $pgUser = Get-EnvValue "POSTGRES_USER" "postgres"
@@ -37,7 +37,7 @@ Write-Host ""
 
 $prev = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
-& docker compose -f docker-compose.yml -f docker-compose.local-pg.yml up -d --build backend frontend 2>&1 | ForEach-Object { Write-Host $_ }
+& docker compose up -d --build backend frontend 2>&1 | ForEach-Object { Write-Host $_ }
 $ErrorActionPreference = $prev
 if ($LASTEXITCODE -ne 0) { throw "docker compose failed." }
 

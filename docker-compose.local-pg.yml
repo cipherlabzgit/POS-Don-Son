@@ -1,13 +1,10 @@
-# Use LOCAL PostgreSQL (pgAdmin / PostgreSQL 18 on the host) instead of Docker postgres.
+# Deprecated: host PostgreSQL settings now live in docker-compose.override.yml
+# (auto-loaded on every docker compose command).
 #
-# Deploy:
-#   .\scripts\deploy-client-local-pg.ps1
-#
-# Or manually:
-#   docker compose -f docker-compose.yml -f docker-compose.local-pg.yml up -d --build
+# This file is kept for backwards compatibility with older scripts that pass:
+#   -f docker-compose.yml -f docker-compose.local-pg.yml
 
 services:
-  # Do not start the Docker postgres container when this override is used.
   postgres:
     profiles:
       - with-docker-db
@@ -19,6 +16,5 @@ services:
     environment:
       ConnectionStrings__DefaultConnection: >-
         Host=host.docker.internal;Port=${POSTGRES_PORT:-5432};Database=${POSTGRES_DB:-dms_erp_db};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres};Pooling=true;MinPoolSize=1;MaxPoolSize=50
-      # Allow LAN IP when public IP is CLIENT_HOST (optional in .env)
       Cors__AllowedOrigins__6: ${LAN_FRONTEND_URL:-}
       Cors__AllowedOrigins__7: ${LAN_POS_URL:-}

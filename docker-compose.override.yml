@@ -1,7 +1,25 @@
-# Fixes frontend "unhealthy" when Next.js needs longer to start on Windows Docker.
-# Docker Compose merges this automatically with docker-compose.yml.
+# Auto-merged on every "docker compose" command (no extra -f flags needed).
+#
+# CLIENT SERVER: backend ALWAYS uses host PostgreSQL (pgAdmin on Windows),
+# NOT the Docker postgres volume (which only has demo seed data).
+#
+# To use Docker postgres for local dev instead, temporarily rename this file.
 
 services:
+  postgres:
+    profiles:
+      - with-docker-db
+
+  backend:
+    depends_on: !reset []
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ConnectionStrings__DefaultConnection: >-
+        Host=host.docker.internal;Port=${POSTGRES_PORT:-5432};Database=${POSTGRES_DB:-dms_erp_db};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres};Pooling=true;MinPoolSize=1;MaxPoolSize=50
+      Cors__AllowedOrigins__6: ${LAN_FRONTEND_URL:-}
+      Cors__AllowedOrigins__7: ${LAN_POS_URL:-}
+
   frontend:
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/login >/dev/null || curl -fsS http://127.0.0.1:3000/ >/dev/null || exit 1"]

@@ -81,10 +81,10 @@ if ($LASTEXITCODE -ne 0) { throw "SQL fix failed." }
 Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
 
 Write-Host ""
-Write-Host "Rebuilding backend (docker-compose.local-pg.yml -> host DB) ..." -ForegroundColor Cyan
+Write-Host "Rebuilding backend (host PostgreSQL via docker-compose.override.yml) ..." -ForegroundColor Cyan
 $prev = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
-& docker compose -f docker-compose.yml -f docker-compose.local-pg.yml up -d --build backend 2>&1 | ForEach-Object { Write-Host $_ }
+& docker compose up -d --build backend 2>&1 | ForEach-Object { Write-Host $_ }
 $ErrorActionPreference = $prev
 
 $backendPort = [int](Get-EnvValue "BACKEND_PORT" "5126")

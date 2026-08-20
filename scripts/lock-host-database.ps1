@@ -23,7 +23,7 @@ $changed = $false
 
 function Set-EnvLine {
     param([string]$Name, [string]$Value)
-    script:changed = $true
+    $script:changed = $true
     if ($script:content -match "(?m)^$([regex]::Escape($Name))=") {
         $script:content = $script:content -replace "(?m)^$([regex]::Escape($Name))=.*$", "$Name=$Value"
     } else {

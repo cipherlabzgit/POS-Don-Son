@@ -41,9 +41,26 @@ Write-Host "Host PostgreSQL: $pgDb @ 127.0.0.1:$pgPort" -ForegroundColor DarkGra
 Write-Host ""
 
 # --- 1) Host DB counts (what pgAdmin should show) ---
+# Use a SQL file so quoted PascalCase columns survive Windows psql quoting.
 $env:PGPASSWORD = $pgPass
-$dbTotal = [int](& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -tAc 'SELECT COUNT(*) FROM products;' 2>&1)
-$demoInDb = [int](& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -tAc "SELECT COUNT(*) FROM products WHERE ""Code"" IN ($demoCodesSql);" 2>&1)
+$countFile = Join-Path $env:TEMP "fix-pos-catalog-counts.sql"
+@"
+SELECT COUNT(*) FROM products;
+SELECT COUNT(*) FROM products WHERE "Code" IN ($demoCodesSql);
+"@ | Set-Content -Path $countFile -Encoding ASCII
+
+$countOut = & $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -t -A -f $countFile 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host $countOut
+    throw "Host DB count query failed."
+}
+$countLines = @($countOut | Where-Object { $_ -match '^\d+$' })
+if ($countLines.Count -lt 2) {
+    Write-Host $countOut
+    throw "Unexpected psql output for product counts."
+}
+$dbTotal = [int]$countLines[0].Trim()
+$demoInDb = [int]$countLines[1].Trim()
 
 Write-Host "Host DB (pgAdmin) product count: $dbTotal" -ForegroundColor $(if ($dbTotal -gt 50) { "Green" } else { "Yellow" })
 if ($demoInDb -gt 0) {

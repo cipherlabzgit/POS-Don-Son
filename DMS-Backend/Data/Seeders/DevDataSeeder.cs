@@ -1,6 +1,7 @@
 using DMS_Backend.Configuration;
 using DMS_Backend.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace DMS_Backend.Data.Seeders;
@@ -12,20 +13,38 @@ public sealed class DevDataSeeder
 {
     private readonly ApplicationDbContext _context;
     private readonly DevSeedOptions _options;
+    private readonly IHostEnvironment _environment;
     private readonly ILogger<DevDataSeeder> _logger;
+
+    /// <summary>Demo bakery product codes seeded for POS testing — not production catalog.</summary>
+    public static readonly string[] DemoProductCodes =
+    [
+        "BR001", "BR002", "BR003",
+        "PA001", "PA002", "PA003", "PA004", "PA005",
+        "SV001", "SV002", "SV003", "SV004",
+    ];
 
     public DevDataSeeder(
         ApplicationDbContext context,
         IOptions<DevSeedOptions> options,
+        IHostEnvironment environment,
         ILogger<DevDataSeeder> logger)
     {
         _context = context;
         _options = options.Value;
+        _environment = environment;
         _logger = logger;
     }
 
     public async Task SeedAsync()
     {
+        if (_environment.IsProduction())
+        {
+            _logger.LogWarning(
+                "Dev seed skipped: ASPNETCORE_ENVIRONMENT=Production. Demo products (BR001, PA001, …) are never seeded in production.");
+            return;
+        }
+
         _logger.LogInformation("Starting dev data seed");
 
         try

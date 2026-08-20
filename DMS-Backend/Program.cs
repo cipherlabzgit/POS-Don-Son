@@ -305,11 +305,39 @@ using (var scope = app.Services.CreateScope())
         // Always ensure POS catalog visibility and role permissions (DisplayInPOS, products:view, etc.)
         await devDataSeeder.EnsurePosCatalogReadyAsync();
 
-        // Seed dev data if enabled
+        // Seed dev data if enabled (never in Production — see DevDataSeeder.SeedAsync guard)
         if (devSeedOptions?.Enabled == true)
         {
-            Log.Information("Dev seed is enabled, seeding development data");
-            await devDataSeeder.SeedAsync();
+            if (app.Environment.IsProduction())
+            {
+                Log.Warning(
+                    "DevSeed:Enabled is true but ASPNETCORE_ENVIRONMENT=Production — demo data will NOT be seeded");
+            }
+            else
+            {
+                Log.Information("Dev seed is enabled, seeding development data");
+                await devDataSeeder.SeedAsync();
+            }
+        }
+
+        var productTotal = await context.Products.IgnoreQueryFilters().CountAsync();
+        var demoProductCount = await context.Products
+            .IgnoreQueryFilters()
+            .CountAsync(p => DevDataSeeder.DemoProductCodes.Contains(p.Code));
+        var connStr = context.Database.GetConnectionString() ?? "(not set)";
+        var dbTarget = TryFormatDbTarget(connStr);
+        Log.Information(
+            "Database catalog summary: {DbTarget} totalProducts={ProductTotal} demoSeedProducts={DemoCount}",
+            dbTarget,
+            productTotal,
+            demoProductCount);
+        if (productTotal > 0 && productTotal <= 15 && demoProductCount >= 10)
+        {
+            Log.Warning(
+                "Only {Count} products in API database and most match dev demo codes (BR001, PA001, …). " +
+                "If pgAdmin shows more products, backend is on a different PostgreSQL. " +
+                "Use docker-compose.local-pg.yml on the client server.",
+                productTotal);
         }
 
         Log.Information("Database seeded successfully");
@@ -416,4 +444,17 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
+}
+
+static string TryFormatDbTarget(string connectionString)
+{
+    try
+    {
+        var b = new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
+        return $"Host={b.Host};Port={b.Port};Database={b.Database};User={b.Username}";
+    }
+    catch
+    {
+        return "(could not parse connection string)";
+    }
 }

@@ -43,7 +43,7 @@ Write-Host ""
 # --- 1) Host DB counts (what pgAdmin should show) ---
 $env:PGPASSWORD = $pgPass
 $dbTotal = [int](& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -tAc 'SELECT COUNT(*) FROM products;' 2>&1)
-$demoInDb = [int](& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -tAc "SELECT COUNT(*) FROM products WHERE code IN ($demoCodesSql);" 2>&1)
+$demoInDb = [int](& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -tAc "SELECT COUNT(*) FROM products WHERE ""Code"" IN ($demoCodesSql);" 2>&1)
 
 Write-Host "Host DB (pgAdmin) product count: $dbTotal" -ForegroundColor $(if ($dbTotal -gt 50) { "Green" } else { "Yellow" })
 if ($demoInDb -gt 0) {

@@ -56,29 +56,29 @@ SELECT COUNT(*) AS total_products FROM products;
 SELECT COUNT(*) AS active_pos_products FROM products WHERE "IsActive" = true AND "DisplayInPOS" = true;
 
 \echo === PRODUCTS BY CATEGORY ===
-SELECT c.name AS category, c.code AS category_code, COUNT(p."Id") AS product_count
+SELECT c."Name" AS category, c."Code" AS category_code, COUNT(p."Id") AS product_count
 FROM categories c
 LEFT JOIN products p ON p."CategoryId" = c."Id"
-GROUP BY c."Id", c.name, c.code
-ORDER BY product_count DESC, c.name;
+GROUP BY c."Id", c."Name", c."Code"
+ORDER BY product_count DESC, c."Name";
 
 \echo === SAMPLE PRODUCTS (first 15 by code) ===
-SELECT p.code, p.name, c.name AS category
+SELECT p."Code", p."Name", c."Name" AS category
 FROM products p
 LEFT JOIN categories c ON c."Id" = p."CategoryId"
-ORDER BY p.code
+ORDER BY p."Code"
 LIMIT 15;
 
 \echo === DEMO BAKERY PRODUCTS (dev seed codes) ===
-SELECT code, name FROM products
-WHERE code IN ('BR001','BR002','BR003','PA001','PA002','PA003','PA004','PA005','SV001','SV002','SV003','SV004')
-ORDER BY code;
+SELECT "Code", "Name" FROM products
+WHERE "Code" IN ('BR001','BR002','BR003','PA001','PA002','PA003','PA004','PA005','SV001','SV002','SV003','SV004')
+ORDER BY "Code";
 
 \echo === ACTION CATEGORY PRODUCTS (sample) ===
-SELECT p.code, p.name FROM products p
+SELECT p."Code", p."Name" FROM products p
 JOIN categories c ON c."Id" = p."CategoryId"
-WHERE c.name = 'Action' OR c.code = 'Action'
-ORDER BY p.code
+WHERE c."Name" = 'Action' OR c."Code" = 'Action'
+ORDER BY p."Code"
 LIMIT 10;
 '@ | Set-Content -Path $auditFile -Encoding ASCII
 
@@ -125,11 +125,11 @@ if ($RemoveDemo) {
     $cleanupFile = Join-Path $env:TEMP "dms-db-cleanup-demo.sql"
     @"
 BEGIN;
-DELETE FROM products WHERE code IN ($codesSql);
-DELETE FROM categories WHERE code IN ($catCodesSql)
+DELETE FROM products WHERE "Code" IN ($codesSql);
+DELETE FROM categories WHERE "Code" IN ($catCodesSql)
   AND NOT EXISTS (SELECT 1 FROM products p WHERE p."CategoryId" = categories."Id");
-DELETE FROM user_roles WHERE "UserId" IN (SELECT "Id" FROM users WHERE email IN ($emailsSql));
-DELETE FROM users WHERE email IN ($emailsSql);
+DELETE FROM user_roles WHERE "UserId" IN (SELECT "Id" FROM users WHERE "Email" IN ($emailsSql));
+DELETE FROM users WHERE "Email" IN ($emailsSql);
 COMMIT;
 SELECT COUNT(*) AS remaining_products FROM products;
 "@ | Set-Content -Path $cleanupFile -Encoding ASCII

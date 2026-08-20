@@ -47,7 +47,7 @@ $demoInDb = [int](& $psql -U $pgUser -h 127.0.0.1 -p $pgPort -d $pgDb -tAc "SELE
 
 Write-Host "Host DB (pgAdmin) product count: $dbTotal" -ForegroundColor $(if ($dbTotal -gt 50) { "Green" } else { "Yellow" })
 if ($demoInDb -gt 0) {
-    Write-Host "  Demo seed codes in host DB: $demoInDb (BR001, PA001, …)" -ForegroundColor DarkGray
+    Write-Host "  Demo seed codes in host DB: $demoInDb (BR001, PA001, etc.)" -ForegroundColor DarkGray
 }
 
 $sqlFile = Join-Path $env:TEMP "fix-pos-catalog.sql"
@@ -83,7 +83,7 @@ for ($i = 1; $i -le 30; $i++) {
 if ($healthy) {
     Write-Host "Backend is healthy." -ForegroundColor Green
 } else {
-    Write-Host "Backend not healthy yet — API test may fail." -ForegroundColor Yellow
+    Write-Host "Backend not healthy yet - API test may fail." -ForegroundColor Yellow
 }
 
 $apiUrl = Get-EnvValue "VITE_API_URL" ""
@@ -146,14 +146,14 @@ if ($mismatch) {
 
 if ($looksLikeDemoOnly -and $dbTotal -gt 50) {
     Write-Host ""
-    Write-Host "API still shows ~12 demo products (BR001, PA001, …) while host DB has $dbTotal." -ForegroundColor Red
+    Write-Host ('API still shows ~12 demo products (BR001, PA001, etc.) while host DB has {0}.' -f $dbTotal) -ForegroundColor Red
     Write-Host "Run: .\scripts\redeploy-dms-local-pg.ps1" -ForegroundColor Cyan
     exit 1
 }
 
 if ($null -ne $apiTotal -and $apiTotal -gt 50) {
     Write-Host ""
-    Write-Host "OK — API and host DB align (~$apiTotal products)." -ForegroundColor Green
+    Write-Host "OK - API and host DB align (~$apiTotal products)." -ForegroundColor Green
     Write-Host ""
     Write-Host "On each POS till:" -ForegroundColor Yellow
     Write-Host "  1. Log out / log in (Server URL: $apiUrl)" -ForegroundColor White

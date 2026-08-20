@@ -57,7 +57,7 @@ for ($i = 1; $i -le 36; $i++) {
 if ($healthy) {
     Write-Host "Backend is healthy." -ForegroundColor Green
 } else {
-    Write-Host "Backend not healthy yet — check: docker compose logs backend" -ForegroundColor Yellow
+    Write-Host "Backend not healthy yet - check: docker compose logs backend" -ForegroundColor Yellow
 }
 
 Write-Host ""

@@ -64,7 +64,7 @@ if ($LASTEXITCODE -ne 0) { throw "SQL fix failed." }
 Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
 
 Write-Host ""
-Write-Host "Rebuilding backend (docker-compose.local-pg.yml → host DB) ..." -ForegroundColor Cyan
+Write-Host "Rebuilding backend (docker-compose.local-pg.yml -> host DB) ..." -ForegroundColor Cyan
 $prev = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
 & docker compose -f docker-compose.yml -f docker-compose.local-pg.yml up -d --build backend 2>&1 | ForEach-Object { Write-Host $_ }
@@ -109,7 +109,10 @@ try {
 
     $payload = $resp.data
     if (-not $payload) { $payload = $resp }
-    $apiTotal = [int]($payload.totalCount ?? $payload.TotalCount ?? 0)
+    $rawTotal = $payload.totalCount
+    if ($null -eq $rawTotal) { $rawTotal = $payload.TotalCount }
+    if ($null -eq $rawTotal) { $rawTotal = 0 }
+    $apiTotal = [int]$rawTotal
     $sample = $payload.products[0]
     if (-not $sample) { $sample = $payload.Products[0] }
 

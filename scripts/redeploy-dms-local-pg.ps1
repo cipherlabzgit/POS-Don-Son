@@ -35,9 +35,20 @@ $pgPort = Get-EnvValue "POSTGRES_PORT" "5432"
 Write-Host "Host DB: $pgDb on 127.0.0.1:$pgPort (user: $pgUser)" -ForegroundColor Green
 Write-Host ""
 
+Remove-Item Env:COMPOSE_FILE -ErrorAction SilentlyContinue
+if (Test-Path ".env") {
+    $envText = Get-Content ".env" -Raw
+    if ($envText -match "(?m)^COMPOSE_FILE=") {
+        $envText = [regex]::Replace($envText, "(?m)^COMPOSE_FILE=.*\r?\n?", "")
+        Set-Content -Path ".env" -Value $envText.TrimEnd() -Encoding ASCII
+        Add-Content -Path ".env" -Value "`n"
+        Write-Host "Removed COMPOSE_FILE from .env (Windows path bug)." -ForegroundColor Yellow
+    }
+}
+
 $prev = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
-& docker compose up -d --build backend frontend 2>&1 | ForEach-Object { Write-Host $_ }
+& docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --build backend frontend 2>&1 | ForEach-Object { Write-Host $_ }
 $ErrorActionPreference = $prev
 if ($LASTEXITCODE -ne 0) { throw "docker compose failed." }
 

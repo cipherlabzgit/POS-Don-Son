@@ -31,9 +31,13 @@ function Set-EnvLine {
     }
 }
 
-# docker-compose.override.yml already forces host PG; this line documents the lock in .env
-if ($content -notmatch '(?m)^COMPOSE_FILE=') {
-    Set-EnvLine "COMPOSE_FILE" "docker-compose.yml:docker-compose.override.yml"
+# Do not set COMPOSE_FILE. On Windows, "file1:file2" is treated as one path
+# and compose fails with GetFileAttributesEx ... yml:docker-compose.override.yml.
+# docker-compose.override.yml is auto-merged when you run docker compose.
+if ($content -match "(?m)^COMPOSE_FILE=") {
+    $content = [regex]::Replace($content, "(?m)^COMPOSE_FILE=.*\r?\n?", "")
+    $changed = $true
+    Write-Host "Removed COMPOSE_FILE from .env (breaks docker compose on Windows)." -ForegroundColor Yellow
 }
 
 Set-EnvLine "POSTGRES_DB" "dms_erp_db"

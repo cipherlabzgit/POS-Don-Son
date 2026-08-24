@@ -82,9 +82,19 @@ Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
 
 Write-Host ""
 Write-Host "Rebuilding backend (host PostgreSQL via docker-compose.override.yml) ..." -ForegroundColor Cyan
+Remove-Item Env:COMPOSE_FILE -ErrorAction SilentlyContinue
+if (Test-Path ".env") {
+    $envText = Get-Content ".env" -Raw
+    if ($envText -match "(?m)^COMPOSE_FILE=") {
+        $envText = [regex]::Replace($envText, "(?m)^COMPOSE_FILE=.*\r?\n?", "")
+        Set-Content -Path ".env" -Value $envText.TrimEnd() -Encoding ASCII
+        Add-Content -Path ".env" -Value "`n"
+        Write-Host "Removed COMPOSE_FILE from .env (Windows path bug)." -ForegroundColor Yellow
+    }
+}
 $prev = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
-& docker compose up -d --build backend 2>&1 | ForEach-Object { Write-Host $_ }
+& docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --build backend 2>&1 | ForEach-Object { Write-Host $_ }
 $ErrorActionPreference = $prev
 
 $backendPort = [int](Get-EnvValue "BACKEND_PORT" "5126")

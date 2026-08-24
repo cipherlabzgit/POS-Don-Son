@@ -46,11 +46,25 @@ if (Test-Path ".env") {
     }
 }
 
+$sha = (git rev-parse --short HEAD 2>$null)
+$labelFields = Test-Path "DMS-Frontend\src\components\products\ProductLabelPrintFields.tsx"
+Write-Host "Git commit: $sha" -ForegroundColor Cyan
+if ($labelFields) {
+    Write-Host "Label-print UI file: present" -ForegroundColor Green
+} else {
+    throw "Latest code is missing on disk. Run: git pull origin main"
+}
+
+Write-Host "Rebuilding backend + frontend with --no-cache (old Next.js image is discarded) ..." -ForegroundColor Yellow
 $prev = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
-& docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --build backend frontend 2>&1 | ForEach-Object { Write-Host $_ }
+& docker compose -f docker-compose.yml -f docker-compose.override.yml build --no-cache backend frontend 2>&1 | ForEach-Object { Write-Host $_ }
+if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = $prev; throw "docker compose build failed." }
+& docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --force-recreate --no-deps backend 2>&1 | ForEach-Object { Write-Host $_ }
+if ($LASTEXITCODE -ne 0) { $ErrorActionPreference = $prev; throw "backend recreate failed." }
+& docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --force-recreate --no-deps frontend 2>&1 | ForEach-Object { Write-Host $_ }
 $ErrorActionPreference = $prev
-if ($LASTEXITCODE -ne 0) { throw "docker compose failed." }
+if ($LASTEXITCODE -ne 0) { throw "frontend recreate failed." }
 
 $backendPort = [int](Get-EnvValue "BACKEND_PORT" "5126")
 $hostName = Get-EnvValue "CLIENT_HOST" "127.0.0.1"

@@ -47,6 +47,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<ProductionSection> ProductionSections => Set<ProductionSection>();
     public DbSet<SectionConsumable> SectionConsumables => Set<SectionConsumable>();
     public DbSet<ProductSectionAssignment> ProductSectionAssignments => Set<ProductSectionAssignment>();
+    public DbSet<ProductLabelIngredient> ProductLabelIngredients => Set<ProductLabelIngredient>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<ApprovalQueue> ApprovalQueues => Set<ApprovalQueue>();
     public DbSet<AutoApprovalConfig> AutoApprovalConfigs => Set<AutoApprovalConfig>();
@@ -1148,6 +1149,13 @@ public sealed class ApplicationDbContext : DbContext
             entity.Property(e => e.RequireOpenStock).HasColumnName("RequireOpenStock");
             entity.Property(e => e.EnableLabelPrint).HasColumnName("EnableLabelPrint");
             entity.Property(e => e.AllowFutureLabelPrint).HasColumnName("AllowFutureLabelPrint");
+            entity.Property(e => e.LabelExpiryMode).HasColumnName("LabelExpiryMode").HasMaxLength(20);
+            entity.Property(e => e.ExpiryDays).HasColumnName("ExpiryDays");
+            entity.Property(e => e.ExpiryHours).HasColumnName("ExpiryHours");
+            entity.Property(e => e.ExpiryFixedTime).HasColumnName("ExpiryFixedTime").HasMaxLength(30);
+            entity.Property(e => e.LabelPrintUomId).HasColumnName("LabelPrintUomId");
+            entity.Property(e => e.LabelPrintQty).HasColumnName("LabelPrintQty");
+            entity.Property(e => e.FutureManufactureDays).HasColumnName("FutureManufactureDays");
             entity.Property(e => e.SortOrder).HasColumnName("SortOrder");
             entity.Property(e => e.DefaultDeliveryTurns).HasColumnName("DefaultDeliveryTurns").HasColumnType("jsonb");
             entity.Property(e => e.AvailableInTurns).HasColumnName("AvailableInTurns").HasColumnType("jsonb");
@@ -1180,6 +1188,11 @@ public sealed class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.LabelTemplateId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            entity.HasOne(e => e.LabelPrintUom)
+                .WithMany()
+                .HasForeignKey(e => e.LabelPrintUomId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             entity.HasIndex(e => e.Code).IsUnique();
             entity.HasIndex(e => e.CategoryId);
             entity.HasIndex(e => e.IsActive);
@@ -1208,6 +1221,25 @@ public sealed class ApplicationDbContext : DbContext
 
             // A product can only appear once per section
             entity.HasIndex(e => new { e.ProductId, e.ProductionSectionId }).IsUnique();
+        });
+
+        modelBuilder.Entity<ProductLabelIngredient>(entity =>
+        {
+            entity.ToTable("product_label_ingredients");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SortOrder).HasDefaultValue(0);
+
+            entity.HasOne(e => e.Product)
+                .WithMany(p => p.LabelIngredients)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Ingredient)
+                .WithMany()
+                .HasForeignKey(e => e.IngredientId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => new { e.ProductId, e.IngredientId }).IsUnique();
         });
 
         // Ingredient entity configuration

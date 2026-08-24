@@ -15,6 +15,18 @@ export interface UpsertProductSectionAssignment {
   sortOrder: number;
 }
 
+export interface ProductLabelIngredient {
+  ingredientId: string;
+  ingredientCode: string;
+  ingredientName: string;
+  sortOrder: number;
+}
+
+export interface UpsertProductLabelIngredient {
+  ingredientId: string;
+  sortOrder: number;
+}
+
 export interface Product {
   id: string;
   code: string;
@@ -40,6 +52,15 @@ export interface Product {
   displayInPOS: boolean;
   enableLabelPrint: boolean;
   allowFutureLabelPrint: boolean;
+  labelExpiryMode?: string;
+  expiryDays?: number | null;
+  expiryHours?: number | null;
+  expiryFixedTime?: string | null;
+  labelPrintUomId?: string | null;
+  labelPrintUom?: string | null;
+  labelPrintQty?: number;
+  futureManufactureDays?: number;
+  labelIngredients?: ProductLabelIngredient[];
   labelTemplateId?: string | null;
   labelTemplateCode?: string | null;
   labelTemplateName?: string | null;
@@ -54,8 +75,6 @@ export interface Product {
   standardQuantity?: number | null;
   showInPos?: boolean | null;
   favorite?: boolean | null;
-  expiryDays?: number | null;
-  expiryHours?: number | null;
 }
 
 export interface CreateProductDto {
@@ -79,6 +98,14 @@ export interface CreateProductDto {
   displayInPOS: boolean;
   enableLabelPrint: boolean;
   allowFutureLabelPrint: boolean;
+  labelExpiryMode?: string;
+  expiryDays?: number | null;
+  expiryHours?: number | null;
+  expiryFixedTime?: string | null;
+  labelPrintUomId?: string | null;
+  labelPrintQty?: number;
+  futureManufactureDays?: number;
+  labelIngredients?: UpsertProductLabelIngredient[];
   labelTemplateId?: string | null;
   sortOrder: number;
   defaultDeliveryTurns: number[];
@@ -107,6 +134,14 @@ export interface UpdateProductDto {
   displayInPOS: boolean;
   enableLabelPrint: boolean;
   allowFutureLabelPrint: boolean;
+  labelExpiryMode?: string;
+  expiryDays?: number | null;
+  expiryHours?: number | null;
+  expiryFixedTime?: string | null;
+  labelPrintUomId?: string | null;
+  labelPrintQty?: number;
+  futureManufactureDays?: number;
+  labelIngredients?: UpsertProductLabelIngredient[];
   labelTemplateId?: string | null;
   sortOrder: number;
   defaultDeliveryTurns: number[];
@@ -149,6 +184,20 @@ function normalizeProduct(raw: any): Product {
     displayInPOS: n('displayInPOS') ?? n('displayInPOS') ?? true,
     enableLabelPrint: n('enableLabelPrint') ?? false,
     allowFutureLabelPrint: n('allowFutureLabelPrint') ?? false,
+    labelExpiryMode: n('labelExpiryMode') ?? 'Days',
+    expiryDays: n('expiryDays') ?? n('ExpiryDays'),
+    expiryHours: n('expiryHours') ?? n('ExpiryHours'),
+    expiryFixedTime: n('expiryFixedTime') ?? n('ExpiryFixedTime'),
+    labelPrintUomId: n('labelPrintUomId') ?? n('LabelPrintUomId'),
+    labelPrintUom: n('labelPrintUom') ?? n('LabelPrintUom'),
+    labelPrintQty: n('labelPrintQty') ?? n('LabelPrintQty') ?? 1,
+    futureManufactureDays: n('futureManufactureDays') ?? n('FutureManufactureDays') ?? 0,
+    labelIngredients: (n('labelIngredients') ?? n('LabelIngredients') ?? []).map((raw: any) => ({
+      ingredientId: raw.ingredientId ?? raw.IngredientId,
+      ingredientCode: raw.ingredientCode ?? raw.IngredientCode ?? '',
+      ingredientName: raw.ingredientName ?? raw.IngredientName ?? '',
+      sortOrder: raw.sortOrder ?? raw.SortOrder ?? 0,
+    })),
     labelTemplateId: n('labelTemplateId'),
     labelTemplateCode: n('labelTemplateCode'),
     labelTemplateName: n('labelTemplateName'),

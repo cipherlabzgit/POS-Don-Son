@@ -39,6 +39,15 @@ public class ProductDetailDto
     
     public bool EnableLabelPrint { get; set; }
     public bool AllowFutureLabelPrint { get; set; }
+    public string LabelExpiryMode { get; set; } = "Days";
+    public int? ExpiryDays { get; set; }
+    public int? ExpiryHours { get; set; }
+    public string? ExpiryFixedTime { get; set; }
+    public Guid? LabelPrintUomId { get; set; }
+    public string? LabelPrintUom { get; set; }
+    public int LabelPrintQty { get; set; }
+    public int FutureManufactureDays { get; set; }
+    public List<ProductLabelIngredientDto> LabelIngredients { get; set; } = new();
     public Guid? LabelTemplateId { get; set; }
     public string? LabelTemplateCode { get; set; }
     public string? LabelTemplateName { get; set; }

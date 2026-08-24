@@ -10,6 +10,7 @@ import Checkbox from '@/components/ui/checkbox';
 import { Toggle } from '@/components/ui/toggle';
 import { ArrowLeft, Save, Plus, X } from 'lucide-react';
 import { productsApi, type Product, type UpdateProductDto, type UpsertProductSectionAssignment } from '@/lib/api/products';
+import { ProductLabelPrintFields } from '@/components/products/ProductLabelPrintFields';
 import { labelTemplatesApi, type LabelTemplate } from '@/lib/api/label-templates';
 import { categoriesApi, type Category } from '@/lib/api/categories';
 import { uomsApi, type UnitOfMeasure } from '@/lib/api/uoms';
@@ -54,6 +55,14 @@ export default function EditProductPage() {
     displayInPOS: true,
     enableLabelPrint: true,
     allowFutureLabelPrint: false,
+    labelExpiryMode: 'Days',
+    expiryDays: 60,
+    expiryHours: null,
+    expiryFixedTime: '',
+    labelPrintUomId: null,
+    labelPrintQty: 1,
+    futureManufactureDays: 0,
+    labelIngredients: [],
     labelTemplateId: null,
     sortOrder: 0,
     defaultDeliveryTurns: [],
@@ -102,6 +111,14 @@ export default function EditProductPage() {
         displayInPOS: fullProduct.displayInPOS ?? true,
         enableLabelPrint: fullProduct.enableLabelPrint,
         allowFutureLabelPrint: fullProduct.allowFutureLabelPrint,
+        labelExpiryMode: fullProduct.labelExpiryMode || 'Days',
+        expiryDays: fullProduct.expiryDays ?? null,
+        expiryHours: fullProduct.expiryHours ?? null,
+        expiryFixedTime: fullProduct.expiryFixedTime ?? '',
+        labelPrintUomId: fullProduct.labelPrintUomId ?? null,
+        labelPrintQty: fullProduct.labelPrintQty ?? 1,
+        futureManufactureDays: fullProduct.futureManufactureDays ?? 0,
+        labelIngredients: fullProduct.labelIngredients ?? [],
         labelTemplateId: fullProduct.labelTemplateId ?? null,
         sortOrder: fullProduct.sortOrder ?? 0,
         defaultDeliveryTurns: fullProduct.defaultDeliveryTurns || [],
@@ -205,6 +222,17 @@ export default function EditProductPage() {
         displayInPOS: formData.displayInPOS ?? true,
         enableLabelPrint: formData.enableLabelPrint ?? true,
         allowFutureLabelPrint: formData.allowFutureLabelPrint ?? false,
+        labelExpiryMode: formData.labelExpiryMode || 'Days',
+        expiryDays: formData.expiryDays ?? null,
+        expiryHours: formData.expiryHours ?? null,
+        expiryFixedTime: formData.expiryFixedTime || undefined,
+        labelPrintUomId: formData.labelPrintUomId || null,
+        labelPrintQty: Number(formData.labelPrintQty) || 1,
+        futureManufactureDays: Number(formData.futureManufactureDays) || 0,
+        labelIngredients: (formData.labelIngredients ?? []).map((i, idx) => ({
+          ingredientId: i.ingredientId,
+          sortOrder: idx,
+        })),
         labelTemplateId: formData.labelTemplateId?.trim()
           ? formData.labelTemplateId
           : null,
@@ -502,27 +530,12 @@ export default function EditProductPage() {
             </div>
 
             {(formData.enableLabelPrint ?? false) && (
-              <div className="pt-2">
-                <Select
-                  label="Label template"
-                  value={formData.labelTemplateId || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      labelTemplateId: e.target.value || null,
-                    })
-                  }
-                  options={[
-                    { value: '', label: '— None —' },
-                    ...labelTemplates.map((t) => ({
-                      value: t.id,
-                      label: `${t.code} — ${t.name}`,
-                    })),
-                  ]}
-                  placeholder="Select template (optional)"
-                  fullWidth
-                />
-              </div>
+              <ProductLabelPrintFields
+                values={formData}
+                uoms={uoms}
+                labelTemplates={labelTemplates}
+                onChange={(patch) => setFormData({ ...formData, ...patch })}
+              />
             )}
 
             <div className="pt-2">

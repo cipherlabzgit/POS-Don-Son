@@ -54,10 +54,11 @@ public class IngredientService : IIngredientService
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
+            var searchLower = searchTerm.Trim().ToLower();
             query = query.Where(i =>
-                i.Code.Contains(searchTerm) ||
-                i.Name.Contains(searchTerm) ||
-                (i.Description != null && i.Description.Contains(searchTerm)));
+                i.Code.ToLower().Contains(searchLower) ||
+                i.Name.ToLower().Contains(searchLower) ||
+                (i.Description != null && i.Description.ToLower().Contains(searchLower)));
         }
 
         var totalCount = await query.CountAsync(cancellationToken);

@@ -42,11 +42,12 @@ public sealed class OutletService : IOutletService
 
         if (!string.IsNullOrWhiteSpace(search))
         {
+            var searchLower = search.Trim().ToLower();
             query = query.Where(o =>
-                o.Code.Contains(search) ||
-                o.Name.Contains(search) ||
-                (o.Address != null && o.Address.Contains(search)) ||
-                (o.ContactPerson != null && o.ContactPerson.Contains(search)));
+                o.Code.ToLower().Contains(searchLower) ||
+                o.Name.ToLower().Contains(searchLower) ||
+                (o.Address != null && o.Address.ToLower().Contains(searchLower)) ||
+                (o.ContactPerson != null && o.ContactPerson.ToLower().Contains(searchLower)));
         }
 
         if (!string.IsNullOrWhiteSpace(locationType))

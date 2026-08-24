@@ -10,6 +10,7 @@ import Checkbox from '@/components/ui/checkbox';
 import { Toggle } from '@/components/ui/toggle';
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import { productsApi, type CreateProductDto, type UpsertProductSectionAssignment } from '@/lib/api/products';
+import { ProductLabelPrintFields } from '@/components/products/ProductLabelPrintFields';
 import { labelTemplatesApi, type LabelTemplate } from '@/lib/api/label-templates';
 import { categoriesApi, type Category } from '@/lib/api/categories';
 import { uomsApi, type UnitOfMeasure } from '@/lib/api/uoms';
@@ -49,6 +50,14 @@ export default function AddProductPage() {
     displayInPOS: true,
     enableLabelPrint: true,
     allowFutureLabelPrint: false,
+    labelExpiryMode: 'Days',
+    expiryDays: 60,
+    expiryHours: null,
+    expiryFixedTime: '',
+    labelPrintUomId: null,
+    labelPrintQty: 1,
+    futureManufactureDays: 0,
+    labelIngredients: [],
     labelTemplateId: null,
     sortOrder: 0,
     defaultDeliveryTurns: [],
@@ -152,6 +161,17 @@ export default function AddProductPage() {
         displayInPOS: formData.displayInPOS!,
         enableLabelPrint: formData.enableLabelPrint!,
         allowFutureLabelPrint: formData.allowFutureLabelPrint!,
+        labelExpiryMode: formData.labelExpiryMode || 'Days',
+        expiryDays: formData.expiryDays ?? null,
+        expiryHours: formData.expiryHours ?? null,
+        expiryFixedTime: formData.expiryFixedTime || undefined,
+        labelPrintUomId: formData.labelPrintUomId || undefined,
+        labelPrintQty: Number(formData.labelPrintQty) || 1,
+        futureManufactureDays: Number(formData.futureManufactureDays) || 0,
+        labelIngredients: (formData.labelIngredients ?? []).map((i, idx) => ({
+          ingredientId: i.ingredientId,
+          sortOrder: idx,
+        })),
         labelTemplateId: formData.labelTemplateId?.trim()
           ? formData.labelTemplateId
           : undefined,
@@ -435,27 +455,12 @@ export default function AddProductPage() {
             </div>
 
             {(formData.enableLabelPrint ?? false) && (
-              <div className="pt-2">
-                <Select
-                  label="Label template"
-                  value={formData.labelTemplateId || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      labelTemplateId: e.target.value || null,
-                    })
-                  }
-                  options={[
-                    { value: '', label: '— None —' },
-                    ...labelTemplates.map((t) => ({
-                      value: t.id,
-                      label: `${t.code} — ${t.name}`,
-                    })),
-                  ]}
-                  placeholder="Select template (optional)"
-                  fullWidth
-                />
-              </div>
+              <ProductLabelPrintFields
+                values={formData}
+                uoms={uoms}
+                labelTemplates={labelTemplates}
+                onChange={(patch) => setFormData({ ...formData, ...patch })}
+              />
             )}
 
             <div className="pt-2">

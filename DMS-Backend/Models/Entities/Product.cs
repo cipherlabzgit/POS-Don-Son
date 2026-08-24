@@ -95,6 +95,24 @@ public class Product : BaseEntity
     public bool EnableLabelPrint { get; set; } = true;
     public bool AllowFutureLabelPrint { get; set; } = false;
 
+    /// <summary>Days, Hours, or FixedTime.</summary>
+    [MaxLength(20)]
+    public string LabelExpiryMode { get; set; } = "Days";
+
+    public int? ExpiryDays { get; set; }
+    public int? ExpiryHours { get; set; }
+
+    [MaxLength(30)]
+    public string? ExpiryFixedTime { get; set; }
+
+    public Guid? LabelPrintUomId { get; set; }
+    public UnitOfMeasure? LabelPrintUom { get; set; }
+
+    public int LabelPrintQty { get; set; } = 1;
+    public int FutureManufactureDays { get; set; }
+
+    public virtual ICollection<ProductLabelIngredient> LabelIngredients { get; set; } = new List<ProductLabelIngredient>();
+
     public Guid? LabelTemplateId { get; set; }
     public LabelTemplate? LabelTemplate { get; set; }
 

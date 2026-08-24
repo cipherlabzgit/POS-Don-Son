@@ -18,6 +18,8 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.UnitOfMeasure, opt => opt.MapFrom(src => src.UnitOfMeasure != null ? src.UnitOfMeasure.Code : string.Empty))
             .ForMember(dest => dest.ProductionSectionName, opt => opt.MapFrom(src => src.ProductionSectionRef != null ? src.ProductionSectionRef.Name : null))
             .ForMember(dest => dest.SectionAssignments, opt => opt.MapFrom(src => src.SectionAssignments))
+            .ForMember(dest => dest.LabelPrintUom, opt => opt.MapFrom(src => src.LabelPrintUom != null ? src.LabelPrintUom.Code : null))
+            .ForMember(dest => dest.LabelIngredients, opt => opt.MapFrom(src => src.LabelIngredients.OrderBy(i => i.SortOrder)))
             .ForMember(dest => dest.LabelTemplateCode, opt => opt.MapFrom(src => src.LabelTemplate != null ? src.LabelTemplate.Code : null))
             .ForMember(dest => dest.LabelTemplateName, opt => opt.MapFrom(src => src.LabelTemplate != null ? src.LabelTemplate.Name : null));
 
@@ -25,10 +27,16 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.ProductionSectionCode, opt => opt.MapFrom(src => src.ProductionSection != null ? src.ProductionSection.Code : string.Empty))
             .ForMember(dest => dest.ProductionSectionName, opt => opt.MapFrom(src => src.ProductionSection != null ? src.ProductionSection.Name : string.Empty));
 
-        // Ignore SectionAssignments on map — handled manually in service
+        CreateMap<ProductLabelIngredient, ProductLabelIngredientDto>()
+            .ForMember(dest => dest.IngredientCode, opt => opt.MapFrom(src => src.Ingredient != null ? src.Ingredient.Code : string.Empty))
+            .ForMember(dest => dest.IngredientName, opt => opt.MapFrom(src => src.Ingredient != null ? src.Ingredient.Name : string.Empty));
+
+        // Ignore collections on map — handled manually in service
         CreateMap<CreateProductDto, Product>()
-            .ForMember(dest => dest.SectionAssignments, opt => opt.Ignore());
+            .ForMember(dest => dest.SectionAssignments, opt => opt.Ignore())
+            .ForMember(dest => dest.LabelIngredients, opt => opt.Ignore());
         CreateMap<UpdateProductDto, Product>()
-            .ForMember(dest => dest.SectionAssignments, opt => opt.Ignore());
+            .ForMember(dest => dest.SectionAssignments, opt => opt.Ignore())
+            .ForMember(dest => dest.LabelIngredients, opt => opt.Ignore());
     }
 }

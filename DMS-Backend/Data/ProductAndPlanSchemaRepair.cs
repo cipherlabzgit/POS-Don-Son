@@ -99,6 +99,49 @@ public static class ProductAndPlanSchemaRepair
               REFERENCES label_templates ("Id")
               ON DELETE SET NULL;
           END IF;
+
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = 'products' AND column_name = 'LabelExpiryMode'
+          ) THEN
+            ALTER TABLE products ADD COLUMN "LabelExpiryMode" varchar(20) NOT NULL DEFAULT 'Days';
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = 'products' AND column_name = 'ExpiryDays'
+          ) THEN
+            ALTER TABLE products ADD COLUMN "ExpiryDays" integer NULL;
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = 'products' AND column_name = 'ExpiryHours'
+          ) THEN
+            ALTER TABLE products ADD COLUMN "ExpiryHours" integer NULL;
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = 'products' AND column_name = 'ExpiryFixedTime'
+          ) THEN
+            ALTER TABLE products ADD COLUMN "ExpiryFixedTime" varchar(30) NULL;
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = 'products' AND column_name = 'LabelPrintUomId'
+          ) THEN
+            ALTER TABLE products ADD COLUMN "LabelPrintUomId" uuid NULL;
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = 'products' AND column_name = 'LabelPrintQty'
+          ) THEN
+            ALTER TABLE products ADD COLUMN "LabelPrintQty" integer NOT NULL DEFAULT 1;
+          END IF;
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = 'products' AND column_name = 'FutureManufactureDays'
+          ) THEN
+            ALTER TABLE products ADD COLUMN "FutureManufactureDays" integer NOT NULL DEFAULT 0;
+          END IF;
         END $EF$;
         """;
 
@@ -404,5 +447,20 @@ public static class ProductAndPlanSchemaRepair
         // product_section_assignments (raw SQL migration, FK can fail on fresh DB)
         await db.Database.ExecuteSqlRawAsync(EnsureProductSectionAssignmentsTableSql, cancellationToken);
         await db.Database.ExecuteSqlRawAsync(EnsureProductSectionAssignmentsFkSql, cancellationToken);
+        await db.Database.ExecuteSqlRawAsync(EnsureProductLabelIngredientsTableSql, cancellationToken);
     }
+
+    private const string EnsureProductLabelIngredientsTableSql =
+        """
+        CREATE TABLE IF NOT EXISTS product_label_ingredients (
+          id uuid PRIMARY KEY,
+          product_id uuid NOT NULL,
+          ingredient_id uuid NOT NULL,
+          sort_order integer NOT NULL DEFAULT 0
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS ix_product_label_ingredients_product_ingredient
+          ON product_label_ingredients (product_id, ingredient_id);
+        CREATE INDEX IF NOT EXISTS ix_product_label_ingredients_product_id
+          ON product_label_ingredients (product_id);
+        """;
 }

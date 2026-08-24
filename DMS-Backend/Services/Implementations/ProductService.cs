@@ -95,6 +95,9 @@ public class ProductService : IProductService
             .Include(p => p.UnitOfMeasure)
             .Include(p => p.ProductionSectionRef)
             .Include(p => p.LabelTemplate)
+            .Include(p => p.LabelPrintUom)
+            .Include(p => p.LabelIngredients)
+                .ThenInclude(i => i.Ingredient)
             .Include(p => p.SectionAssignments)
                 .ThenInclude(a => a.ProductionSection)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
@@ -154,6 +157,8 @@ public class ProductService : IProductService
             _context.ProductSectionAssignments.AddRange(assignments);
             await _context.SaveChangesAsync(cancellationToken);
         }
+
+        await SyncLabelIngredientsAsync(product.Id, dto.LabelIngredients, cancellationToken);
 
         await _systemLogService.LogInfoAsync("ProductService", $"Product created: {product.Code} by user {userId}");
 
@@ -236,7 +241,16 @@ public class ProductService : IProductService
         product.DisplayInPOS = dto.DisplayInPOS;
         product.EnableLabelPrint = dto.EnableLabelPrint;
         product.AllowFutureLabelPrint = dto.AllowFutureLabelPrint;
+        product.LabelExpiryMode = string.IsNullOrWhiteSpace(dto.LabelExpiryMode) ? "Days" : dto.LabelExpiryMode.Trim();
+        product.ExpiryDays = dto.ExpiryDays;
+        product.ExpiryHours = dto.ExpiryHours;
+        product.ExpiryFixedTime = dto.ExpiryFixedTime;
+        product.LabelPrintUomId = dto.LabelPrintUomId;
+        product.LabelPrintQty = dto.LabelPrintQty;
+        product.FutureManufactureDays = dto.FutureManufactureDays;
         product.LabelTemplateId = dto.LabelTemplateId;
+
+        await SyncLabelIngredientsAsync(id, dto.LabelIngredients, cancellationToken);
         product.SortOrder = dto.SortOrder;
         product.DefaultDeliveryTurns = dto.DefaultDeliveryTurns;
         product.AvailableInTurns = dto.AvailableInTurns;
@@ -287,6 +301,44 @@ public class ProductService : IProductService
         }
 
         return await query.AnyAsync(cancellationToken);
+    }
+
+    private async Task SyncLabelIngredientsAsync(
+        Guid productId,
+        List<UpsertProductLabelIngredientDto> items,
+        CancellationToken cancellationToken)
+    {
+        var existing = await _context.ProductLabelIngredients
+            .Where(x => x.ProductId == productId)
+            .ToListAsync(cancellationToken);
+        _context.ProductLabelIngredients.RemoveRange(existing);
+
+        if (items.Count == 0)
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
+        var ids = items.Select(i => i.IngredientId).Distinct().ToList();
+        var validIds = await _context.Ingredients
+            .IgnoreQueryFilters()
+            .Where(i => ids.Contains(i.Id))
+            .Select(i => i.Id)
+            .ToListAsync(cancellationToken);
+
+        var missing = ids.Except(validIds).ToList();
+        if (missing.Count > 0)
+        {
+            throw new InvalidOperationException("One or more ingredients were not found");
+        }
+
+        _context.ProductLabelIngredients.AddRange(items.Select((item, idx) => new ProductLabelIngredient
+        {
+            ProductId = productId,
+            IngredientId = item.IngredientId,
+            SortOrder = item.SortOrder != 0 ? item.SortOrder : idx,
+        }));
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     private async Task EnsureLabelTemplateExistsAsync(Guid? labelTemplateId, CancellationToken cancellationToken)

@@ -811,13 +811,16 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <div className="flex min-w-0 flex-1 gap-2 overflow-hidden">
+            <div
+              className="grid min-w-0 flex-1 gap-2 overflow-hidden"
+              style={{ gridTemplateColumns: `repeat(${CATS_PER_PAGE}, minmax(0, 1fr))` }}
+            >
               {visibleCats.map((c) => (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => selectCategory(c.id)}
-                  className={`flex h-10 min-w-0 flex-1 items-center justify-center rounded-lg px-2 text-center text-xs font-bold leading-tight shadow ${c.colour} ${categoryId === c.id ? 'ring-2 ring-[var(--brand-accent)] ring-offset-1' : ''}`}
+                  className={`flex h-10 w-full items-center justify-center rounded-lg px-1.5 text-center text-xs font-bold leading-tight shadow ${c.colour} ${categoryId === c.id ? 'ring-2 ring-[var(--brand-accent)] ring-offset-1' : ''}`}
                 >
                   <span className="line-clamp-2">{c.name.replace('★ ', '')}</span>
                 </button>

@@ -3,7 +3,7 @@ export function normalizeApiBaseUrl(url: string): string {
   let s = (url ?? '').trim()
   if (!s) return s
 
-  // Accidental paste like: D:\DMS\http:\\123.231.10.22:5126
+  // Accidental paste like: D:\DMS\http:\\host:5126
   const embedded = s.match(/https?:[/\\]+[^\s]+/i)
   if (embedded) {
     s = embedded[0]

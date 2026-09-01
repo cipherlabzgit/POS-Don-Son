@@ -11,7 +11,11 @@ export async function applyBootstrapConfig(): Promise<void> {
     const fromFile = cfg?.apiBaseUrl?.trim()
     if (fromFile) {
       useSettingsStore.getState().setApiBaseUrl(normalizeApiBaseUrl(fromFile))
-      console.log('[bootstrap] API URL from pos-config.json:', normalizeApiBaseUrl(fromFile))
+      console.log('[bootstrap] API URL loaded from pos-config.json')
+    }
+    const showroomCode = (cfg as { showroomCode?: string } | null)?.showroomCode?.trim()
+    if (showroomCode) {
+      useSettingsStore.getState().setAssignedShowroomCode(showroomCode)
     }
   } catch (e) {
     console.warn('[bootstrap] Could not read pos-config.json', e)
@@ -29,6 +33,6 @@ export function repairStaleLocalApiUrl(): void {
   const current = normalizeApiBaseUrl(useSettingsStore.getState().apiBaseUrl)
   if (isLocalApiUrl(current) && current !== buildDefault) {
     useSettingsStore.getState().setApiBaseUrl(buildDefault)
-    console.log('[bootstrap] Replaced stale local API URL with build default:', buildDefault)
+    console.log('[bootstrap] Replaced stale local API URL with build default')
   }
 }

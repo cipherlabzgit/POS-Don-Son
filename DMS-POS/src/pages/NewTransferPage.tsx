@@ -4,7 +4,7 @@ import { PosSubPageLayout } from '../components/PosSubPageLayout'
 import { CatalogStaleBanner } from '../components/CatalogStaleBanner'
 import { useAuthStore } from '../lib/auth-store'
 import { useSettingsStore } from '../lib/settings-store'
-import { loadProductsIntoDb } from '../lib/catalog-sync'
+import { loadAllActiveProducts } from '../lib/catalog-sync'
 import type { ProductRow } from '../lib/types'
 import { createTransfer, fetchOutletsPage, submitTransfer } from '../lib/api'
 import { useOnlineStatus } from '../lib/use-online-status'
@@ -26,7 +26,7 @@ export function NewTransferPage({ onBack }: Props) {
 
   const [outlets, setOutlets]         = useState<{ id: string; code: string; name: string }[]>([])
   const [toOutletId, setToOutletId]   = useState('')
-  const [transferDate, setTransferDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [nowClock, setNowClock]       = useState(() => new Date())
   const [notes, setNotes]             = useState('')
   const [products, setProducts]       = useState<ProductRow[]>([])
   const [search, setSearch]           = useState('')
@@ -40,7 +40,7 @@ export function NewTransferPage({ onBack }: Props) {
   useEffect(() => {
     void (async () => {
       try {
-        const list = await loadProductsIntoDb()
+        const list = await loadAllActiveProducts()
         setProducts(list)
         if (list.length === 0) {
           toast(
@@ -68,6 +68,11 @@ export function NewTransferPage({ onBack }: Props) {
       } catch { /* offline */ }
     })()
   }, [token])
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowClock(new Date()), 1000)
+    return () => window.clearInterval(id)
+  }, [])
 
   const toChoices = useMemo(() => outlets.filter((o) => o.id !== fromOutletId), [outlets, fromOutletId])
 
@@ -101,7 +106,7 @@ export function NewTransferPage({ onBack }: Props) {
     setPendingSubmitId(null)
     try {
       const created = (await createTransfer({
-        transferDate: new Date(`${transferDate}T12:00:00.000Z`).toISOString(),
+        transferDate: new Date().toISOString(),
         fromOutletId,
         toOutletId,
         notes: notes.trim() || undefined,
@@ -193,9 +198,10 @@ export function NewTransferPage({ onBack }: Props) {
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Date</label>
-            <input type="date" value={transferDate} onChange={(e) => setTransferDate(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-[var(--border)] bg-white px-2 py-1.5 text-sm text-[var(--foreground)] focus:border-[var(--brand-primary)] focus:outline-none" />
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Date &amp; time</p>
+            <p className="mt-0.5 font-semibold tabular-nums text-[var(--foreground)]">
+              {nowClock.toLocaleString()}
+            </p>
           </div>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Requested by</p>

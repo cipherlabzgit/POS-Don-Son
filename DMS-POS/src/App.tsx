@@ -27,6 +27,12 @@ export default function App() {
     useSettingsStore.getState().applyThemeColors()
   }, [])
 
+  useEffect(() => {
+    void window.dmsPos?.isFullscreen?.().then((full) => {
+      if (!full) void window.dmsPos?.toggleFullscreen?.()
+    })
+  }, [])
+
   // Sync theme from server when authenticated (useOnlineStatus already handles sync)
   // This is a backup in case the hook doesn't trigger
   useEffect(() => {

@@ -7,7 +7,6 @@ import { toast } from '../lib/toast-store'
 import type { ProductRow, CategoryRow } from '../lib/types'
 
 export function DiagnosticPage({ onClose }: { onClose: () => void }) {
-  const apiBaseUrl = useSettingsStore((s) => s.apiBaseUrl)
   const cacheUpdatedAt = useSettingsStore((s) => s.cacheUpdatedAt)
   const [products, setProducts] = useState<ProductRow[]>([])
   const [categories, setCategories] = useState<CategoryRow[]>([])
@@ -99,14 +98,12 @@ export function DiagnosticPage({ onClose }: { onClose: () => void }) {
             <>
               <div className="rounded-lg border border-[var(--border)] bg-white p-4 text-sm">
                 <p className="font-semibold text-[var(--foreground)]">Server connection</p>
-                <p className="mt-1 font-mono text-xs text-[var(--muted-foreground)]">{apiBaseUrl}</p>
                 <p className="mt-2 text-xs text-[var(--muted-foreground)]">
                   Last catalogue sync:{' '}
                   {cacheUpdatedAt ? new Date(cacheUpdatedAt).toLocaleString() : 'never'}
                 </p>
                 <p className="mt-2 text-xs text-amber-800">
-                  POS downloads products from the live server API into this PC&apos;s local cache.
-                  All tills must use the same Server URL ({apiBaseUrl || 'not set'}) and
+                  POS downloads products from the live server into this PC&apos;s local cache.
                   Clear and Re-sync after server product updates.
                 </p>
               </div>

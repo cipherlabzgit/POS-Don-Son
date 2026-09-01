@@ -2,7 +2,7 @@ import {
   useCallback, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react'
 import {
-  ChevronRight, ChevronUp,
+  ChevronLeft, ChevronRight, ChevronUp, Check,
   Cloud, History, Inbox, LogOut, Menu,
   Minus, Package, Plus, Printer,
   Search, Settings2, Star, Truck, Undo2,
@@ -13,7 +13,7 @@ import { useCartStore } from '../lib/cart-store'
 import { useFavoriteStore } from '../lib/favorite-store'
 import { useSettingsStore } from '../lib/settings-store'
 import { syncCatalogFromServer } from '../lib/catalog-sync'
-import { fetchOutletsPage, getApiBaseUrl, postPosSale } from '../lib/api'
+import { fetchOutletsPage, postPosSale } from '../lib/api'
 import { enqueueMutation, processPendingQueue } from '../lib/sync-queue'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { printReceiptHtml, type PrintReceiptOpts } from '../lib/print-receipt'
@@ -21,8 +21,8 @@ import { toast } from '../lib/toast-store'
 import { OnlineBadge } from '../components/OnlineBadge'
 import { PaymentModal } from '../components/PaymentModal'
 import { TransactionHistoryModal } from '../components/TransactionHistoryModal'
-import { PrintPreviewModal } from '../components/PrintPreviewModal'
 import { QtyNumpad } from '../components/QtyNumpad'
+import { SearchKeyboard } from '../components/SearchKeyboard'
 import { DiagnosticPage } from './DiagnosticPage'
 import type { CategoryRow, ProductRow } from '../lib/types'
 import { offlineDb } from '../lib/offline-db'
@@ -66,9 +66,10 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
 
   const outletId    = useSettingsStore((s) => s.outletId)
   const outletLabel = useSettingsStore((s) => s.outletLabel)
+  const assignedShowroomCode = useSettingsStore((s) => s.assignedShowroomCode)
+  const setAssignedShowroomCode = useSettingsStore((s) => s.setAssignedShowroomCode)
   const setOutlet   = useSettingsStore((s) => s.setOutlet)
   const apiBaseUrl  = useSettingsStore((s) => s.apiBaseUrl)
-  const setApiBaseUrl = useSettingsStore((s) => s.setApiBaseUrl)
   const zoomPercent = useSettingsStore((s) => s.zoomPercent)
   const setZoom     = useSettingsStore((s) => s.setZoomPercent)
   const productTilePercent = useSettingsStore((s) => s.productTilePercent)
@@ -96,12 +97,11 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   const [drawer, setDrawer]           = useState(false)
   const [techOpen, setTechOpen]       = useState(false)
   const [userMenu, setUserMenu]       = useState(false)
-  const [outletMenu, setOutletMenu]   = useState(false)
+  const [showroomBindError, setShowroomBindError] = useState('')
   const [search, setSearch]           = useState('')
   const [categoryId, setCategoryId]   = useState<string>('all')
   const [payOpen, setPayOpen]         = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
-  const [printPreview, setPrintPreview] = useState<PrintReceiptOpts | null>(null)
   const [loadErr, setLoadErr]         = useState('')
   const [numpad, setNumpad]           = useState<NumpadTarget | null>(null)
   const [products, setProducts]       = useState<ProductRow[]>([])
@@ -117,6 +117,8 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   }>({ count: 0, byType: [] })
   const [syncPopoverOpen, setSyncPopoverOpen] = useState(false)
   const [diagnosticOpen, setDiagnosticOpen] = useState(false)
+  const [searchKbOpen, setSearchKbOpen] = useState(false)
+  const [catPage, setCatPage] = useState(0)
 
   const catalogScrollRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -176,23 +178,30 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
           phone: String(o.phone ?? o.Phone ?? ''),
         })).filter((o) => o.id)
         setOutlets(rows)
-        const current = useSettingsStore.getState().outletId
-        const stillValid = Boolean(current && rows.some((o) => o.id === current))
-        if (!stillValid && rows.length > 0) {
-          const preferred =
-            rows.find((o) => /city/i.test(o.name) || /city/i.test(o.code)) ?? rows[0]
-          setOutlet(preferred.id, preferred.name || preferred.code)
+        const code = useSettingsStore.getState().assignedShowroomCode.trim().toUpperCase()
+        if (!code) {
+          setOutlet(null, 'Showroom')
+          setShowroomBindError('This till has no Showroom Code. A system administrator must set it in Technical settings.')
+          return
         }
+        const match = rows.find((o) => o.code.trim().toUpperCase() === code)
+        if (!match) {
+          setOutlet(null, 'Showroom')
+          setShowroomBindError(`Showroom Code "${code}" was not found in DMS. Check the Code on Showroom master.`)
+          return
+        }
+        setShowroomBindError('')
+        setOutlet(match.id, match.name || match.code)
       } catch (err) {
         if (!cancelled) {
           setOutlets([])
           console.warn('[outlets] Failed to load showrooms:', err)
-          toast('Could not load showrooms from server. Check API URL and permissions.', 'error')
+          toast('Could not load showrooms from server. Check the network connection and permissions.', 'error')
         }
       }
     })()
     return () => { cancelled = true }
-  }, [accessToken, online, apiBaseUrl, setOutlet])
+  }, [accessToken, online, apiBaseUrl, assignedShowroomCode, setOutlet])
 
   useEffect(() => {
     if (!accessToken) {
@@ -227,14 +236,13 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
         if (payOpen) { e.preventDefault(); setPayOpen(false); return }
         if (numpad) { e.preventDefault(); setNumpad(null); return }
         if (historyOpen) { e.preventDefault(); setHistoryOpen(false); return }
-        if (printPreview) { e.preventDefault(); setPrintPreview(null); return }
         if (syncPopoverOpen) { e.preventDefault(); setSyncPopoverOpen(false) }
         return
       }
       if (e.key === '/' || e.key === 'F3') {
         if (e.key === '/' && typing) return
         e.preventDefault()
-        searchInputRef.current?.focus()
+        setSearchKbOpen(true)
         return
       }
       if (e.key === 'F5') {
@@ -249,7 +257,7 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [payOpen, numpad, historyOpen, printPreview, syncPopoverOpen, lines.length, outletId, canSaleCreate, loadData])
+  }, [payOpen, numpad, historyOpen, syncPopoverOpen, lines.length, outletId, canSaleCreate, loadData])
 
   // ── Filtered product list ───────────────────────────────────────────────────
   const filteredProducts = useMemo(() => {
@@ -276,6 +284,15 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
     setCategoryId(id)
   }
 
+  const CATS_PER_PAGE = 7
+  const catPages = Math.max(1, Math.ceil(catRow.length / CATS_PER_PAGE))
+  const visibleCats = catRow.slice(catPage * CATS_PER_PAGE, catPage * CATS_PER_PAGE + CATS_PER_PAGE)
+  const catProgress = ((catPage + 1) / catPages) * 100
+
+  useEffect(() => {
+    if (catPage > catPages - 1) setCatPage(Math.max(0, catPages - 1))
+  }, [catPage, catPages])
+
   const sub = subtotal()
 
   // ── Current outlet details ─────────────────────────────────────────────────
@@ -286,7 +303,7 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   // ── Payment ─────────────────────────────────────────────────────────────────
   async function handlePay(method: 'Cash' | 'Card', cashReceived?: number, change?: number) {
     if (!canSaleCreate) { toast('You do not have permission to complete sales.', 'error'); return }
-    if (!outletId) { toast('Select a showroom first.', 'error'); return }
+    if (!outletId) { toast('This till is not assigned to a showroom.', 'error'); return }
     if (lines.length === 0) return
 
     const body = {
@@ -427,13 +444,16 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   }
 
   // ── Print ───────────────────────────────────────────────────────────────────
-  function handlePrint() {
+  async function handlePrint() {
     const now = new Date()
-    const dateTimeStr = now.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) + ' ' + 
+    const dateTimeStr = now.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) + ' ' +
                        now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
-    
+    const cashier = user ? `${user.firstName} ${user.lastName}`.trim() : ''
+    const footerLines = ['FOOD ARE NOT RETURNABLE', 'COMPLAINT MUST BE LODGED BEFORE', '12 NOON NEXT DAY']
+
+    let opts: PrintReceiptOpts | null = null
     if (lines.length > 0) {
-      setPrintPreview({
+      opts = {
         title: 'DON & SONS (PVT) LTD',
         companyAddress: receiptCompanyAddress,
         companyPhone: `Tel:${receiptCompanyPhone}`,
@@ -443,13 +463,11 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
         cash: sub,
         change: 0,
         dateTime: dateTimeStr,
-        cashier: user ? `${user.firstName} ${user.lastName}`.trim() : '',
-        footerLines: ['FOOD ARE NOT RETURNABLE', 'COMPLAINT MUST BE LODGED BEFORE', '12 NOON NEXT DAY'],
-      })
-      return
-    }
-    if (lastReceipt) {
-      setPrintPreview({
+        cashier,
+        footerLines,
+      }
+    } else if (lastReceipt) {
+      opts = {
         title: 'DON & SONS (PVT) LTD',
         companyAddress: receiptCompanyAddress,
         companyPhone: `Tel:${receiptCompanyPhone}`,
@@ -459,24 +477,27 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
         cash: lastReceipt.cash,
         change: lastReceipt.change,
         dateTime: lastReceipt.dateTime || dateTimeStr,
-        cashier: user ? `${user.firstName} ${user.lastName}`.trim() : '',
+        cashier,
         paymentMethod: lastReceipt.paymentMethod,
         saleNo: lastReceipt.saleNo,
-        footerLines: ['FOOD ARE NOT RETURNABLE', 'COMPLAINT MUST BE LODGED BEFORE', '12 NOON NEXT DAY'],
-      })
+        footerLines,
+      }
+    }
+    if (!opts) {
+      toast('Add items or complete a sale first.', 'info')
       return
     }
-    toast('Add items to print a preview, or complete a sale first.', 'info')
+    const ok = await printReceiptHtml(opts)
+    if (!ok) toast('Unable to print — try again.', 'error')
   }
 
   // ── Display Bill (during payment) ──────────────────────────────────────────
-  function handleDisplayBill(cashReceived?: number, change?: number) {
+  async function handleDisplayBill(cashReceived?: number, change?: number) {
     if (lines.length === 0) return
     const now = new Date()
-    const dateTimeStr = now.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) + ' ' + 
+    const dateTimeStr = now.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) + ' ' +
                        now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
-    
-    setPrintPreview({
+    const ok = await printReceiptHtml({
       title: 'DON & SONS (PVT) LTD',
       companyAddress: receiptCompanyAddress,
       companyPhone: `Tel:${receiptCompanyPhone}`,
@@ -489,6 +510,7 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
       cashier: user ? `${user.firstName} ${user.lastName}`.trim() : '',
       footerLines: ['FOOD ARE NOT RETURNABLE', 'COMPLAINT MUST BE LODGED BEFORE', '12 NOON NEXT DAY'],
     })
+    if (!ok) toast('Unable to print — try again.', 'error')
   }
 
   // ── Product tile click → quick add or long press for numpad ────────────────
@@ -612,27 +634,11 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             ) : null}
           </div>
 
-          {/* Showroom pill */}
-          <div className="relative">
-            <button type="button" onClick={() => setOutletMenu((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20">
-              <span className="max-w-[8rem] truncate">{outletLabel || 'Select showroom'}</span>
-              <ChevronRight className="h-3.5 w-3.5 shrink-0 rotate-90" />
-            </button>
-            {outletMenu ? (
-              <ul className="absolute right-0 top-full z-50 mt-1 min-w-[12rem] rounded-xl border border-[var(--border)] bg-white py-1 shadow-xl">
-                {outlets.map((o) => (
-                  <li key={o.id}>
-                    <button type="button" className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--neutral-50)]"
-                      onClick={() => { setOutlet(o.id, o.name || o.code); setOutletMenu(false) }}>
-                      <span className="font-semibold text-[var(--foreground)]">{o.name}</span>
-                      {' '}<span className="text-[var(--muted-foreground)]">({o.code})</span>
-                    </button>
-                  </li>
-                ))}
-                {outlets.length === 0 && <li className="px-4 py-3 text-xs text-[var(--muted-foreground)]">No showrooms available</li>}
-              </ul>
-            ) : null}
+          <div
+            className="flex items-center rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white"
+            title="Assigned showroom (device setting)"
+          >
+            <span className="max-w-[10rem] truncate">{outletId ? outletLabel : 'Showroom not assigned'}</span>
           </div>
 
           {/* User dropdown */}
@@ -689,7 +695,7 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
       {/* Showroom warning */}
       {!outletId ? (
         <div className="flex-shrink-0 border-b border-[var(--brand-accent)] bg-[var(--brand-accent)]/20 px-4 py-2 text-sm font-medium text-amber-900">
-          ⚠ Select a showroom from the header to enable payments.
+          ⚠ {showroomBindError || 'This till is not assigned to a showroom. Ask an administrator to set the Showroom Code.'}
         </div>
       ) : null}
 
@@ -700,53 +706,48 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
         {/* ── LEFT: Bill panel ── */}
         <section className="flex min-h-0 flex-col border-r border-[var(--border)] bg-white">
 
-          <div className="flex-shrink-0 border-b border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3">
-            <h2 className="font-pos-title text-lg font-bold text-[var(--foreground)]">Current Bill</h2>
-            <p className="text-xs text-[var(--muted-foreground)]">Tap a product on the right to add it</p>
+          <div className="flex-shrink-0 border-b border-[var(--border)] px-4 py-3">
+            <h2 className="font-pos-title text-xl font-bold text-[var(--foreground)]">Bill</h2>
           </div>
 
-          {/* Lines table */}
-          <div className="pos-scroll-light min-h-0 flex-1 overflow-auto">
+          <div className="pos-scroll-visible min-h-0 flex-1">
             {lines.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
                 <p className="text-sm font-semibold text-[var(--neutral-500)]">No items yet</p>
-                <p className="max-w-xs text-xs text-[var(--neutral-400)]">Browse categories on the right and tap any product to add it here.</p>
+                <p className="max-w-xs text-xs text-[var(--neutral-400)]">Tap a product on the right to add it.</p>
               </div>
             ) : (
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--neutral-50)] text-xs font-semibold uppercase text-[var(--muted-foreground)]">
+                <thead className="sticky top-0 z-10 border-b border-[var(--border)] bg-white text-xs font-semibold text-[var(--muted-foreground)]">
                   <tr>
-                    <th className="px-3 py-2.5">Item</th>
-                    <th className="px-3 py-2.5 text-center">Qty</th>
-                    <th className="px-3 py-2.5 text-right">Amount</th>
-                    <th className="w-9 px-3 py-2.5" />
+                    <th className="px-3 py-2">Item</th>
+                    <th className="px-2 py-2 text-center">Qty</th>
+                    <th className="px-3 py-2 text-right">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
                   {lines.map((l) => (
-                    <tr key={l.productId} className="hover:bg-[var(--neutral-50)]">
+                    <tr key={l.productId}>
                       <td className="px-3 py-2.5 text-sm font-medium text-[var(--foreground)]">{l.name}</td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex items-center justify-center gap-1">
-                          <button type="button" className="pos-tap rounded-lg bg-red-50 px-2 text-red-600 hover:bg-red-100" onClick={() => dec(l.productId)} aria-label={`Decrease ${l.name}`}>
+                      <td className="px-2 py-2.5">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand-primary)] text-white" onClick={() => remove(l.productId)} aria-label={`Remove ${l.name}`}>
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                          <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand-primary)] text-white" onClick={() => dec(l.productId)} aria-label={`Decrease ${l.name}`}>
                             <Minus className="h-3.5 w-3.5" />
                           </button>
-                          <button type="button" className="min-w-[2rem] text-center text-sm font-bold tabular-nums text-[var(--foreground)] hover:text-[var(--brand-primary)]"
-                            onClick={() => setNumpad({ productId: l.productId, name: l.name, currentQty: l.qty })} title="Edit quantity">
+                          <button type="button" className="min-w-[1.25rem] text-center text-sm font-bold tabular-nums"
+                            onClick={() => setNumpad({ productId: l.productId, name: l.name, currentQty: l.qty })}>
                             {l.qty}
                           </button>
-                          <button type="button" className="pos-tap rounded-lg border border-[var(--border)] bg-white px-2 text-[var(--foreground)] hover:border-[var(--brand-primary)] hover:bg-[var(--neutral-50)]" onClick={() => inc(l.productId)} aria-label={`Increase ${l.name}`}>
+                          <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand-accent)] text-neutral-900" onClick={() => inc(l.productId)} aria-label={`Increase ${l.name}`}>
                             <Plus className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </td>
                       <td className="px-3 py-2.5 text-right text-sm font-semibold tabular-nums">
-                        Rs {(l.qty * l.unitPrice).toFixed(2)}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <button type="button" className="pos-tap rounded-lg p-1 text-red-500 hover:bg-red-50" onClick={() => remove(l.productId)} aria-label={`Remove ${l.name}`}>
-                          <X className="h-4 w-4" />
-                        </button>
+                        {(l.qty * l.unitPrice).toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -755,45 +756,42 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             )}
           </div>
 
-          {/* Total + actions */}
           <div className="flex-shrink-0 border-t border-[var(--border)] bg-white px-4 py-3 space-y-3">
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Total</p>
-                <p className="font-pos-title text-2xl font-bold tabular-nums text-[var(--foreground)]">
-                  Rs {sub.toFixed(2)}
-                </p>
-              </div>
-              {lines.length > 0 ? (
-                <button type="button" onClick={() => { clear(); toast('Bill cleared.', 'info') }}
-                  className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--muted-foreground)] hover:border-red-300 hover:text-red-600">
-                  Clear bill
-                </button>
-              ) : null}
-            </div>
+            <p className="font-pos-title text-2xl font-bold tabular-nums text-[var(--foreground)]">
+              Total: Rs {sub.toFixed(2)}
+            </p>
 
             <button type="button" disabled={lines.length === 0 || !outletId || !canSaleCreate} onClick={() => lines.length > 0 && outletId && canSaleCreate && setPayOpen(true)}
-              className="w-full rounded-xl bg-[var(--brand-primary)] py-4 text-lg font-bold text-white shadow-md transition hover:bg-[var(--brand-primary-dark)] disabled:cursor-not-allowed disabled:opacity-40">
+              className="w-full rounded-lg bg-[var(--brand-primary)] py-4 text-xl font-bold tracking-wide text-white shadow-md hover:bg-[var(--brand-primary-dark)] disabled:cursor-not-allowed disabled:opacity-40">
               PAY
             </button>
 
             <div className="grid grid-cols-3 gap-2">
-              <ActionBtn icon={<Users className="h-5 w-5 text-[var(--brand-primary)]" />} label="Customer" onClick={onCustomerView} />
-              <ActionBtn icon={<Printer className="h-5 w-5 text-[var(--brand-accent-dark)]" />} label="Print" accent onClick={handlePrint} />
-              <ActionBtn icon={<History className="h-5 w-5 text-[var(--neutral-600)]" />} label="History" dark onClick={() => setHistoryOpen(true)} disabled={!canSaleView} />
+              <button type="button" onClick={onCustomerView} className="pos-tap flex h-14 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-white" aria-label="Customer">
+                <Users className="h-6 w-6" />
+              </button>
+              <button type="button" onClick={handlePrint} className="pos-tap flex h-14 items-center justify-center rounded-lg bg-[var(--brand-accent)] text-neutral-900" aria-label="Print">
+                <Printer className="h-6 w-6" />
+              </button>
+              <button type="button" disabled={!canSaleView} onClick={() => setHistoryOpen(true)} className="pos-tap flex h-14 items-center justify-center rounded-lg bg-[var(--brand-primary-dark)] text-white disabled:opacity-35" aria-label="History">
+                <History className="h-6 w-6" />
+              </button>
             </div>
           </div>
         </section>
 
         {/* ── RIGHT: Catalog ── */}
-        <section className="flex min-h-0 flex-col bg-[var(--neutral-50)] p-3">
+        <section className="flex min-h-0 flex-col bg-[var(--pos-catalog-surface)] p-3">
 
           {/* Search */}
           <div className="relative mb-3">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--neutral-400)]" />
-            <input type="search" placeholder="Search item name or code" value={search}
+            <input type="text" placeholder="Search item name or code" value={search}
               ref={searchInputRef}
-              onChange={(e) => setSearch(e.target.value)}
+              readOnly
+              inputMode="none"
+              onFocus={(e) => { e.currentTarget.blur(); setSearchKbOpen(true) }}
+              onClick={() => setSearchKbOpen(true)}
               className="w-full rounded-xl border border-[var(--border)] bg-white py-3 pl-11 pr-10 text-[var(--foreground)] placeholder:text-[var(--neutral-400)] shadow-sm focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
               autoComplete="off" />
             {search.trim() ? (
@@ -803,43 +801,69 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             ) : null}
           </div>
 
-          {/* Category pills — show all (no next/prev pager) */}
-          <div className="mb-3 flex flex-wrap gap-2">
-            {catRow.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => selectCategory(c.id)}
-                className={`rounded-xl px-4 py-2.5 text-sm font-bold shadow transition whitespace-nowrap ${c.colour} ${categoryId === c.id ? 'ring-2 ring-[var(--brand-primary)] ring-offset-2' : 'opacity-90 hover:opacity-100'}`}
-              >
-                {c.name}
-              </button>
-            ))}
+          <div className="mb-2 flex items-center gap-2">
+            <button
+              type="button"
+              className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
+              disabled={catPage <= 0}
+              onClick={() => setCatPage((p) => Math.max(0, p - 1))}
+              aria-label="Previous categories"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <div className="flex min-w-0 flex-1 gap-2 overflow-hidden">
+              {visibleCats.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => selectCategory(c.id)}
+                  className={`flex h-10 min-w-0 flex-1 items-center justify-center rounded-lg px-2 text-center text-xs font-bold leading-tight shadow ${c.colour} ${categoryId === c.id ? 'ring-2 ring-[var(--brand-accent)] ring-offset-1' : ''}`}
+                >
+                  <span className="line-clamp-2">{c.name.replace('★ ', '')}</span>
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
+              disabled={catPage >= catPages - 1}
+              onClick={() => setCatPage((p) => Math.min(catPages - 1, p + 1))}
+              aria-label="Next categories"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[var(--neutral-200)]">
+            <div className="h-full rounded-full bg-[var(--brand-primary)] transition-all" style={{ width: `${catProgress}%` }} />
           </div>
 
-          {/* Count + Top */}
-          <div className="mb-2 flex items-center justify-between text-xs text-[var(--muted-foreground)]">
-            <span>{filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}</span>
-            <button type="button" className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-white px-2.5 py-1.5 text-xs font-medium hover:bg-[var(--neutral-100)]"
+          <div className="mb-2 flex items-center justify-between">
+            <button
+              type="button"
+              className="pos-tap flex h-8 w-8 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white"
+              onClick={() => catalogScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+              aria-label="Back to top"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+            <button type="button" className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-white px-2.5 py-1.5 text-xs font-medium"
               onClick={() => catalogScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}>
               <ChevronUp className="h-3.5 w-3.5" /> Top
             </button>
           </div>
 
-          {/* Product grid — auto-fill columns, uniform aspect tiles, rows do not stretch */}
           <div
             ref={catalogScrollRef}
-            className="pos-scroll pos-product-grid grid min-h-0 flex-1 overflow-y-auto p-0.5"
+            className="pos-scroll-visible pos-product-grid grid min-h-0 flex-1 p-0.5"
             style={{
-              ['--pos-tile-min' as string]: `${Math.round(140 * (productTilePercent / 100))}px`,
-              ['--pos-tile-font' as string]: `${(0.875 * (productTilePercent / 100)).toFixed(3)}rem`,
-              ['--pos-tile-gap' as string]: `${Math.max(0.35, 0.75 * (productTilePercent / 100)).toFixed(2)}rem`,
+              ['--pos-tile-min' as string]: `${Math.round(128 * (productTilePercent / 100))}px`,
+              ['--pos-tile-font' as string]: `${(0.8 * (productTilePercent / 100)).toFixed(3)}rem`,
+              ['--pos-tile-gap' as string]: `${Math.max(0.35, 0.55 * (productTilePercent / 100)).toFixed(2)}rem`,
             }}
           >
             {filteredProducts.length === 0 ? (
               <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border)] px-6 py-16 text-center">
                 <p className="text-sm font-semibold text-[var(--neutral-500)]">No products match</p>
-                <p className="mt-1 text-xs text-[var(--neutral-400)]">Try a different category or clear the search.</p>
               </div>
             ) : (
               filteredProducts.map((p) => (
@@ -864,42 +888,31 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
                       longPressTimerRef.current = null
                     }
                   }}
-                  className="product-tile group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-white p-3 text-left text-stone-900 shadow-sm hover:border-[var(--brand-primary)] hover:shadow-md"
+                  className="product-tile group relative flex aspect-square cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-[var(--pos-product-tile-border)] bg-[var(--pos-product-tile)] p-2 text-center text-stone-900 shadow-sm hover:border-[var(--brand-primary)]"
                 >
-                  <div className="flex shrink-0 items-start justify-between gap-1 mb-2">
-                    <button
-                      type="button"
-                      className="-m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-[var(--brand-primary)]"
-                      onClick={(e) => { e.stopPropagation(); toggleFav(p.id) }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onMouseUp={(e) => e.stopPropagation()}
-                      onTouchStart={(e) => e.stopPropagation()}
-                      onTouchEnd={(e) => e.stopPropagation()}
-                      aria-label={isFav(p.id) ? 'Remove from favourites' : 'Add to favourites'}
-                    >
-                      <Star className={`h-4 w-4 ${isFav(p.id) ? 'fill-[var(--brand-primary)] text-[var(--brand-primary)]' : ''}`} />
-                    </button>
-                    {lines.find((l) => l.productId === p.id) ? (
-                      <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--brand-primary)] px-1.5 text-[11px] font-bold text-white">
-                        {lines.find((l) => l.productId === p.id)?.qty}
-                      </span>
-                    ) : (
-                      <span className="h-6 w-6 shrink-0" aria-hidden />
-                    )}
-                  </div>
-                  <div className="min-h-0 flex-1 overflow-hidden mb-3">
-                    <h3 className="line-clamp-3 text-sm font-semibold leading-tight text-stone-800">
-                      {p.name}
-                    </h3>
-                  </div>
-                  <div className="flex shrink-0 flex-col gap-1.5 border-t border-stone-200/80 pt-2.5">
-                    <span className="product-tile-price text-base font-bold tabular-nums text-stone-900">
-                      Rs {p.unitPrice.toFixed(2)}
+                  <button
+                    type="button"
+                    className="absolute left-1 top-1 flex h-7 w-7 items-center justify-center rounded-md text-[var(--brand-accent-dark)]"
+                    onClick={(e) => { e.stopPropagation(); toggleFav(p.id) }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onMouseUp={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchEnd={(e) => e.stopPropagation()}
+                    aria-label={isFav(p.id) ? 'Remove from favourites' : 'Add to favourites'}
+                  >
+                    <Star className={`h-4 w-4 ${isFav(p.id) ? 'fill-[var(--brand-accent)] text-[var(--brand-accent-dark)]' : ''}`} />
+                  </button>
+                  {lines.find((l) => l.productId === p.id) ? (
+                    <span className="absolute right-1 top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--brand-primary)] px-1 text-[11px] font-bold text-white">
+                      {lines.find((l) => l.productId === p.id)?.qty}
                     </span>
-                    <span className="truncate font-mono text-[10px] font-medium text-stone-500">
-                      {p.code}
-                    </span>
-                  </div>
+                  ) : null}
+                  <h3 className="line-clamp-3 px-1 text-sm font-semibold leading-tight">
+                    {p.name}
+                  </h3>
+                  <span className="mt-1 text-sm font-bold tabular-nums">
+                    Rs {p.unitPrice.toFixed(2)}
+                  </span>
                 </div>
               ))
             )}
@@ -910,9 +923,6 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
       {/* ── Modals ── */}
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} onPay={handlePay} onDisplayBill={handleDisplayBill} total={sub} />
       <TransactionHistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} outletId={outletId} outletLabel={outletLabel} />
-      {printPreview ? (
-        <PrintPreviewModal opts={printPreview} onClose={() => setPrintPreview(null)} />
-      ) : null}
       {numpad ? (
         <QtyNumpad
           productName={numpad.name}
@@ -923,6 +933,9 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
       ) : null}
       {diagnosticOpen ? (
         <DiagnosticPage onClose={() => { setDiagnosticOpen(false); void loadData() }} />
+      ) : null}
+      {searchKbOpen ? (
+        <SearchKeyboard value={search} onChange={setSearch} onClose={() => setSearchKbOpen(false)} />
       ) : null}
 
       {/* ── Operations drawer (slides from left) ── */}
@@ -970,13 +983,6 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
               </button>
               {techOpen ? (
                 <div className="space-y-3 border-t border-[var(--border)] px-3 py-3 text-xs">
-                  <label className="block">
-                    <span className="font-semibold text-[var(--muted-foreground)]">API base URL</span>
-                    <input value={apiBaseUrl} onChange={(e) => setApiBaseUrl(e.target.value)}
-                      onBlur={() => setApiBaseUrl(apiBaseUrl)}
-                      placeholder="http://123.231.10.22:5126"
-                      className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-2 py-1.5 font-mono text-[11px] text-[var(--foreground)]" />
-                  </label>
                   <div>
                     <p className="mb-1 font-semibold text-[var(--muted-foreground)]">Product button size</p>
                     <div className="flex items-center gap-1">
@@ -986,6 +992,20 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
                     </div>
                     <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">Catalogue cards only — does not change screen zoom.</p>
                   </div>
+                  {user?.isSuperAdmin ? (
+                    <label className="block">
+                      <span className="font-semibold text-[var(--muted-foreground)]">Showroom Code</span>
+                      <input
+                        value={assignedShowroomCode}
+                        onChange={(e) => setAssignedShowroomCode(e.target.value)}
+                        placeholder="e.g. DBQ"
+                        className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-2 py-1.5 font-mono uppercase text-[var(--foreground)]"
+                      />
+                      <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+                        Must match the Code field on DMS → Showroom. Cashiers cannot change this.
+                      </p>
+                    </label>
+                  ) : null}
                   <label className="flex cursor-pointer items-center gap-2">
                     <input type="checkbox" checked={autoPrint} onChange={(e) => setAutoPrint(e.target.checked)} className="h-4 w-4 rounded accent-[var(--brand-primary)]" />
                     <span className="font-semibold text-[var(--foreground)]">Auto-print receipt after payment</span>
@@ -1000,7 +1020,6 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
                     <input value={receiptAddress} onChange={(e) => setReceiptAddress(e.target.value)}
                       className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-2 py-1.5 text-[var(--foreground)]" />
                   </label>
-                  <p className="text-[var(--muted-foreground)]">Active: <span className="font-mono text-[var(--foreground)]">{getApiBaseUrl()}</span></p>
                   <p className="text-[var(--muted-foreground)]">Cache: <span className="font-medium text-[var(--foreground)]">{cacheUpdatedAt ? new Date(cacheUpdatedAt).toLocaleString() : '—'}</span></p>
                 </div>
               ) : null}
@@ -1018,21 +1037,6 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
 }
 
 // ── Small helpers ──────────────────────────────────────────────────────────────
-
-function ActionBtn({ icon, label, onClick, accent, dark, disabled }: { icon: ReactNode; label: string; onClick: () => void; accent?: boolean; dark?: boolean; disabled?: boolean }) {
-  const base = 'flex flex-col items-center gap-1 rounded-xl border py-3 text-xs font-semibold shadow-sm transition hover:brightness-95'
-  const cls = accent
-    ? `${base} border-[var(--brand-accent)] bg-[var(--brand-accent)] text-neutral-900`
-    : dark
-    ? `${base} border-[var(--neutral-700)] bg-[var(--neutral-800)] text-white`
-    : `${base} border-[var(--border)] bg-white text-[var(--foreground)] hover:bg-[var(--neutral-50)]`
-  return (
-    <button type="button" disabled={disabled} onClick={onClick} className={`${cls} disabled:cursor-not-allowed disabled:opacity-35`}>
-      {icon}
-      <span>{label}</span>
-    </button>
-  )
-}
 
 function MenuAction({ icon, label, onClick, textClass = 'text-[var(--foreground)]' }: { icon: ReactNode; label: string; onClick: () => void; textClass?: string }) {
   return (

@@ -21,10 +21,10 @@ function buildReceiptDocumentHtml(opts: PrintReceiptOpts): string {
     .map(
       (l) =>
         `<tr>
-          <td style="padding:4px 0">${escapeHtml(l.name)}</td>
-          <td style="text-align:right;padding:4px 8px">${Number(l.unitPrice).toFixed(2)}</td>
-          <td style="text-align:center;padding:4px 8px">${Number(l.qty)}</td>
-          <td style="text-align:right;padding:4px 0">${Number(l.amount).toFixed(2)}</td>
+          <td class="item">${escapeHtml(l.name)}</td>
+          <td class="each">${Number(l.unitPrice).toFixed(2)}</td>
+          <td class="qty">${Number(l.qty)}</td>
+          <td class="tot">${Number(l.amount).toFixed(2)}</td>
         </tr>`,
     )
     .join('')
@@ -50,11 +50,13 @@ body{font-family:'Courier New',monospace;padding:8px;max-width:300px;margin:0 au
 .company-info{font-size:9px;margin:2px 0}
 .divider{border-top:1px dashed #000;margin:6px 0}
 .info-line{font-size:10px;margin:2px 0}
-table{width:100%;border-collapse:collapse;font-size:10px;margin:6px 0}
-th{text-align:left;padding:3px 0;font-weight:bold;border-bottom:1px dashed #000}
-th.center{text-align:center}
-th.right{text-align:right}
-td{padding:4px 0}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px;margin:6px 0}
+th{padding:3px 0;font-weight:bold;border-bottom:1px dashed #000;vertical-align:bottom}
+td{padding:5px 0;vertical-align:top}
+.item{width:46%;text-align:left;white-space:normal;word-wrap:break-word;overflow-wrap:anywhere;padding-right:8px}
+.each{width:20%;text-align:right;padding-left:10px;white-space:nowrap}
+.qty{width:12%;text-align:center;padding-left:8px;padding-right:8px;white-space:nowrap}
+.tot{width:22%;text-align:right;padding-left:10px;white-space:nowrap}
 .totals{margin-top:6px;border-top:1px dashed #000;padding-top:6px}
 .total-row{display:flex;justify-content:space-between;margin:3px 0;font-size:11px}
 .total-row.main{font-weight:bold;font-size:12px}
@@ -77,10 +79,10 @@ ${opts.saleNo ? `<div class="info-line">Bill No: ${escapeHtml(opts.saleNo)}</div
 <table>
   <thead>
     <tr>
-      <th>Item</th>
-      <th class="right">Each</th>
-      <th class="center">Qty</th>
-      <th class="right">Total</th>
+      <th class="item">Item</th>
+      <th class="each">Each</th>
+      <th class="qty">Qty</th>
+      <th class="tot">Total</th>
     </tr>
   </thead>
   <tbody>${rows}</tbody>
@@ -178,8 +180,8 @@ function printViaIframe(html: string): Promise<boolean> {
 }
 
 /**
- * Prints a receipt: Electron uses a visible print window + system dialog;
- * falls back to an iframe print dialog if that fails (or in browser mode).
+ * Prints a receipt: Electron sends silently to the default printer;
+ * browser mode falls back to the system print dialog.
  */
 export async function printReceiptHtml(opts: PrintReceiptOpts): Promise<boolean> {
   const html = buildReceiptDocumentHtml(opts)

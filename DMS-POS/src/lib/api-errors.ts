@@ -31,7 +31,7 @@ export function formatSubmitError(err: unknown): string {
         (typeof err.message === 'string' &&
           (err.message === 'Network Error' || err.message.includes('Network Error'))))
     ) {
-      return 'Could not reach the server. Check the Server URL on the login screen, firewall (port 5126), and that the backend is running.'
+      return 'Could not reach the server. Check the network connection and that the system is online.'
     }
   }
   if (err instanceof Error) return err.message

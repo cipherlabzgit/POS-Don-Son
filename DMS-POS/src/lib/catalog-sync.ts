@@ -50,7 +50,7 @@ export async function syncCatalogFromServer(): Promise<void> {
 
       if (page === 1 && rawCount === 0) {
         throw new Error(
-          'Server returned no products. Check login, Server URL (http://123.231.10.22:5126), and run fix-pos-catalog.ps1 on the server.',
+          'Server returned no products. Sign in again or ask an administrator to refresh the catalogue.',
         )
       }
 
@@ -104,7 +104,7 @@ export async function syncCatalogFromServer(): Promise<void> {
 
   useSettingsStore.getState().setCacheUpdatedAt(Date.now())
   console.log(
-    `[catalog-sync] Synced ${prods.length} products, ${cats.length} categories from ${useSettingsStore.getState().apiBaseUrl}`,
+    `[catalog-sync] Synced ${prods.length} products, ${cats.length} categories`,
   )
 }
 
@@ -113,6 +113,32 @@ export async function loadProductsIntoDb(): Promise<ProductRow[]> {
   if (local.length > 0) return local
   await syncCatalogFromServer()
   return offlineDb.products.toArray()
+}
+
+/** All active products (ignores Display In POS). Transfer / Delivery Return only. */
+export async function loadAllActiveProducts(): Promise<ProductRow[]> {
+  const pageSize = 200
+  const maxPages = 50
+  try {
+    let page = 1
+    let totalCount = 0
+    let fetchedRaw = 0
+    const prods: ProductRow[] = []
+    do {
+      const res = await fetchProductsPage(page, pageSize, { posVisibleOnly: false })
+      totalCount = Number(res.totalCount ?? 0)
+      const batch = (res.products as Record<string, unknown>[]).map(mapProduct)
+      const rawCount = Number(res.rawCount ?? batch.length)
+      fetchedRaw += rawCount
+      prods.push(...batch)
+      if (rawCount < pageSize || fetchedRaw >= totalCount) break
+      page += 1
+    } while (page <= maxPages)
+    if (prods.length > 0) return prods
+  } catch {
+    /* offline — fall back to POS cache */
+  }
+  return loadProductsIntoDb()
 }
 
 export async function loadCategoriesIntoDb(): Promise<CategoryRow[]> {

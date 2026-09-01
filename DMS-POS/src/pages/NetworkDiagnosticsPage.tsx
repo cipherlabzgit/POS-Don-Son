@@ -78,7 +78,7 @@ export function NetworkDiagnosticsPage({ onBack }: NetworkDiagnosticsPageProps) 
       updateResult('Server Reachability', {
         status: 'success',
         message: 'Server is reachable',
-        details: `${apiBaseUrl} responded`,
+        details: 'Server responded',
         duration: Date.now() - startTime2,
       })
     } catch (err: unknown) {
@@ -309,10 +309,6 @@ export function NetworkDiagnosticsPage({ onBack }: NetworkDiagnosticsPageProps) 
             Configuration
           </h3>
           <div className="text-sm space-y-1">
-            <p>
-              <strong>API URL:</strong>{' '}
-              <code className="bg-white px-2 py-1 rounded">{apiBaseUrl}</code>
-            </p>
             <p>
               <strong>Outlet ID:</strong>{' '}
               <code className="bg-white px-2 py-1 rounded">

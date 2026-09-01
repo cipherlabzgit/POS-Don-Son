@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, shell, dialog } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -42,7 +42,8 @@ function createMainWindow() {
     minWidth: 1024,
     minHeight: 700,
     title: 'Don & Sons — POS',
-    // Show maximised on startup (common for POS terminals)
+    fullscreen: true,
+    autoHideMenuBar: true,
     show: false,
     backgroundColor: '#ffffff',
     webPreferences: {
@@ -50,7 +51,7 @@ function createMainWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
-      // Prevent drag-drop navigation
+      devTools: false,
       navigateOnDragDrop: false,
     },
   })
@@ -63,10 +64,30 @@ function createMainWindow() {
     callback({ requestHeaders: details.requestHeaders })
   })
 
-  // Start maximised — POS terminals run full-screen
-  mainWin.maximize()
+  mainWin.setMenu(null)
+  mainWin.setMenuBarVisibility(false)
+  mainWin.setFullScreen(true)
+
+  mainWin.webContents.on('devtools-opened', () => {
+    mainWin.webContents.closeDevTools()
+  })
+  mainWin.webContents.on('context-menu', (event) => {
+    event.preventDefault()
+  })
+  mainWin.webContents.on('before-input-event', (event, input) => {
+    const key = (input.key || '').toLowerCase()
+    const ctrl = input.control || input.meta
+    const shift = input.shift
+    const blocked =
+      key === 'f12' ||
+      (ctrl && key === 'r') ||
+      (ctrl && shift && (key === 'i' || key === 'j' || key === 'c' || key === 'r')) ||
+      (ctrl && key === 'u')
+    if (blocked) event.preventDefault()
+  })
 
   mainWin.once('ready-to-show', () => {
+    mainWin.setFullScreen(true)
     mainWin.show()
   })
 
@@ -98,8 +119,6 @@ function createMainWindow() {
 
   if (isDev) {
     mainWin.loadURL(process.env.VITE_DEV_SERVER_URL)
-    // Open DevTools in development
-    mainWin.webContents.openDevTools({ mode: 'detach' })
   } else {
     mainWin.loadFile(path.join(__dirname, '../dist/index.html'))
   }
@@ -171,7 +190,6 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
     // windows often never appear, so Print looks broken.
     printWin = new BrowserWindow({
       parent: mainWin,
-      modal: true,
       show: false,
       width: 420,
       height: 720,
@@ -185,9 +203,7 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
     })
 
     await printWin.loadFile(tempPath)
-    printWin.show()
-    printWin.focus()
-    await new Promise((r) => setTimeout(r, 250))
+    await new Promise((r) => setTimeout(r, 200))
 
     const result = await new Promise((resolve) => {
       const timeout = setTimeout(() => {
@@ -198,7 +214,7 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
       try {
         printWin.webContents.print(
           {
-            silent: false,
+            silent: true,
             printBackground: true,
             color: false,
             margins: { marginType: 'printableArea' },
@@ -243,6 +259,7 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
 // ─── App lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null)
   posConfig = readPosConfig()
   if (posConfig?.configPath) {
     console.log('[pos-config] Loaded from', posConfig.configPath)

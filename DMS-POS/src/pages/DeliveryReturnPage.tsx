@@ -4,7 +4,7 @@ import { PosSubPageLayout } from '../components/PosSubPageLayout'
 import { CatalogStaleBanner } from '../components/CatalogStaleBanner'
 import { useAuthStore } from '../lib/auth-store'
 import { useSettingsStore } from '../lib/settings-store'
-import { loadProductsIntoDb } from '../lib/catalog-sync'
+import { loadAllActiveProducts } from '../lib/catalog-sync'
 import type { ProductRow } from '../lib/types'
 import { createDeliveryReturn, submitDeliveryReturn } from '../lib/api'
 import { useOnlineStatus } from '../lib/use-online-status'
@@ -39,7 +39,7 @@ export function DeliveryReturnPage({ onBack }: Props) {
   useEffect(() => {
     void (async () => {
       try {
-        const list = await loadProductsIntoDb()
+        const list = await loadAllActiveProducts()
         setProducts(list)
         if (list.length === 0) {
           toast(

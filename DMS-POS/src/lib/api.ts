@@ -94,7 +94,12 @@ export async function loginRequest(email: string, password: string): Promise<Log
   return data
 }
 
-export async function fetchProductsPage(page: number, pageSize: number) {
+export async function fetchProductsPage(
+  page: number,
+  pageSize: number,
+  opts?: { posVisibleOnly?: boolean },
+) {
+  const posVisibleOnly = opts?.posVisibleOnly !== false
   const { data } = await api.get('/api/products', {
     params: { page, pageSize, activeOnly: true },
   })
@@ -102,11 +107,13 @@ export async function fetchProductsPage(page: number, pageSize: number) {
     'totalCount',
     'TotalCount',
   ])
-  const products = items.filter((p) => {
-    const r = p as Record<string, unknown>
-    const d = r.displayInPOS ?? r.DisplayInPOS
-    return d === undefined || d === null || Boolean(d)
-  })
+  const products = posVisibleOnly
+    ? items.filter((p) => {
+        const r = p as Record<string, unknown>
+        const d = r.displayInPOS ?? r.DisplayInPOS
+        return d === undefined || d === null || Boolean(d)
+      })
+    : items
   // rawCount = unfiltered page size from API (for pagination; do not use filtered length)
   return { products, totalCount, rawCount: items.length }
 }

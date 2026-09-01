@@ -21,6 +21,8 @@ interface SettingsState {
   apiBaseUrl: string
   outletId: string | null
   outletLabel: string
+  /** DMS showroom Code assigned to this till (admin-only). */
+  assignedShowroomCode: string
   zoomPercent: number
   /** Product card/button size in catalogue only (not whole dashboard zoom). */
   productTilePercent: number
@@ -32,6 +34,7 @@ interface SettingsState {
   themeColors: ThemeColors | null
   setApiBaseUrl: (url: string) => void
   setOutlet: (id: string | null, label: string) => void
+  setAssignedShowroomCode: (code: string) => void
   setZoomPercent: (p: number) => void
   setProductTilePercent: (p: number) => void
   setCacheUpdatedAt: (t: number | null) => void
@@ -48,6 +51,7 @@ export const useSettingsStore = create<SettingsState>()(
       apiBaseUrl: DEFAULT_API_BASE_URL,
       outletId: null,
       outletLabel: 'Showroom',
+      assignedShowroomCode: '',
       zoomPercent: 100,
       productTilePercent: 100,
       cacheUpdatedAt: null,
@@ -58,6 +62,8 @@ export const useSettingsStore = create<SettingsState>()(
 
       setApiBaseUrl: (apiBaseUrl) => set({ apiBaseUrl: normalizeApiBaseUrl(apiBaseUrl) }),
       setOutlet: (outletId, outletLabel) => set({ outletId, outletLabel }),
+      setAssignedShowroomCode: (assignedShowroomCode) =>
+        set({ assignedShowroomCode: assignedShowroomCode.trim().toUpperCase() }),
       setZoomPercent: (zoomPercent) =>
         set({ zoomPercent: Math.min(120, Math.max(70, Math.round(zoomPercent))) }),
       setProductTilePercent: (productTilePercent) =>
@@ -129,7 +135,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'dms-pos-settings',
-      version: 8,
+      version: 9,
       migrate: (persisted: unknown, version: number) => {
         const wrongPorts = ['http://localhost:5000', 'http://127.0.0.1:5000']
         if (version < 2 && persisted && typeof persisted === 'object' && 'state' in persisted) {
@@ -185,6 +191,16 @@ export const useSettingsStore = create<SettingsState>()(
             state: {
               ...s,
               productTilePercent: s.productTilePercent ?? 100,
+            },
+          }
+        }
+        if (version < 9 && persisted && typeof persisted === 'object' && 'state' in persisted) {
+          const s = (persisted as { state: Partial<SettingsState> }).state
+          return {
+            ...(persisted as object),
+            state: {
+              ...s,
+              assignedShowroomCode: (s.assignedShowroomCode ?? '').trim().toUpperCase(),
             },
           }
         }

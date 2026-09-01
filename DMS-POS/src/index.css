@@ -47,8 +47,8 @@
   --pos-header-bg:          #c8102e;    /* red header bar */
   --pos-header-text:        #ffffff;
   --pos-header-border:      #a00d26;
-  --pos-catalog-surface:    #f3f4f6;   /* light grey catalog panel */
-  --pos-product-tile:       #fffbeb;   /* warm white/cream tile */
+  --pos-catalog-surface:    #efe4e6;   /* muted rose — easier on cashiers than white */
+  --pos-product-tile:       #fff6f2;   /* warm cream tile */
   --pos-product-tile-hover: #fef3c7;
   --pos-product-tile-border:#fde68a;
   --pos-sidebar-bg:         #ffffff;
@@ -108,6 +108,29 @@ body {
 .pos-scroll-light::-webkit-scrollbar-track { background: var(--neutral-50); }
 .pos-scroll-light::-webkit-scrollbar-thumb { background: var(--neutral-200); border-radius: 3px; }
 .pos-scroll-light::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
+
+/* Always-visible vertical bars (bill list + product grid) */
+.pos-scroll-visible {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+  scrollbar-color: var(--brand-primary) var(--neutral-200);
+}
+.pos-scroll-visible::-webkit-scrollbar {
+  width: 14px;
+}
+.pos-scroll-visible::-webkit-scrollbar-track {
+  background: var(--neutral-200);
+  border-left: 1px solid var(--border);
+}
+.pos-scroll-visible::-webkit-scrollbar-thumb {
+  background: var(--brand-primary);
+  border-radius: 8px;
+  border: 3px solid var(--neutral-200);
+}
+.pos-scroll-visible::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-primary-dark);
+}
 
 /* ─── Typography — titles / brand lines (same family as UI, tighter tracking) ─── */
 .font-pos-title {

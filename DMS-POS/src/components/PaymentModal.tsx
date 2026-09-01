@@ -59,7 +59,7 @@ export function PaymentModal({ open, onClose, onPay, onDisplayBill, total }: Pro
       }
       if (!/^\d$/.test(key)) return prev
       if (!prev || prev === '0') return key
-      const [whole, frac] = prev.split('.')
+      const [, frac] = prev.split('.')
       if (frac !== undefined && frac.length >= 2) return prev
       return prev + key
     })

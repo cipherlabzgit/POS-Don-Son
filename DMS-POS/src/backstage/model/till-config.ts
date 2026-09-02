@@ -1,6 +1,8 @@
 export type TillConfig = {
   apiBaseUrl: string
+  posVerificationCode: string
   showroomCode: string
+  showroomPublicCode?: string
   configPath?: string
   encrypted?: boolean
 }

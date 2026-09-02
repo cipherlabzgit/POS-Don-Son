@@ -288,6 +288,9 @@ using (var scope = app.Services.CreateScope())
         // operation_approvals table; rounding_rules ratio columns — PhaseC empty Up() drift.
         await context.EnsureProductAndPlanColumnsAsync();
 
+        // outlets.pos_verification_code — login joins Outlet and 500s if the column is missing.
+        await context.EnsureOutletColumnsAsync();
+
         // Seed permissions first
         await permissionSeeder.SeedAsync();
 

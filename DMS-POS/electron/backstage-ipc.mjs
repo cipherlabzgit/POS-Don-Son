@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import {
+  grantBackstageSession,
   isBackstageUnlocked,
   loadTillConfig,
   lockBackstage,
@@ -9,6 +10,7 @@ import {
 
 export function registerBackstageIpc() {
   ipcMain.handle('backstage:unlock', (_event, password) => verifyAdminKey(password))
+  ipcMain.handle('backstage:grant-session', () => grantBackstageSession())
 
   ipcMain.handle('backstage:lock', () => {
     lockBackstage()

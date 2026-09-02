@@ -88,6 +88,29 @@ public sealed class SystemSettingsBootstrapSeeder
             });
         }
 
+        var posKeyExists = await _context.SystemSettings.AnyAsync(
+            s => s.SettingKey == "POS_BACKSTAGE_ADMIN_KEY",
+            cancellationToken);
+        if (!posKeyExists)
+        {
+            _context.SystemSettings.Add(new SystemSetting
+            {
+                Id = Guid.NewGuid(),
+                SettingKey = "POS_BACKSTAGE_ADMIN_KEY",
+                SettingName = "POS Hidden Admin Key",
+                SettingValue = "Don&son2026#",
+                SettingType = "String",
+                Description = "Verification Admin Key for the POS Ctrl+Shift+A backstage panel. Super Admin only.",
+                Category = "POS",
+                IsSystemSetting = true,
+                IsEncrypted = false,
+                DisplayOrder = 100,
+                IsActive = true,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

@@ -35,7 +35,7 @@ export function BackstageAdminPanel() {
             }}
           >
             <p className="text-sm text-neutral-300">
-              Enter the Verification Admin Key to edit the encrypted API URL and Showroom Code.
+              Enter the Verification Admin Key to edit the encrypted API URL, POS Verification Code, and Showroom Code.
             </p>
             <label className="block">
               <span className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
@@ -100,15 +100,27 @@ export function BackstageAdminPanel() {
                 POS Verification Code
               </span>
               <input
-                value={vm.showroomCode}
-                onChange={(e) => vm.setShowroomCode(e.target.value)}
+                value={vm.posVerificationCode}
+                onChange={(e) => vm.setPosVerificationCode(e.target.value)}
                 className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-amber-400"
                 placeholder="From DMS → Showroom → POS Verification Code"
                 maxLength={40}
               />
               <p className="mt-1 text-[11px] text-neutral-500">
-                Use the POS Verification Code from DMS Showrooms — not the public Code (DBQ, SR001).
+                Binds this till to the showroom. Not the public Code.
               </p>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                Showroom Code
+              </span>
+              <input
+                value={vm.showroomCode}
+                onChange={(e) => vm.setShowroomCode(e.target.value)}
+                className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-amber-400"
+                placeholder="Public showroom code (e.g. DBQ)"
+                maxLength={40}
+              />
             </label>
             {vm.configPath ? (
               <p className="truncate text-[11px] text-neutral-500">

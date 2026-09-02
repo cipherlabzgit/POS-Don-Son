@@ -13,9 +13,15 @@ export async function applyBootstrapConfig(): Promise<void> {
       useSettingsStore.getState().setApiBaseUrl(normalizeApiBaseUrl(fromFile))
       console.log('[bootstrap] API URL loaded from encrypted till config')
     }
-    const showroomCode = cfg?.showroomCode?.trim()
-    if (showroomCode) {
-      useSettingsStore.getState().setAssignedShowroomCode(showroomCode)
+    const verify = (cfg?.posVerificationCode || '').trim()
+    const maybeCode = (cfg?.showroomCode || '').trim()
+    if (verify) {
+      useSettingsStore.getState().setAssignedShowroomCode(verify)
+      useSettingsStore.getState().setAssignedShowroomPublicCode(
+        (cfg?.showroomPublicCode || maybeCode || '').trim(),
+      )
+    } else if (maybeCode) {
+      useSettingsStore.getState().setAssignedShowroomCode(maybeCode)
     }
   } catch (e) {
     console.warn('[bootstrap] Could not read encrypted till config', e)

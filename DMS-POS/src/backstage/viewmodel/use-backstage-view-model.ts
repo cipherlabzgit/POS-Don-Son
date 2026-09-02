@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import axios from 'axios'
+import { getApiBaseUrl } from '../../lib/api'
 import { normalizeApiBaseUrl } from '../../lib/api-url'
 import { applyBootstrapConfig } from '../../lib/bootstrap-config'
 import { useSettingsStore } from '../../lib/settings-store'
@@ -7,11 +9,13 @@ import type { SaveConfigResult, UnlockResult } from '../model/till-config'
 
 export type BackstagePhase = 'locked' | 'unlocked'
 
+/** View-model for the hidden backstage panel (MVVM). */
 export function useBackstageViewModel() {
   const [visible, setVisible] = useState(false)
   const [phase, setPhase] = useState<BackstagePhase>('locked')
   const [password, setPassword] = useState('')
   const [apiBaseUrl, setApiBaseUrl] = useState('')
+  const [posVerificationCode, setPosVerificationCode] = useState('')
   const [showroomCode, setShowroomCode] = useState('')
   const [configPath, setConfigPath] = useState('')
   const [encrypted, setEncrypted] = useState(false)
@@ -55,7 +59,8 @@ export function useBackstageViewModel() {
     const cfg = (await window.dmsPos?.getSecureConfig?.()) ?? (await window.dmsPos?.getConfig?.())
     const store = useSettingsStore.getState()
     setApiBaseUrl(cfg?.apiBaseUrl || store.apiBaseUrl)
-    setShowroomCode(cfg?.showroomCode || store.assignedShowroomCode)
+    setPosVerificationCode(cfg?.posVerificationCode || store.assignedShowroomCode)
+    setShowroomCode(cfg?.showroomPublicCode || cfg?.showroomCode || store.assignedShowroomPublicCode)
     setConfigPath(cfg?.configPath ?? '')
     setEncrypted(Boolean(cfg?.encrypted))
   }, [])
@@ -72,10 +77,27 @@ export function useBackstageViewModel() {
     setUnlocking(true)
     setError('')
     try {
-      const result = (await window.dmsPos?.unlockBackstage?.(password)) as UnlockResult | undefined
-      if (!result?.ok) {
-        setError(result?.message || 'Invalid verification key.')
-        return
+      let unlocked = false
+      try {
+        const { data } = await axios.post(`${getApiBaseUrl()}/api/pos-backstage/verify`, {
+          key: password,
+        })
+        const ok = Boolean(
+          (data as { success?: boolean })?.success ?? (data as { Success?: boolean })?.Success,
+        )
+        if (ok) {
+          const granted = await window.dmsPos?.grantBackstageSession?.()
+          unlocked = Boolean(granted?.ok)
+        }
+      } catch {
+        /* offline or old API — fall back to the baked-in hash */
+      }
+      if (!unlocked) {
+        const result = (await window.dmsPos?.unlockBackstage?.(password)) as UnlockResult | undefined
+        if (!result?.ok) {
+          setError(result?.message || 'Invalid verification key.')
+          return
+        }
       }
       setPhase('unlocked')
       setPassword('')
@@ -89,7 +111,8 @@ export function useBackstageViewModel() {
 
   const saveCommand = useCallback(async () => {
     const url = normalizeApiBaseUrl(apiBaseUrl)
-    const code = showroomCode.trim()
+    const verify = posVerificationCode.trim()
+    const publicCode = showroomCode.trim()
     if (!url) {
       setError('API URL is required.')
       return
@@ -98,7 +121,11 @@ export function useBackstageViewModel() {
       setError('API URL must start with http:// or https://')
       return
     }
-    if (!code) {
+    if (!verify) {
+      setError('POS Verification Code is required.')
+      return
+    }
+    if (!publicCode) {
       setError('Showroom Code is required.')
       return
     }
@@ -107,14 +134,17 @@ export function useBackstageViewModel() {
     try {
       const result = (await window.dmsPos?.saveSecureConfig?.({
         apiBaseUrl: url,
-        showroomCode: code,
+        posVerificationCode: verify,
+        showroomCode: publicCode,
+        showroomPublicCode: publicCode,
       })) as SaveConfigResult | undefined
       if (!result?.ok) {
         setError(result?.message || 'Could not save encrypted configuration.')
         return
       }
       useSettingsStore.getState().setApiBaseUrl(url)
-      useSettingsStore.getState().setAssignedShowroomCode(code)
+      useSettingsStore.getState().setAssignedShowroomCode(verify)
+      useSettingsStore.getState().setAssignedShowroomPublicCode(publicCode)
       await applyBootstrapConfig()
       setEncrypted(true)
       setConfigPath(result.config?.configPath ?? configPath)
@@ -125,13 +155,14 @@ export function useBackstageViewModel() {
     } finally {
       setSaving(false)
     }
-  }, [apiBaseUrl, showroomCode, configPath, closeCommand])
+  }, [apiBaseUrl, posVerificationCode, showroomCode, configPath, closeCommand])
 
   return {
     visible,
     phase,
     password,
     apiBaseUrl,
+    posVerificationCode,
     showroomCode,
     configPath,
     encrypted,
@@ -141,6 +172,7 @@ export function useBackstageViewModel() {
     desktop,
     setPassword,
     setApiBaseUrl,
+    setPosVerificationCode,
     setShowroomCode,
     openCommand,
     closeCommand,

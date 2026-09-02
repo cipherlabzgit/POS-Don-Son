@@ -44,10 +44,20 @@ export function LoginPage() {
       }
     } catch (err: unknown) {
       const status = axios.isAxiosError(err) ? err.response?.status : undefined
-      const msg =
-        err && typeof err === 'object' && 'message' in err
-          ? String((err as { message?: string }).message)
+      const data = axios.isAxiosError(err) ? err.response?.data : undefined
+      const serverMsg =
+        data && typeof data === 'object'
+          ? String(
+              (data as { error?: string }).error ||
+                (data as { message?: string }).message ||
+                '',
+            )
           : ''
+      const msg =
+        serverMsg ||
+        (err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : '')
       const isNetwork =
         msg.includes('Network Error') ||
         msg.includes('ERR_CONNECTION_REFUSED') ||

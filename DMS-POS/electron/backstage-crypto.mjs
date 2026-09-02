@@ -13,8 +13,8 @@ const MODE_SAFE = 1
 const MODE_AES = 2
 
 const PBKDF2_ITER = 210_000
-const ADMIN_SALT = Buffer.from('e3b77c5da90c5861ded5b9369942f0cb', 'hex')
-const ADMIN_HASH = Buffer.from('095eb86278c619a32708a932975865e36b36572765ed1608f3e70d2999549883', 'hex')
+const ADMIN_SALT = Buffer.from('53fe79f3322e9d5a622bf332045ad8c6', 'hex')
+const ADMIN_HASH = Buffer.from('4b9a4f083e334ce925f962a222a5a039f5ca629a009ccb201bff70ee37c45fb7', 'hex')
 
 /** Split pepper — not a usable password; only AES fallback material. */
 const PEPPER_A = Buffer.from([0x4b, 0x91, 0x2e, 0x7c, 0xd4, 0x18, 0xa3, 0x5f])
@@ -57,6 +57,12 @@ export function isBackstageUnlocked() {
   return Date.now() < unlockedUntil
 }
 
+export function grantBackstageSession() {
+  failures = 0
+  unlockedUntil = Date.now() + UNLOCK_MS
+  return { ok: true }
+}
+
 export function lockBackstage() {
   unlockedUntil = 0
 }
@@ -88,8 +94,18 @@ function deriveAesKey(salt) {
 
 function normalizeConfig(raw) {
   const apiBaseUrl = typeof raw?.apiBaseUrl === 'string' ? raw.apiBaseUrl.trim() : ''
+  const explicitVerify =
+    typeof raw?.posVerificationCode === 'string' ? raw.posVerificationCode.trim() : ''
   const showroomCode = typeof raw?.showroomCode === 'string' ? raw.showroomCode.trim() : ''
-  return { apiBaseUrl, showroomCode }
+  const showroomPublicCode =
+    typeof raw?.showroomPublicCode === 'string' ? raw.showroomPublicCode.trim() : ''
+  // Legacy files stored the POS verify value in showroomCode only.
+  const posVerificationCode = explicitVerify || (raw?.posVerificationCode == null ? showroomCode : '')
+  return {
+    apiBaseUrl,
+    posVerificationCode,
+    showroomCode: showroomPublicCode || (explicitVerify ? showroomCode : ''),
+  }
 }
 
 function encryptPayload(plainObj) {

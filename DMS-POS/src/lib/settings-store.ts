@@ -23,6 +23,8 @@ interface SettingsState {
   outletLabel: string
   /** DMS POS Verification Code assigned to this till (backstage only). */
   assignedShowroomCode: string
+  /** Public showroom Code from DMS (backstage only; not used to bind the till). */
+  assignedShowroomPublicCode: string
   zoomPercent: number
   /** Product card/button size in catalogue only (not whole dashboard zoom). */
   productTilePercent: number
@@ -35,6 +37,7 @@ interface SettingsState {
   setApiBaseUrl: (url: string) => void
   setOutlet: (id: string | null, label: string) => void
   setAssignedShowroomCode: (code: string) => void
+  setAssignedShowroomPublicCode: (code: string) => void
   setZoomPercent: (p: number) => void
   setProductTilePercent: (p: number) => void
   setCacheUpdatedAt: (t: number | null) => void
@@ -52,6 +55,7 @@ export const useSettingsStore = create<SettingsState>()(
       outletId: null,
       outletLabel: 'Showroom',
       assignedShowroomCode: '',
+      assignedShowroomPublicCode: '',
       zoomPercent: 100,
       productTilePercent: 100,
       cacheUpdatedAt: null,
@@ -64,6 +68,8 @@ export const useSettingsStore = create<SettingsState>()(
       setOutlet: (outletId, outletLabel) => set({ outletId, outletLabel }),
       setAssignedShowroomCode: (assignedShowroomCode) =>
         set({ assignedShowroomCode: assignedShowroomCode.trim() }),
+      setAssignedShowroomPublicCode: (assignedShowroomPublicCode) =>
+        set({ assignedShowroomPublicCode: assignedShowroomPublicCode.trim() }),
       setZoomPercent: (zoomPercent) =>
         set({ zoomPercent: Math.min(120, Math.max(70, Math.round(zoomPercent))) }),
       setProductTilePercent: (productTilePercent) =>

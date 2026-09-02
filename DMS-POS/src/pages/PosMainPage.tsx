@@ -179,10 +179,20 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
           phone: String(o.phone ?? o.Phone ?? ''),
         })).filter((o) => o.id)
         setOutlets(rows)
-        const verification = useSettingsStore.getState().assignedShowroomCode.trim()
+        const cfg = (await window.dmsPos?.getSecureConfig?.()) ?? (await window.dmsPos?.getConfig?.())
+        const fromFile = (cfg?.posVerificationCode || '').trim()
+        if (fromFile) useSettingsStore.getState().setAssignedShowroomCode(fromFile)
+        const isDesktop = window.dmsPos?.mode === 'electron'
+        const verification = isDesktop
+          ? fromFile
+          : (fromFile || useSettingsStore.getState().assignedShowroomCode.trim())
         if (!verification) {
           setOutlet(null, 'Showroom')
-          setShowroomBindError('This till has no POS Verification Code. A system administrator must configure it.')
+          setShowroomBindError(
+            isDesktop
+              ? 'This desktop till needs a POS Verification Code before it can connect to a showroom. Press Ctrl+Shift+A to open the hidden admin panel.'
+              : 'This till has no POS Verification Code. A system administrator must configure it.',
+          )
           return
         }
         try {
@@ -516,7 +526,10 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
 
   // ── Product tile click → quick add or long press for numpad ────────────────
   function handleProductTap(p: ProductRow) {
-    // Quick tap: just add 1 to cart
+    if (!outletId) {
+      toast('Set the POS Verification Code (Ctrl+Shift+A) to connect this till to a showroom.', 'error')
+      return
+    }
     add({ productId: p.id, code: p.code, name: p.name, unitPrice: p.unitPrice })
   }
 
@@ -693,15 +706,15 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
         </div>
       ) : null}
 
-      {/* Showroom warning */}
       {!outletId ? (
         <div className="flex-shrink-0 border-b border-[var(--brand-accent)] bg-[var(--brand-accent)]/20 px-4 py-2 text-sm font-medium text-amber-900">
-          ⚠ {showroomBindError || 'This till is not assigned to a showroom. Ask a system administrator to set the POS Verification Code.'}
+          ⚠ {showroomBindError || 'This till is not assigned to a showroom. A POS Verification Code is required.'}
         </div>
       ) : null}
 
       {/* ── Main body: bill | catalog ── */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[minmax(280px,32%)_1fr]"
+      <div className="relative min-h-0 flex-1">
+      <div className="grid min-h-0 h-full grid-cols-1 md:grid-cols-[minmax(280px,32%)_1fr]"
         style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: `${100 / scale}%`, height: `${100 / scale}%` }}>
 
         {/* ── LEFT: Bill panel ── */}
@@ -932,6 +945,18 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             )}
           </div>
         </section>
+      </div>
+      {!outletId ? (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-[var(--pos-catalog-surface)]/80 p-6 backdrop-blur-[2px]">
+          <div className="max-w-md rounded-2xl border border-[var(--border)] bg-white p-6 text-center shadow-xl">
+            <p className="font-pos-title text-lg font-bold text-[var(--foreground)]">Showroom not connected</p>
+            <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+              This desktop till must have a POS Verification Code to connect to a showroom.
+              Press <span className="font-semibold text-[var(--foreground)]">Ctrl+Shift+A</span>, unlock with the admin key, then save the code from DMS.
+            </p>
+          </div>
+        </div>
+      ) : null}
       </div>
 
       {/* ── Modals ── */}

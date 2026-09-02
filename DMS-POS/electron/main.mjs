@@ -12,14 +12,16 @@ const isDev = Boolean(process.env.VITE_DEV_SERVER_URL)
 /** @type {BrowserWindow | null} */
 let mainWin = null
 
-/** @type {{ apiBaseUrl?: string; showroomCode?: string; configPath?: string; encrypted?: boolean } | null} */
+/** @type {{ apiBaseUrl?: string; posVerificationCode?: string; showroomCode?: string; configPath?: string; encrypted?: boolean } | null} */
 let posConfig = null
 
 function publicPosConfig() {
   if (!posConfig) return null
   return {
     apiBaseUrl: posConfig.apiBaseUrl,
+    posVerificationCode: posConfig.posVerificationCode,
     showroomCode: posConfig.showroomCode,
+    showroomPublicCode: posConfig.showroomCode,
     configPath: posConfig.configPath,
     encrypted: Boolean(posConfig.encrypted),
   }

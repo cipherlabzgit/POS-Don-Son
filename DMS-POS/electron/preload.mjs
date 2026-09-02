@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('dmsPos', {
   /** Silent print HTML content without showing print dialog */
   printSilent: (html) => ipcRenderer.invoke('app:print-silent', html),
   unlockBackstage: (password) => ipcRenderer.invoke('backstage:unlock', password),
+  grantBackstageSession: () => ipcRenderer.invoke('backstage:grant-session'),
   lockBackstage: () => ipcRenderer.invoke('backstage:lock'),
   backstageStatus: () => ipcRenderer.invoke('backstage:status'),
   getSecureConfig: () => ipcRenderer.invoke('backstage:get-config'),

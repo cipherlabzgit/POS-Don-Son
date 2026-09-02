@@ -969,6 +969,13 @@ export const PERMISSION_SECTIONS: SectionDef[] = [
         icon: Palette,
         actions: fillCoreActions('pos-theme'),
       },
+      {
+        id: 'admin-pos-backstage-key',
+        name: 'POS Admin Key',
+        href: '/administrator/pos-backstage-key',
+        icon: KeyRound,
+        actions: fillCoreActions('setting'),
+      },
     ],
   },
 ];

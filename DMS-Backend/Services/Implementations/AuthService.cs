@@ -297,17 +297,17 @@ public sealed class AuthService : IAuthService
     {
         var assignment = await _context.OutletEmployees
             .AsNoTracking()
-            .Include(oe => oe.Outlet)
             .Where(oe => oe.UserId == userId && oe.IsActive)
             .OrderByDescending(oe => oe.IsManager)
             .ThenBy(oe => oe.CreatedAt)
+            .Select(oe => new { oe.OutletId, OutletName = oe.Outlet != null ? oe.Outlet.Name : null })
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (assignment?.Outlet == null)
+        if (assignment == null || string.IsNullOrWhiteSpace(assignment.OutletName))
             return;
 
         dto.AssignedOutletId = assignment.OutletId;
-        dto.AssignedOutletName = assignment.Outlet.Name;
+        dto.AssignedOutletName = assignment.OutletName;
     }
 
     private static UserDto MapToUserDto(Models.Entities.User user, List<string> permissions)

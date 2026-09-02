@@ -16,6 +16,14 @@ public sealed class CreateOutletValidator : AbstractValidator<CreateOutletDto>
             .NotEmpty().WithMessage("Outlet name is required")
             .MaximumLength(100).WithMessage("Name cannot exceed 100 characters");
 
+        RuleFor(x => x.PosVerificationCode)
+            .MinimumLength(8).WithMessage("POS Verification Code must be at least 8 characters")
+            .MaximumLength(40).WithMessage("POS Verification Code cannot exceed 40 characters")
+            .Matches(@"^[A-Za-z0-9#@$%_\-]+$").WithMessage("POS Verification Code may contain letters, numbers, and # @ $ % _ -")
+            .Must((dto, code) => !string.Equals(code?.Trim(), dto.Code?.Trim(), StringComparison.OrdinalIgnoreCase))
+            .WithMessage("POS Verification Code cannot be the same as the showroom Code")
+            .When(x => !string.IsNullOrWhiteSpace(x.PosVerificationCode));
+
         RuleFor(x => x.Address)
             .MaximumLength(200).WithMessage("Address cannot exceed 200 characters")
             .When(x => !string.IsNullOrWhiteSpace(x.Address));

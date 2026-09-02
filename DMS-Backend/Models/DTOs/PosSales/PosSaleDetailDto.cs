@@ -18,6 +18,8 @@ public sealed class PosSaleDetailDto
     public DateTime? RejectedAt { get; set; }
     public string? RejectedByName { get; set; }
     public string? RejectionReason { get; set; }
+    public bool CancelRequested { get; set; }
+    public string? CancellationReason { get; set; }
     public IReadOnlyList<PosSaleLineDetailDto> Lines { get; set; } = Array.Empty<PosSaleLineDetailDto>();
 }
 

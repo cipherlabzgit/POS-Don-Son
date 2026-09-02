@@ -1,5 +1,6 @@
 using DMS_Backend.Data;
 using DMS_Backend.Models.DTOs.OperationApprovals;
+using DMS_Backend.Models.Entities;
 using DMS_Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -228,7 +229,40 @@ public class OperationApprovalService : IOperationApprovalService
 
         // 3. Fetch Administrator Approvals (generic queue)
         var (adminApprovals, _) = await _approvalQueueService.GetPendingAsync(1, int.MaxValue, null, cancellationToken);
-        summary.AdminApprovals = adminApprovals.Select(a => new OperationApprovalItemDto
+        var posCancelRows = adminApprovals
+            .Where(a => string.Equals(a.ApprovalType, PosSaleService.CancellationApprovalType, StringComparison.Ordinal))
+            .ToList();
+        var otherAdmin = adminApprovals
+            .Where(a => !string.Equals(a.ApprovalType, PosSaleService.CancellationApprovalType, StringComparison.Ordinal))
+            .ToList();
+
+        var cancelSaleIds = posCancelRows.Select(a => a.EntityId).Distinct().ToList();
+        var cancelSales = cancelSaleIds.Count == 0
+            ? new Dictionary<Guid, PosSale>()
+            : await _context.PosSales
+                .AsNoTracking()
+                .Include(s => s.Outlet)
+                .Where(s => cancelSaleIds.Contains(s.Id))
+                .ToDictionaryAsync(s => s.Id, cancellationToken);
+
+        summary.PosCancellationRequests = posCancelRows.Select(a =>
+        {
+            cancelSales.TryGetValue(a.EntityId, out var sale);
+            return new OperationApprovalItemDto
+            {
+                Id = a.Id,
+                ApprovalType = PosSaleService.CancellationApprovalType,
+                ReferenceNo = a.EntityReference ?? sale?.SaleNo ?? a.EntityId.ToString(),
+                RequestDate = a.RequestedAt,
+                OutletName = sale?.Outlet?.Name ?? "POS",
+                Status = a.Status,
+                RequestedByName = a.RequestedByName,
+                Description = a.Notes,
+                TotalValue = sale?.TotalAmount,
+            };
+        }).ToList();
+
+        summary.AdminApprovals = otherAdmin.Select(a => new OperationApprovalItemDto
         {
             Id = a.Id,
             ApprovalType = a.ApprovalType,

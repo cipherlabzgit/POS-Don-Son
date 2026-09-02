@@ -29,4 +29,9 @@ public interface IPosSaleService
 
     /// <summary>Voids an approved sale (supervisor action). Records audit trail.</summary>
     Task<PosSaleDetailDto?> VoidAsync(Guid id, Guid userId, string? reason, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Queues a POS cancellation for admin approval. Sale stays Approved until the request is approved.
+    /// </summary>
+    Task<PosSaleDetailDto> RequestCancelAsync(Guid id, Guid userId, string reason, CancellationToken cancellationToken = default);
 }

@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type { User } from './types'
 
 interface AuthState {
@@ -12,35 +11,28 @@ interface AuthState {
   hasPermission: (code: string) => boolean
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
+try {
+  localStorage.removeItem('dms-pos-auth')
+} catch {
+  /* ignore */
+}
 
-      login: (accessToken, refreshToken, user) =>
-        set({ accessToken, refreshToken, user }),
+export const useAuthStore = create<AuthState>()((set, get) => ({
+  user: null,
+  accessToken: null,
+  refreshToken: null,
 
-      logout: () => set({ accessToken: null, refreshToken: null, user: null }),
+  login: (accessToken, refreshToken, user) =>
+    set({ accessToken, refreshToken, user }),
 
-      updateTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken }),
+  logout: () => set({ accessToken: null, refreshToken: null, user: null }),
 
-      hasPermission: (code: string) => {
-        const u = get().user
-        if (!u) return false
-        if (u.isSuperAdmin) return true
-        return u.permissions.includes(code) || u.permissions.includes('*')
-      },
-    }),
-    {
-      name: 'dms-pos-auth',
-      storage: createJSONStorage(() => localStorage),
-      partialize: (s) => ({
-        accessToken: s.accessToken,
-        refreshToken: s.refreshToken,
-        user: s.user,
-      }),
-    },
-  ),
-)
+  updateTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken }),
+
+  hasPermission: (code: string) => {
+    const u = get().user
+    if (!u) return false
+    if (u.isSuperAdmin) return true
+    return u.permissions.includes(code) || u.permissions.includes('*')
+  },
+}))

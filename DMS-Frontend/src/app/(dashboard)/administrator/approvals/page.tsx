@@ -36,7 +36,7 @@ import { formatSlDate, formatSlDateTime } from '@/lib/sri-lanka-time';
 
 type SubsectionKey =
   | 'deliveries' | 'transfers' | 'disposals' | 'cancellations' | 'labelPrintRequests'
-  | 'stockBFs' | 'deliveryReturns' | 'posSales' | 'showroomLabelRequests'
+  | 'stockBFs' | 'deliveryReturns' | 'posSales' | 'posCancellationRequests' | 'showroomLabelRequests'
   | 'dailyProductions' | 'productionCancels' | 'stockAdjustments' | 'dailyProductionPlans'
   | 'immediateOrders' | 'adminApprovals';
 
@@ -65,6 +65,7 @@ const SECTIONS: Section[] = [
       { key: 'stockBFs',             label: 'Stock BF',             approvalType: 'Stock BF' },
       { key: 'deliveryReturns',      label: 'Delivery Returns',     approvalType: 'Delivery Return' },
       { key: 'posSales',             label: 'POS Sales',            approvalType: 'POS Sale' },
+      { key: 'posCancellationRequests', label: 'POS Cancellation Request', approvalType: 'POS Cancellation Request' },
       { key: 'showroomLabelRequests',label: 'Showroom Labels',      approvalType: 'Showroom Label' },
     ],
   },
@@ -103,6 +104,7 @@ const APPROVAL_TYPE_PERMISSIONS: Record<string, { approve: string; reject?: stri
   'Stock BF':        { approve: 'operation:stock-bf:approve',        reject: 'operation:stock-bf:reject' },
   'Delivery Return': { approve: 'operation:delivery-return:approve', reject: 'operation:delivery-return:reject' },
   'POS Sale':        { approve: 'pos:sale:approve',                  reject: 'pos:sale:reject' },
+  'POS Cancellation Request': { approve: 'approval:approve',         reject: 'approval:reject' },
   'Showroom Label':  { approve: 'operation:approvals:approve',       reject: 'operation:approvals:approve' },
   'Daily Production':  { approve: 'production:daily:approve',           reject: 'production:daily:reject' },
   'Production Cancel': { approve: 'production:cancel:approve',          reject: 'production:cancel:reject' },
@@ -127,7 +129,7 @@ function allItems(summary: OperationApprovalsSummary | null): OperationApprovalI
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ApprovalsPage() {
-  const { can } = usePermissions();
+  const { can, canAny } = usePermissions();
   const [summary, setSummary] = useState<OperationApprovalsSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -258,6 +260,19 @@ export default function ApprovalsPage() {
           break;
         case 'Delivery Return':   data = await deliveryReturnsApi.getById(item.id); break;
         case 'POS Sale':          data = await posSalesApi.getById(item.id); break;
+        case 'POS Cancellation Request': {
+          const approval = await approvalsApi.getById(item.id);
+          let sale: PosSale | null = null;
+          if (approval.entityId) {
+            try {
+              sale = await posSalesApi.getById(approval.entityId);
+            } catch {
+              sale = null;
+            }
+          }
+          data = { approval, sale };
+          break;
+        }
         case 'Immediate Order':   data = await immediateOrdersApi.getById(item.id); break;
         case 'Daily Production':  data = await dailyProductionsApi.getById(item.id); break;
         case 'Production Cancel': data = await productionCancelsApi.getById(item.id); break;
@@ -299,6 +314,13 @@ export default function ApprovalsPage() {
         case 'Stock BF':          await stockBfApi.approve(id); break;
         case 'Delivery Return':   await deliveryReturnsApi.approve(id); break;
         case 'POS Sale':          await posSalesApi.approve(id); break;
+        case 'POS Cancellation Request':
+          if (can('approval:approve')) {
+            await approvalsApi.approve(id, { notes: '' });
+          } else {
+            await posSalesApi.approveCancelRequest(id);
+          }
+          break;
         case 'Showroom Label':    await operationApprovalsApi.approveShowroomLabel(id); break;
         case 'Immediate Order':   await immediateOrdersApi.approve(id); break;
         case 'Daily Production':  await dailyProductionsApi.approve(id); break;
@@ -354,7 +376,7 @@ export default function ApprovalsPage() {
       setPosRejectOpen(true);
       return;
     }
-    if (type === 'Generic' || type === 'Admin') {
+    if (type === 'Generic' || type === 'Admin' || type === 'POS Cancellation Request') {
       setModalApproval(selectedApproval);
       setShowRejectModal(true);
       return;
@@ -395,7 +417,11 @@ export default function ApprovalsPage() {
     try {
       setSubmittingIds(prev => new Set(prev).add(modalApproval.id));
       const dto: RejectApprovalDto = { rejectionReason, notes: approvalNotes };
-      await approvalsApi.reject(modalApproval.id, dto);
+      if (modalApproval.approvalType === 'POS Cancellation Request' && !can('approval:reject')) {
+        await posSalesApi.rejectCancelRequest(modalApproval.id, rejectionReason);
+      } else {
+        await approvalsApi.reject(modalApproval.id, dto);
+      }
       toast.success('Approval rejected');
       setShowRejectModal(false);
       setRejectionReason('');
@@ -743,6 +769,9 @@ export default function ApprovalsPage() {
                             {selectedApproval.approvalType === 'POS Sale' && (
                               <PosSaleDetailsView sale={detailsData as PosSale} />
                             )}
+                            {selectedApproval.approvalType === 'POS Cancellation Request' && (
+                              <PosCancellationRequestDetailsView data={detailsData} />
+                            )}
                             {selectedApproval.approvalType === 'Showroom Label' && (
                               <ShowroomLabelDetailsView item={selectedApproval} />
                             )}
@@ -761,8 +790,13 @@ export default function ApprovalsPage() {
                           {/* Approve / Reject buttons */}
                           {(() => {
                             const perms = APPROVAL_TYPE_PERMISSIONS[selectedApproval.approvalType];
-                            const canApprove = perms ? can(perms.approve) : false;
-                            const canReject  = perms?.reject ? can(perms.reject) : false;
+                            const isPosCancel = selectedApproval.approvalType === 'POS Cancellation Request';
+                            const canApprove = isPosCancel
+                              ? canAny(['approval:approve', 'pos:sale:approve'])
+                              : (perms ? can(perms.approve) : false);
+                            const canReject  = isPosCancel
+                              ? canAny(['approval:reject', 'pos:sale:reject'])
+                              : (perms?.reject ? can(perms.reject) : false);
 
                             if (!canApprove && !canReject) {
                               return (
@@ -1425,6 +1459,75 @@ function PosSaleDetailsView({ sale }: { sale: PosSale }) {
           />
         </div>
       )}
+      </div>
+    </DetailPanel>
+  );
+}
+
+function PosCancellationRequestDetailsView({
+  data,
+}: {
+  data: { approval?: any; sale?: PosSale | null } | null;
+}) {
+  if (!data) return null;
+  const approval = data.approval;
+  const sale = data.sale;
+  return (
+    <DetailPanel>
+      <div className="space-y-6">
+        <DetailSectionTint title="POS Cancellation Request">
+          <InfoGrid plain>
+            <InfoField label="Type" value="POS Cancellation Request" highlight />
+            <InfoField
+              label="Bill No"
+              value={approval?.entityReference || sale?.saleNo || '—'}
+            />
+            <InfoField
+              label="Requested At"
+              value={approval?.requestedAt ? formatSlDateTime(approval.requestedAt) : '—'}
+            />
+          </InfoGrid>
+        </DetailSectionTint>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-6">
+          <InfoField label="Requested By" value={approval?.requestedByName || '—'} />
+          <InfoField label="Showroom" value={sale?.outletName || sale?.outlet?.name || '—'} />
+          {sale ? (
+            <InfoField
+              label="Sale Total"
+              value={`Rs. ${Number(sale.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              highlight
+            />
+          ) : null}
+          <InfoField label="Sale Status" value={sale?.status || '—'} />
+        </div>
+        {approval?.notes && (
+          <div className="rounded-lg border border-dashed p-3" style={{ borderColor: 'var(--border)' }}>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+              Cancellation reason
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>
+              {approval.notes}
+            </p>
+          </div>
+        )}
+        {sale?.lines && sale.lines.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+              Line items
+            </p>
+            <ItemsTable
+              headers={['Product', 'Qty', 'Line Total']}
+              rows={sale.lines.map((line: any) => [
+                <div key={line.id}>
+                  <p className="font-medium">{line.productName || '—'}</p>
+                  {line.productCode && <p className="text-xs text-muted-foreground">{line.productCode}</p>}
+                </div>,
+                Number(line.quantity).toLocaleString(),
+                `Rs. ${Number(line.lineTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+              ])}
+            />
+          </div>
+        )}
       </div>
     </DetailPanel>
   );

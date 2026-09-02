@@ -22,6 +22,7 @@ export interface OperationApprovalsSummary {
   stockBFs: OperationApprovalItem[];
   deliveryReturns: OperationApprovalItem[];
   posSales: OperationApprovalItem[];
+  posCancellationRequests: OperationApprovalItem[];
   showroomLabelRequests: OperationApprovalItem[];
   dailyProductions: OperationApprovalItem[];
   productionCancels: OperationApprovalItem[];
@@ -56,6 +57,7 @@ export const operationApprovalsApi = {
       stockBFs: raw.stockBFs ?? raw.StockBFs ?? [],
       deliveryReturns: raw.deliveryReturns ?? raw.DeliveryReturns ?? [],
       posSales: raw.posSales ?? raw.PosSales ?? [],
+      posCancellationRequests: raw.posCancellationRequests ?? raw.PosCancellationRequests ?? [],
       showroomLabelRequests: raw.showroomLabelRequests ?? raw.ShowroomLabelRequests ?? [],
       dailyProductions: raw.dailyProductions ?? raw.DailyProductions ?? [],
       productionCancels: raw.productionCancels ?? raw.ProductionCancels ?? [],

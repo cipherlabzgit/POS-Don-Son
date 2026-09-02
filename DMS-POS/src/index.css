@@ -47,10 +47,11 @@
   --pos-header-bg:          #c8102e;    /* red header bar */
   --pos-header-text:        #ffffff;
   --pos-header-border:      #a00d26;
-  --pos-catalog-surface:    #efe4e6;   /* muted rose — easier on cashiers than white */
-  --pos-product-tile:       #fff6f2;   /* warm cream tile */
-  --pos-product-tile-hover: #fef3c7;
-  --pos-product-tile-border:#fde68a;
+  /* Soft brand rose — distinct from white, easier on cashiers for long shifts */
+  --pos-catalog-surface:    color-mix(in srgb, var(--brand-primary) 22%, #f6e8ea);
+  --pos-product-tile:       #fffdfb;   /* light cream button on rose field */
+  --pos-product-tile-hover: #fff4c8;
+  --pos-product-tile-border: color-mix(in srgb, var(--brand-primary) 28%, #f3d6da);
   --pos-sidebar-bg:         #ffffff;
   --pos-sidebar-border:     #e5e7eb;
 
@@ -129,6 +130,29 @@ body {
   border: 3px solid var(--neutral-200);
 }
 .pos-scroll-visible::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-primary-dark);
+}
+
+/* Always-visible horizontal bar (category chips) */
+.pos-scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: auto;
+  scrollbar-color: var(--brand-primary) var(--neutral-200);
+}
+.pos-scroll-x::-webkit-scrollbar {
+  height: 12px;
+}
+.pos-scroll-x::-webkit-scrollbar-track {
+  background: var(--neutral-200);
+  border-radius: 8px;
+}
+.pos-scroll-x::-webkit-scrollbar-thumb {
+  background: var(--brand-primary);
+  border-radius: 8px;
+  border: 2px solid var(--neutral-200);
+}
+.pos-scroll-x::-webkit-scrollbar-thumb:hover {
   background: var(--brand-primary-dark);
 }
 

@@ -21,4 +21,6 @@ public interface IOutletService
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<bool> CodeExistsAsync(string code, Guid? excludeId = null, CancellationToken cancellationToken = default);
+
+    Task<PosShowroomBindDto?> ResolveByPosVerificationCodeAsync(string code, CancellationToken cancellationToken = default);
 }

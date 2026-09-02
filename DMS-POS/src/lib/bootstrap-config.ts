@@ -1,7 +1,7 @@
 import { DEFAULT_API_BASE_URL, useSettingsStore } from './settings-store'
 import { isLocalApiUrl, normalizeApiBaseUrl } from './api-url'
 
-/** Apply server URL from Electron pos-config.json (field deployments). */
+/** Apply server URL and showroom code from the encrypted till config. */
 export async function applyBootstrapConfig(): Promise<void> {
   const getConfig = window.dmsPos?.getConfig
   if (!getConfig) return
@@ -11,14 +11,14 @@ export async function applyBootstrapConfig(): Promise<void> {
     const fromFile = cfg?.apiBaseUrl?.trim()
     if (fromFile) {
       useSettingsStore.getState().setApiBaseUrl(normalizeApiBaseUrl(fromFile))
-      console.log('[bootstrap] API URL loaded from pos-config.json')
+      console.log('[bootstrap] API URL loaded from encrypted till config')
     }
-    const showroomCode = (cfg as { showroomCode?: string } | null)?.showroomCode?.trim()
+    const showroomCode = cfg?.showroomCode?.trim()
     if (showroomCode) {
       useSettingsStore.getState().setAssignedShowroomCode(showroomCode)
     }
   } catch (e) {
-    console.warn('[bootstrap] Could not read pos-config.json', e)
+    console.warn('[bootstrap] Could not read encrypted till config', e)
   }
 }
 

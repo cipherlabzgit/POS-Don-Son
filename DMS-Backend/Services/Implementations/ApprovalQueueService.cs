@@ -13,15 +13,18 @@ public sealed class ApprovalQueueService : IApprovalQueueService
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<ApprovalQueueService> _logger;
+    private readonly IPosSaleService _posSaleService;
 
     public ApprovalQueueService(
         ApplicationDbContext context,
         IMapper mapper,
-        ILogger<ApprovalQueueService> logger)
+        ILogger<ApprovalQueueService> logger,
+        IPosSaleService posSaleService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _posSaleService = posSaleService;
     }
 
     public async Task<(IEnumerable<ApprovalQueueListDto> approvals, int totalCount)> GetPendingAsync(
@@ -155,17 +158,40 @@ public sealed class ApprovalQueueService : IApprovalQueueService
             throw new InvalidOperationException($"Approval is already {approval.Status}.");
         }
 
+        var originalNotes = approval.Notes;
         approval.Status = "Approved";
         approval.ApprovedById = approvedByUserId;
         approval.ApprovedAt = DateTime.UtcNow;
         if (!string.IsNullOrWhiteSpace(notes))
         {
-            approval.Notes = notes;
+            approval.Notes = string.IsNullOrWhiteSpace(originalNotes)
+                ? notes.Trim()
+                : $"{originalNotes}\nApprover: {notes.Trim()}";
         }
         approval.UpdatedById = approvedByUserId;
         approval.UpdatedAt = DateTime.UtcNow;
 
-        await _context.SaveChangesAsync(cancellationToken);
+        if (string.Equals(approval.ApprovalType, PosSaleService.CancellationApprovalType, StringComparison.Ordinal))
+        {
+            try
+            {
+                var voided = await _posSaleService.VoidAsync(
+                    approval.EntityId,
+                    approvedByUserId,
+                    originalNotes,
+                    cancellationToken);
+                if (voided == null)
+                    throw new InvalidOperationException("POS sale for this cancellation request was not found.");
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("already been voided", StringComparison.OrdinalIgnoreCase))
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+        }
+        else
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
 
         _logger.LogInformation("Approval approved: {Id} by user {UserId}", approval.Id, approvedByUserId);
 

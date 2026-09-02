@@ -10,6 +10,7 @@ public sealed class OperationApprovalsSummaryDto
     public List<OperationApprovalItemDto> StockBFs { get; set; } = new();
     public List<OperationApprovalItemDto> DeliveryReturns { get; set; } = new();
     public List<OperationApprovalItemDto> PosSales { get; set; } = new();
+    public List<OperationApprovalItemDto> PosCancellationRequests { get; set; } = new();
     public List<OperationApprovalItemDto> ShowroomLabelRequests { get; set; } = new();
 
     // Production Sections
@@ -33,6 +34,7 @@ public sealed class OperationApprovalsSummaryDto
         StockBFs.Count +
         DeliveryReturns.Count +
         PosSales.Count +
+        PosCancellationRequests.Count +
         ShowroomLabelRequests.Count +
         DailyProductions.Count +
         ProductionCancels.Count +

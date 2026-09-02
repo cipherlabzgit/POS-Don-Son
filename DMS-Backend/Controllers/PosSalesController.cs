@@ -1,5 +1,6 @@
 using DMS_Backend.Common;
 using DMS_Backend.Models.DTOs.PosSales;
+using DMS_Backend.Services.Implementations;
 using DMS_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,11 +15,16 @@ public sealed class PosSalesController : ControllerBase
 {
     private readonly IPosSaleService _posSaleService;
     private readonly IPosSaleReceiptService _receiptService;
+    private readonly IApprovalQueueService _approvalQueueService;
 
-    public PosSalesController(IPosSaleService posSaleService, IPosSaleReceiptService receiptService)
+    public PosSalesController(
+        IPosSaleService posSaleService,
+        IPosSaleReceiptService receiptService,
+        IApprovalQueueService approvalQueueService)
     {
         _posSaleService = posSaleService;
         _receiptService = receiptService;
+        _approvalQueueService = approvalQueueService;
     }
 
     [HttpGet]
@@ -161,6 +167,96 @@ public sealed class PosSalesController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(ApiResponse<PosSaleDetailDto>.FailureResponse(Error.Validation(ex.Message)));
+        }
+    }
+
+    [HttpPost("{id:guid}/request-cancel")]
+    [HasPermission("pos:sale:create")]
+    [Audit]
+    public async Task<ActionResult<ApiResponse<PosSaleDetailDto>>> RequestCancel(
+        Guid id,
+        [FromBody] RejectPosSaleDto? body,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var sale = await _posSaleService.RequestCancelAsync(id, userId, body?.Reason ?? string.Empty, cancellationToken);
+            return Ok(ApiResponse<PosSaleDetailDto>.SuccessResponse(sale));
+        }
+        catch (InvalidOperationException ex)
+        {
+            if (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+            {
+                return NotFound(ApiResponse<PosSaleDetailDto>.FailureResponse(
+                    Error.NotFound("PosSale", id.ToString())));
+            }
+
+            return BadRequest(ApiResponse<PosSaleDetailDto>.FailureResponse(Error.Validation(ex.Message)));
+        }
+    }
+
+    [HttpPost("cancel-requests/{queueId:guid}/approve")]
+    [HasPermission("pos:sale:approve")]
+    [Audit]
+    public async Task<ActionResult<ApiResponse<PosSaleDetailDto>>> ApproveCancelRequest(
+        Guid queueId,
+        [FromBody] RejectPosSaleDto? body,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var queue = await _approvalQueueService.GetByIdAsync(queueId, cancellationToken);
+            if (queue == null ||
+                !string.Equals(queue.ApprovalType, PosSaleService.CancellationApprovalType, StringComparison.Ordinal))
+            {
+                return NotFound(ApiResponse<PosSaleDetailDto>.FailureResponse(
+                    Error.NotFound("POS Cancellation Request", queueId.ToString())));
+            }
+
+            await _approvalQueueService.ApproveAsync(queueId, userId, body?.Reason, cancellationToken);
+            var sale = await _posSaleService.GetByIdAsync(queue.EntityId, cancellationToken);
+            if (sale == null)
+            {
+                return NotFound(ApiResponse<PosSaleDetailDto>.FailureResponse(
+                    Error.NotFound("PosSale", queue.EntityId.ToString())));
+            }
+
+            return Ok(ApiResponse<PosSaleDetailDto>.SuccessResponse(sale));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ApiResponse<PosSaleDetailDto>.FailureResponse(Error.Validation(ex.Message)));
+        }
+    }
+
+    [HttpPost("cancel-requests/{queueId:guid}/reject")]
+    [HasPermission("pos:sale:reject")]
+    [Audit]
+    public async Task<ActionResult<ApiResponse<object>>> RejectCancelRequest(
+        Guid queueId,
+        [FromBody] RejectPosSaleDto? body,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var queue = await _approvalQueueService.GetByIdAsync(queueId, cancellationToken);
+            if (queue == null ||
+                !string.Equals(queue.ApprovalType, PosSaleService.CancellationApprovalType, StringComparison.Ordinal))
+            {
+                return NotFound(ApiResponse<object>.FailureResponse(
+                    Error.NotFound("POS Cancellation Request", queueId.ToString())));
+            }
+
+            var reason = string.IsNullOrWhiteSpace(body?.Reason) ? "Rejected" : body!.Reason.Trim();
+            var result = await _approvalQueueService.RejectAsync(queueId, userId, reason, null, cancellationToken);
+            return Ok(ApiResponse<object>.SuccessResponse(result));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ApiResponse<object>.FailureResponse(Error.Validation(ex.Message)));
         }
     }
 

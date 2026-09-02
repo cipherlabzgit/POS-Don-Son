@@ -21,7 +21,7 @@ interface SettingsState {
   apiBaseUrl: string
   outletId: string | null
   outletLabel: string
-  /** DMS showroom Code assigned to this till (admin-only). */
+  /** DMS POS Verification Code assigned to this till (backstage only). */
   assignedShowroomCode: string
   zoomPercent: number
   /** Product card/button size in catalogue only (not whole dashboard zoom). */
@@ -63,7 +63,7 @@ export const useSettingsStore = create<SettingsState>()(
       setApiBaseUrl: (apiBaseUrl) => set({ apiBaseUrl: normalizeApiBaseUrl(apiBaseUrl) }),
       setOutlet: (outletId, outletLabel) => set({ outletId, outletLabel }),
       setAssignedShowroomCode: (assignedShowroomCode) =>
-        set({ assignedShowroomCode: assignedShowroomCode.trim().toUpperCase() }),
+        set({ assignedShowroomCode: assignedShowroomCode.trim() }),
       setZoomPercent: (zoomPercent) =>
         set({ zoomPercent: Math.min(120, Math.max(70, Math.round(zoomPercent))) }),
       setProductTilePercent: (productTilePercent) =>
@@ -100,6 +100,15 @@ export const useSettingsStore = create<SettingsState>()(
         root.style.setProperty('--pos-header-bg', colors.primaryColor)
         root.style.setProperty('--pos-header-border', colors.primaryDark)
         root.style.setProperty('--pos-header-text', '#ffffff')
+        root.style.setProperty(
+          '--pos-catalog-surface',
+          `color-mix(in srgb, ${colors.primaryColor} 22%, #f6e8ea)`,
+        )
+        root.style.setProperty('--pos-product-tile', '#fffdfb')
+        root.style.setProperty(
+          '--pos-product-tile-border',
+          `color-mix(in srgb, ${colors.primaryColor} 28%, #f3d6da)`,
+        )
         
         // Category pill colors - all 8 tabs (customizable by admin)
         const defaultCategoryColors = [
@@ -135,7 +144,16 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'dms-pos-settings',
-      version: 9,
+      version: 10,
+      partialize: (s) => ({
+        zoomPercent: s.zoomPercent,
+        productTilePercent: s.productTilePercent,
+        cacheUpdatedAt: s.cacheUpdatedAt,
+        autoPrint: s.autoPrint,
+        receiptPhone: s.receiptPhone,
+        receiptAddress: s.receiptAddress,
+        themeColors: s.themeColors,
+      }),
       migrate: (persisted: unknown, version: number) => {
         const wrongPorts = ['http://localhost:5000', 'http://127.0.0.1:5000']
         if (version < 2 && persisted && typeof persisted === 'object' && 'state' in persisted) {
@@ -202,6 +220,17 @@ export const useSettingsStore = create<SettingsState>()(
               ...s,
               assignedShowroomCode: (s.assignedShowroomCode ?? '').trim().toUpperCase(),
             },
+          }
+        }
+        if (version < 10 && persisted && typeof persisted === 'object' && 'state' in persisted) {
+          const s = { ...(persisted as { state: Partial<SettingsState> }).state }
+          delete s.apiBaseUrl
+          delete s.outletId
+          delete s.outletLabel
+          delete s.assignedShowroomCode
+          return {
+            ...(persisted as object),
+            state: s,
           }
         }
         return persisted

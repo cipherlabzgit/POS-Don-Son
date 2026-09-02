@@ -38,6 +38,7 @@ function ShowroomPageContent() {
       try {
         const dto: CreateOutletDto = {
           code: req(row, 'code'),
+          posVerificationCode: row.posVerificationCode?.trim() || undefined,
           name: req(row, 'name'),
           description: row.description?.trim() || undefined,
           address: row.address?.trim() || undefined,
@@ -115,6 +116,15 @@ function ShowroomPageContent() {
       render: (item: Outlet) => (
         <span className="font-mono font-semibold" style={{ color: '#C8102E' }}>
           {item.code}
+        </span>
+      ),
+    },
+    {
+      key: 'posVerificationCode',
+      label: 'POS Verify Code',
+      render: (item: Outlet) => (
+        <span className="font-mono text-xs">
+          {item.posVerificationCode || '—'}
         </span>
       ),
     },
@@ -228,6 +238,7 @@ function ShowroomPageContent() {
             permissionMode="any"
             columns={[
               { header: 'code' },
+              { header: 'posVerificationCode' },
               { header: 'name' },
               { header: 'description' },
               { header: 'address' },
@@ -246,6 +257,7 @@ function ShowroomPageContent() {
             exampleRows={[
               [
                 'SR01',
+                'PV-K7M2-Q9X4-WN8R',
                 'Main Showroom',
                 '',
                 '123 Street',

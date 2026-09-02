@@ -2,7 +2,7 @@ import {
   useCallback, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react'
 import {
-  ChevronLeft, ChevronRight, ChevronUp, Check,
+  ChevronDown, ChevronRight, ChevronUp, Check,
   Cloud, History, Inbox, LogOut, Menu,
   Minus, Package, Plus, Printer,
   Search, Settings2, Star, Truck, Undo2,
@@ -13,13 +13,14 @@ import { useCartStore } from '../lib/cart-store'
 import { useFavoriteStore } from '../lib/favorite-store'
 import { useSettingsStore } from '../lib/settings-store'
 import { syncCatalogFromServer } from '../lib/catalog-sync'
-import { fetchOutletsPage, postPosSale } from '../lib/api'
+import { fetchOutletsPage, postPosSale, resolveOutletByPosVerificationCode } from '../lib/api'
 import { enqueueMutation, processPendingQueue } from '../lib/sync-queue'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { printReceiptHtml, type PrintReceiptOpts } from '../lib/print-receipt'
 import { toast } from '../lib/toast-store'
 import { OnlineBadge } from '../components/OnlineBadge'
 import { PaymentModal } from '../components/PaymentModal'
+import { PrintPreviewModal } from '../components/PrintPreviewModal'
 import { TransactionHistoryModal } from '../components/TransactionHistoryModal'
 import { QtyNumpad } from '../components/QtyNumpad'
 import { SearchKeyboard } from '../components/SearchKeyboard'
@@ -67,7 +68,6 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   const outletId    = useSettingsStore((s) => s.outletId)
   const outletLabel = useSettingsStore((s) => s.outletLabel)
   const assignedShowroomCode = useSettingsStore((s) => s.assignedShowroomCode)
-  const setAssignedShowroomCode = useSettingsStore((s) => s.setAssignedShowroomCode)
   const setOutlet   = useSettingsStore((s) => s.setOutlet)
   const apiBaseUrl  = useSettingsStore((s) => s.apiBaseUrl)
   const zoomPercent = useSettingsStore((s) => s.zoomPercent)
@@ -118,7 +118,8 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   const [syncPopoverOpen, setSyncPopoverOpen] = useState(false)
   const [diagnosticOpen, setDiagnosticOpen] = useState(false)
   const [searchKbOpen, setSearchKbOpen] = useState(false)
-  const [catPage, setCatPage] = useState(0)
+  const [previewOpts, setPreviewOpts] = useState<PrintReceiptOpts | null>(null)
+  const [catsExpanded, setCatsExpanded] = useState(false)
 
   const catalogScrollRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -178,20 +179,27 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
           phone: String(o.phone ?? o.Phone ?? ''),
         })).filter((o) => o.id)
         setOutlets(rows)
-        const code = useSettingsStore.getState().assignedShowroomCode.trim().toUpperCase()
-        if (!code) {
+        const verification = useSettingsStore.getState().assignedShowroomCode.trim()
+        if (!verification) {
           setOutlet(null, 'Showroom')
-          setShowroomBindError('This till has no Showroom Code. A system administrator must set it in Technical settings.')
+          setShowroomBindError('This till has no POS Verification Code. A system administrator must configure it.')
           return
         }
-        const match = rows.find((o) => o.code.trim().toUpperCase() === code)
-        if (!match) {
+        try {
+          const match = await resolveOutletByPosVerificationCode(verification)
+          if (cancelled) return
+          if (!match.id) {
+            setOutlet(null, 'Showroom')
+            setShowroomBindError('POS Verification Code was not found in DMS. Ask an administrator to set it on the showroom.')
+            return
+          }
+          setShowroomBindError('')
+          setOutlet(match.id, match.name || match.code)
+        } catch {
+          if (cancelled) return
           setOutlet(null, 'Showroom')
-          setShowroomBindError(`Showroom Code "${code}" was not found in DMS. Check the Code on Showroom master.`)
-          return
+          setShowroomBindError('POS Verification Code was not found in DMS. Ask an administrator to set it on the showroom.')
         }
-        setShowroomBindError('')
-        setOutlet(match.id, match.name || match.code)
       } catch (err) {
         if (!cancelled) {
           setOutlets([])
@@ -283,15 +291,6 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   function selectCategory(id: string) {
     setCategoryId(id)
   }
-
-  const CATS_PER_PAGE = 7
-  const catPages = Math.max(1, Math.ceil(catRow.length / CATS_PER_PAGE))
-  const visibleCats = catRow.slice(catPage * CATS_PER_PAGE, catPage * CATS_PER_PAGE + CATS_PER_PAGE)
-  const catProgress = ((catPage + 1) / catPages) * 100
-
-  useEffect(() => {
-    if (catPage > catPages - 1) setCatPage(Math.max(0, catPages - 1))
-  }, [catPage, catPages])
 
   const sub = subtotal()
 
@@ -492,12 +491,15 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   }
 
   // ── Display Bill (during payment) ──────────────────────────────────────────
-  async function handleDisplayBill(cashReceived?: number, change?: number) {
-    if (lines.length === 0) return
+  function handleDisplayBill(cashReceived?: number, change?: number) {
+    if (lines.length === 0) {
+      toast('Add items to the bill first.', 'info')
+      return
+    }
     const now = new Date()
     const dateTimeStr = now.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) + ' ' +
                        now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
-    const ok = await printReceiptHtml({
+    setPreviewOpts({
       title: 'DON & SONS (PVT) LTD',
       companyAddress: receiptCompanyAddress,
       companyPhone: `Tel:${receiptCompanyPhone}`,
@@ -510,7 +512,6 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
       cashier: user ? `${user.firstName} ${user.lastName}`.trim() : '',
       footerLines: ['FOOD ARE NOT RETURNABLE', 'COMPLAINT MUST BE LODGED BEFORE', '12 NOON NEXT DAY'],
     })
-    if (!ok) toast('Unable to print — try again.', 'error')
   }
 
   // ── Product tile click → quick add or long press for numpad ────────────────
@@ -695,7 +696,7 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
       {/* Showroom warning */}
       {!outletId ? (
         <div className="flex-shrink-0 border-b border-[var(--brand-accent)] bg-[var(--brand-accent)]/20 px-4 py-2 text-sm font-medium text-amber-900">
-          ⚠ {showroomBindError || 'This till is not assigned to a showroom. Ask an administrator to set the Showroom Code.'}
+          ⚠ {showroomBindError || 'This till is not assigned to a showroom. Ask a system administrator to set the POS Verification Code.'}
         </div>
       ) : null}
 
@@ -757,9 +758,26 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
           </div>
 
           <div className="flex-shrink-0 border-t border-[var(--border)] bg-white px-4 py-3 space-y-3">
-            <p className="font-pos-title text-2xl font-bold tabular-nums text-[var(--foreground)]">
-              Total: Rs {sub.toFixed(2)}
-            </p>
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Total</p>
+                <p className="font-pos-title text-2xl font-bold tabular-nums text-[var(--foreground)]">
+                  Rs {sub.toFixed(2)}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={lines.length === 0}
+                onClick={() => {
+                  if (lines.length === 0) return
+                  setNumpad(null)
+                  clear()
+                }}
+                className="pos-tap rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-medium text-[var(--neutral-500)] hover:bg-[var(--neutral-50)] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Clear bill
+              </button>
+            </div>
 
             <button type="button" disabled={lines.length === 0 || !outletId || !canSaleCreate} onClick={() => lines.length > 0 && outletId && canSaleCreate && setPayOpen(true)}
               className="w-full rounded-lg bg-[var(--brand-primary)] py-4 text-xl font-bold tracking-wide text-white shadow-md hover:bg-[var(--brand-primary-dark)] disabled:cursor-not-allowed disabled:opacity-40">
@@ -801,26 +819,22 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             ) : null}
           </div>
 
-          <div className="mb-2 flex items-center gap-2">
-            <button
-              type="button"
-              className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
-              disabled={catPage <= 0}
-              onClick={() => setCatPage((p) => Math.max(0, p - 1))}
-              aria-label="Previous categories"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
+          <div className="mb-3 flex items-start gap-2">
             <div
-              className="grid min-w-0 flex-1 gap-2 overflow-hidden"
-              style={{ gridTemplateColumns: `repeat(${CATS_PER_PAGE}, minmax(0, 1fr))` }}
+              className={
+                catsExpanded
+                  ? 'grid min-w-0 flex-1 grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-7'
+                  : 'pos-scroll-x flex min-w-0 flex-1 gap-2 pb-1'
+              }
             >
-              {visibleCats.map((c) => (
+              {catRow.map((c) => (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => selectCategory(c.id)}
-                  className={`flex h-10 w-full items-center justify-center rounded-lg px-1.5 text-center text-xs font-bold leading-tight shadow ${c.colour} ${categoryId === c.id ? 'ring-2 ring-[var(--brand-accent)] ring-offset-1' : ''}`}
+                  className={`flex h-10 items-center justify-center rounded-lg px-2 text-center text-xs font-bold leading-tight shadow ${c.colour} ${
+                    catsExpanded ? 'w-full' : 'w-[7.25rem] shrink-0'
+                  } ${categoryId === c.id ? 'ring-2 ring-[var(--brand-accent)] ring-offset-1' : ''}`}
                 >
                   <span className="line-clamp-2">{c.name.replace('★ ', '')}</span>
                 </button>
@@ -828,16 +842,13 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             </div>
             <button
               type="button"
-              className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
-              disabled={catPage >= catPages - 1}
-              onClick={() => setCatPage((p) => Math.min(catPages - 1, p + 1))}
-              aria-label="Next categories"
+              className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white"
+              onClick={() => setCatsExpanded((open) => !open)}
+              aria-label={catsExpanded ? 'Collapse categories' : 'Show all categories'}
+              aria-expanded={catsExpanded}
             >
-              <ChevronRight className="h-5 w-5" />
+              {catsExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
             </button>
-          </div>
-          <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[var(--neutral-200)]">
-            <div className="h-full rounded-full bg-[var(--brand-primary)] transition-all" style={{ width: `${catProgress}%` }} />
           </div>
 
           <div className="mb-2 flex items-center justify-between">
@@ -925,6 +936,9 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
 
       {/* ── Modals ── */}
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} onPay={handlePay} onDisplayBill={handleDisplayBill} total={sub} />
+      {previewOpts ? (
+        <PrintPreviewModal opts={previewOpts} onClose={() => setPreviewOpts(null)} />
+      ) : null}
       <TransactionHistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} outletId={outletId} outletLabel={outletLabel} />
       {numpad ? (
         <QtyNumpad
@@ -995,20 +1009,6 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
                     </div>
                     <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">Catalogue cards only — does not change screen zoom.</p>
                   </div>
-                  {user?.isSuperAdmin ? (
-                    <label className="block">
-                      <span className="font-semibold text-[var(--muted-foreground)]">Showroom Code</span>
-                      <input
-                        value={assignedShowroomCode}
-                        onChange={(e) => setAssignedShowroomCode(e.target.value)}
-                        placeholder="e.g. DBQ"
-                        className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-2 py-1.5 font-mono uppercase text-[var(--foreground)]"
-                      />
-                      <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
-                        Must match the Code field on DMS → Showroom. Cashiers cannot change this.
-                      </p>
-                    </label>
-                  ) : null}
                   <label className="flex cursor-pointer items-center gap-2">
                     <input type="checkbox" checked={autoPrint} onChange={(e) => setAutoPrint(e.target.checked)} className="h-4 w-4 rounded accent-[var(--brand-primary)]" />
                     <span className="font-semibold text-[var(--foreground)]">Auto-print receipt after payment</span>

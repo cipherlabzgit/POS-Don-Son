@@ -161,9 +161,22 @@ public sealed class CashierBalanceService : ICashierBalanceService
             throw new InvalidOperationException("No active showrooms are configured.");
         }
 
-        if (dto.Lines.Count != outletDict.Count || dto.Lines.Any(l => !outletDict.ContainsKey(l.OutletId)))
+        if (dto.Lines.Any(l => !outletDict.ContainsKey(l.OutletId)))
         {
-            throw new InvalidOperationException("All active showrooms must be included exactly once.");
+            throw new InvalidOperationException("One or more showrooms are invalid or inactive.");
+        }
+
+        var isFullSubmit = dto.Lines.Count == outletDict.Count
+            && outletDict.Keys.All(id => dto.Lines.Any(l => l.OutletId == id));
+
+        if (!isFullSubmit && dto.Lines.Select(l => l.OutletId).Distinct().Count() != dto.Lines.Count)
+        {
+            throw new InvalidOperationException("Each showroom can appear only once.");
+        }
+
+        if (isFullSubmit == false && dto.Lines.Count == 0)
+        {
+            throw new InvalidOperationException("At least one showroom line is required.");
         }
 
         foreach (var line in dto.Lines)
@@ -175,6 +188,18 @@ public sealed class CashierBalanceService : ICashierBalanceService
 
             if (line.OutletEmployeeId is null || line.OutletEmployeeId == Guid.Empty)
             {
+                var linked = await _context.OutletEmployees.AsNoTracking()
+                    .FirstOrDefaultAsync(
+                        e => e.OutletId == line.OutletId && e.UserId == submittedByUserId && e.IsActive,
+                        cancellationToken);
+                if (linked != null)
+                {
+                    line.OutletEmployeeId = linked.Id;
+                }
+            }
+
+            if (isFullSubmit && (line.OutletEmployeeId is null || line.OutletEmployeeId == Guid.Empty))
+            {
                 throw new InvalidOperationException("Cashier is required for open showrooms.");
             }
 
@@ -184,11 +209,14 @@ public sealed class CashierBalanceService : ICashierBalanceService
                 throw new InvalidOperationException("Cashier balance (cash, card, Uber, PickMe) must be greater than zero for open showrooms.");
             }
 
-            var employeeOk = await _context.OutletEmployees.AsNoTracking()
-                .AnyAsync(e => e.Id == line.OutletEmployeeId && e.OutletId == line.OutletId && e.IsActive, cancellationToken);
-            if (!employeeOk)
+            if (line.OutletEmployeeId is { } empId && empId != Guid.Empty)
             {
-                throw new InvalidOperationException("One or more selected cashiers are invalid for their showroom.");
+                var employeeOk = await _context.OutletEmployees.AsNoTracking()
+                    .AnyAsync(e => e.Id == empId && e.OutletId == line.OutletId && e.IsActive, cancellationToken);
+                if (!employeeOk)
+                {
+                    throw new InvalidOperationException("One or more selected cashiers are invalid for their showroom.");
+                }
             }
         }
 
@@ -200,9 +228,9 @@ public sealed class CashierBalanceService : ICashierBalanceService
             {
                 Id = Guid.NewGuid(),
                 ProcessDate = pd,
-                IsSubmitted = true,
-                SubmittedAt = now,
-                SubmittedById = submittedByUserId,
+                IsSubmitted = isFullSubmit,
+                SubmittedAt = isFullSubmit ? now : null,
+                SubmittedById = isFullSubmit ? submittedByUserId : null,
                 IsApproved = false,
                 ApprovedById = null,
                 ApprovedAt = null,
@@ -211,7 +239,7 @@ public sealed class CashierBalanceService : ICashierBalanceService
             };
             _context.CashierBalanceDays.Add(existingDay);
         }
-        else
+        else if (isFullSubmit)
         {
             existingDay.IsSubmitted = true;
             existingDay.SubmittedAt = now;
@@ -219,6 +247,10 @@ public sealed class CashierBalanceService : ICashierBalanceService
             existingDay.IsApproved = false;
             existingDay.ApprovedById = null;
             existingDay.ApprovedAt = null;
+            existingDay.UpdatedAt = now;
+        }
+        else
+        {
             existingDay.UpdatedAt = now;
         }
 

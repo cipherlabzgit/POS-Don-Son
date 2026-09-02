@@ -7,7 +7,7 @@ import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import { Toggle } from '@/components/ui/toggle';
 import { ArrowLeft, Save, Loader2, LayoutDashboard } from 'lucide-react';
-import { outletsApi, type Outlet, type UpdateOutletDto } from '@/lib/api/outlets';
+import { outletsApi, generatePosVerificationCode, type Outlet, type UpdateOutletDto } from '@/lib/api/outlets';
 import { usersApi, type User } from '@/lib/api/users';
 import toast from 'react-hot-toast';
 
@@ -73,6 +73,7 @@ export default function EditShowroomPage() {
   
   const [formData, setFormData] = useState<Partial<UpdateOutletDto & { isActive?: boolean }>>({
     code: '',
+    posVerificationCode: '',
     name: '',
     address: '',
     phone: '',
@@ -118,6 +119,7 @@ export default function EditShowroomPage() {
       
       setFormData({
         code: showroom.code,
+        posVerificationCode: showroom.posVerificationCode || '',
         name: showroom.name,
         address: showroom.address,
         phone: showroom.phone,
@@ -164,6 +166,7 @@ export default function EditShowroomPage() {
 
       const updateData: UpdateOutletDto = {
         code: formData.code!,
+        posVerificationCode: formData.posVerificationCode?.trim() || '',
         name: formData.name!,
         address: formData.address?.trim() || undefined,
         phone: formData.phone,
@@ -238,6 +241,26 @@ export default function EditShowroomPage() {
                 fullWidth
                 required
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+              <Input
+                label="POS Verification Code"
+                value={formData.posVerificationCode || ''}
+                onChange={(e) => setFormData({ ...formData, posVerificationCode: e.target.value })}
+                placeholder="Generate or enter an uncommon code (not the showroom Code)"
+                fullWidth
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setFormData({ ...formData, posVerificationCode: generatePosVerificationCode() })}
+              >
+                Generate
+              </Button>
+              <p className="md:col-span-2 text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                Enter this on the POS Hidden Admin Utility to assign the till. Do not use the showroom Code.
+              </p>
             </div>
 
             <Input

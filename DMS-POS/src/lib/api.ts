@@ -134,6 +134,32 @@ export async function fetchCategoriesPage(page: number, pageSize: number) {
   return { categories, totalCount, rawCount: items.length }
 }
 
+export async function resolveOutletByPosVerificationCode(code: string) {
+  const { data } = await api.get<ApiEnvelope<{
+    id?: string
+    Id?: string
+    code?: string
+    Code?: string
+    name?: string
+    Name?: string
+    address?: string
+    Address?: string
+    phone?: string
+    Phone?: string
+  }>>('/api/outlets/by-pos-verification-code', {
+    params: { code: code.trim() },
+  })
+  const row = unwrap(data)
+  const r = row as Record<string, unknown>
+  return {
+    id: String(r.id ?? r.Id ?? ''),
+    code: String(r.code ?? r.Code ?? ''),
+    name: String(r.name ?? r.Name ?? ''),
+    address: String(r.address ?? r.Address ?? ''),
+    phone: r.phone != null || r.Phone != null ? String(r.phone ?? r.Phone) : undefined,
+  }
+}
+
 export async function fetchOutletsPage(page: number, pageSize: number) {
   const { data } = await api.get('/api/outlets', {
     params: { page, pageSize, activeOnly: true },
@@ -316,6 +342,14 @@ export async function fetchPosSales(params: {
 /** Latest sale detail from server (approval status, lines, etc.). */
 export async function fetchPosSaleById(id: string) {
   const { data } = await api.get<ApiEnvelope<unknown>>(`/api/pos-sales/${encodeURIComponent(id)}`)
+  return unwrap(data)
+}
+
+export async function requestPosSaleCancel(id: string, reason: string) {
+  const { data } = await api.post<ApiEnvelope<unknown>>(
+    `/api/pos-sales/${encodeURIComponent(id)}/request-cancel`,
+    { reason },
+  )
   return unwrap(data)
 }
 

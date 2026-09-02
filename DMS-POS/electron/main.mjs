@@ -3,6 +3,8 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { registerSqliteIpc, closeSqliteDb } from './sqlite-ipc.mjs'
+import { registerBackstageIpc } from './backstage-ipc.mjs'
+import { loadTillConfig, migrateLegacyIfNeeded } from './backstage-crypto.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL)
@@ -10,29 +12,33 @@ const isDev = Boolean(process.env.VITE_DEV_SERVER_URL)
 /** @type {BrowserWindow | null} */
 let mainWin = null
 
-/** @type {{ apiBaseUrl?: string; configPath?: string } | null} */
+/** @type {{ apiBaseUrl?: string; showroomCode?: string; configPath?: string; encrypted?: boolean } | null} */
 let posConfig = null
 
-function readPosConfig() {
-  const candidates = []
-  if (app.isPackaged) {
-    candidates.push(path.join(path.dirname(process.execPath), 'pos-config.json'))
+function publicPosConfig() {
+  if (!posConfig) return null
+  return {
+    apiBaseUrl: posConfig.apiBaseUrl,
+    showroomCode: posConfig.showroomCode,
+    configPath: posConfig.configPath,
+    encrypted: Boolean(posConfig.encrypted),
   }
-  candidates.push(path.join(app.getPath('userData'), 'pos-config.json'))
+}
 
-  for (const configPath of candidates) {
+function resolveWindowIcon() {
+  const candidates = [
+    path.join(__dirname, '../public/icon.ico'),
+    path.join(__dirname, '../public/icon.png'),
+    path.join(process.resourcesPath || '', 'icon.ico'),
+  ]
+  for (const candidate of candidates) {
     try {
-      if (!fs.existsSync(configPath)) continue
-      const raw = fs.readFileSync(configPath, 'utf8')
-      const json = JSON.parse(raw)
-      if (json && typeof json === 'object') {
-        return { ...json, configPath }
-      }
-    } catch (err) {
-      console.error('[pos-config] Failed to read', configPath, err)
+      if (candidate && fs.existsSync(candidate)) return candidate
+    } catch {
+      /* ignore missing icon */
     }
   }
-  return null
+  return undefined
 }
 
 function createMainWindow() {
@@ -42,6 +48,7 @@ function createMainWindow() {
     minWidth: 1024,
     minHeight: 700,
     title: 'Don & Sons — POS',
+    icon: resolveWindowIcon(),
     fullscreen: true,
     autoHideMenuBar: true,
     show: false,
@@ -78,6 +85,11 @@ function createMainWindow() {
     const key = (input.key || '').toLowerCase()
     const ctrl = input.control || input.meta
     const shift = input.shift
+    if (ctrl && shift && key === 'a') {
+      event.preventDefault()
+      mainWin.webContents.send('app:backstage-hotkey')
+      return
+    }
     const blocked =
       key === 'f12' ||
       (ctrl && key === 'r') ||
@@ -128,7 +140,10 @@ function createMainWindow() {
 
 ipcMain.handle('app:version', () => app.getVersion())
 
-ipcMain.handle('app:get-config', () => posConfig)
+ipcMain.handle('app:get-config', () => {
+  posConfig = loadTillConfig()
+  return publicPosConfig()
+})
 
 ipcMain.handle('app:shutdown', async () => {
   if (!mainWin || mainWin.isDestroyed()) {
@@ -260,10 +275,11 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null)
-  posConfig = readPosConfig()
+  posConfig = migrateLegacyIfNeeded() ?? loadTillConfig()
   if (posConfig?.configPath) {
-    console.log('[pos-config] Loaded from', posConfig.configPath)
+    console.log('[pos-config] Loaded from', posConfig.configPath, posConfig.encrypted ? '(encrypted)' : '(legacy)')
   }
+  registerBackstageIpc()
   registerSqliteIpc()
   createMainWindow()
 

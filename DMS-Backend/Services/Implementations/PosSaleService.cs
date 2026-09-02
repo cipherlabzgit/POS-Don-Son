@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using DMS_Backend.Data;
 using DMS_Backend.Models.DTOs.OperationApprovals;
@@ -9,6 +10,8 @@ namespace DMS_Backend.Services.Implementations;
 
 public sealed class PosSaleService : IPosSaleService
 {
+    public const string CancellationApprovalType = "POS Cancellation Request";
+
     private readonly ApplicationDbContext _context;
     private readonly IOperationApprovalRecorder _approvalRecorder;
 
@@ -75,7 +78,8 @@ public sealed class PosSaleService : IPosSaleService
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return (rows.Select(MapDetail).ToList(), total);
+        var pendingCancels = await GetPendingCancelReasonsAsync(rows.Select(s => s.Id), cancellationToken);
+        return (rows.Select(s => MapDetail(s, pendingCancels)).ToList(), total);
     }
 
     public async Task<PosSaleDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -90,7 +94,11 @@ public sealed class PosSaleService : IPosSaleService
             .ThenInclude(l => l.Product)
             .FirstOrDefaultAsync(s => s.Id == id && s.IsActive, cancellationToken);
 
-        return sale == null ? null : MapDetail(sale);
+        if (sale == null)
+            return null;
+
+        var pendingCancels = await GetPendingCancelReasonsAsync(new[] { sale.Id }, cancellationToken);
+        return MapDetail(sale, pendingCancels);
     }
 
     public async Task<IReadOnlyList<PosSale>> GetPendingSalesForApprovalsAsync(CancellationToken cancellationToken = default)
@@ -389,8 +397,111 @@ public sealed class PosSaleService : IPosSaleService
         return await GetByIdAsync(id, cancellationToken);
     }
 
-    private static PosSaleDetailDto MapDetail(PosSale s)
+    public async Task<PosSaleDetailDto> RequestCancelAsync(
+        Guid id,
+        Guid userId,
+        string reason,
+        CancellationToken cancellationToken = default)
     {
+        var comment = (reason ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(comment))
+            throw new InvalidOperationException("Cancellation reason is required.");
+
+        if (comment.Length > 500)
+            comment = comment[..500];
+
+        var sale = await _context.PosSales
+            .Include(s => s.Outlet)
+            .Include(s => s.CreatedBy)
+            .Include(s => s.ApprovedBy)
+            .Include(s => s.RejectedBy)
+            .Include(s => s.Lines)
+            .ThenInclude(l => l.Product)
+            .FirstOrDefaultAsync(s => s.Id == id && s.IsActive, cancellationToken);
+
+        if (sale == null)
+            throw new InvalidOperationException("Sale not found.");
+
+        if (sale.Status == PosSaleStatus.Voided)
+            throw new InvalidOperationException("This sale has already been cancelled.");
+
+        if (sale.Status == PosSaleStatus.Rejected)
+            throw new InvalidOperationException("Rejected sales cannot be cancelled.");
+
+        if (sale.Status != PosSaleStatus.Approved)
+            throw new InvalidOperationException("Only approved sales can be submitted for cancellation.");
+
+        var alreadyPending = await _context.ApprovalQueues.AnyAsync(
+            q => q.EntityId == sale.Id
+                 && q.ApprovalType == CancellationApprovalType
+                 && q.Status == "Pending"
+                 && q.IsActive,
+            cancellationToken);
+
+        if (alreadyPending)
+            throw new InvalidOperationException("A cancellation request is already pending for this bill.");
+
+        var now = DateTime.UtcNow;
+        _context.ApprovalQueues.Add(new ApprovalQueue
+        {
+            Id = Guid.NewGuid(),
+            ApprovalType = CancellationApprovalType,
+            EntityId = sale.Id,
+            EntityReference = sale.SaleNo,
+            RequestedById = userId,
+            RequestedAt = now,
+            Status = "Pending",
+            Priority = 0,
+            Notes = comment,
+            RequestData = JsonSerializer.Serialize(new
+            {
+                saleId = sale.Id,
+                saleNo = sale.SaleNo,
+                outletId = sale.OutletId,
+                outletName = sale.Outlet?.Name,
+                reason = comment,
+            }),
+            IsActive = true,
+            CreatedById = userId,
+            UpdatedById = userId,
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var pendingCancels = new Dictionary<Guid, string?> { [sale.Id] = comment };
+        return MapDetail(sale, pendingCancels);
+    }
+
+    private async Task<Dictionary<Guid, string?>> GetPendingCancelReasonsAsync(
+        IEnumerable<Guid> saleIds,
+        CancellationToken cancellationToken)
+    {
+        var ids = saleIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return new Dictionary<Guid, string?>();
+
+        var rows = await _context.ApprovalQueues
+            .AsNoTracking()
+            .Where(q =>
+                q.IsActive
+                && q.Status == "Pending"
+                && q.ApprovalType == CancellationApprovalType
+                && ids.Contains(q.EntityId))
+            .Select(q => new { q.EntityId, q.Notes })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(r => r.EntityId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Notes).FirstOrDefault());
+    }
+
+    private static PosSaleDetailDto MapDetail(PosSale s, IReadOnlyDictionary<Guid, string?>? pendingCancels = null)
+    {
+        string? cancelReason = null;
+        var cancelRequested = pendingCancels != null && pendingCancels.TryGetValue(s.Id, out cancelReason);
+
         return new PosSaleDetailDto
         {
             Id = s.Id,
@@ -409,6 +520,8 @@ public sealed class PosSaleService : IPosSaleService
             RejectedAt = s.RejectedAt,
             RejectedByName = UserDisplayName(s.RejectedBy),
             RejectionReason = s.RejectionReason,
+            CancelRequested = cancelRequested,
+            CancellationReason = cancelReason,
             Lines = s.Lines
                 .Where(l => l.IsActive)
                 .Select(l => new PosSaleLineDetailDto

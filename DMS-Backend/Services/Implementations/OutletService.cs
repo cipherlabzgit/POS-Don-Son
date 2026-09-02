@@ -87,8 +87,18 @@ public sealed class OutletService : IOutletService
             throw new InvalidOperationException($"Outlet with code '{dto.Code}' already exists.");
         }
 
+        var posCode = NormalizePosVerificationCode(dto.PosVerificationCode);
+        if (posCode != null)
+        {
+            if (string.Equals(posCode, dto.Code.Trim(), StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("POS Verification Code cannot be the same as the showroom Code.");
+            if (await PosVerificationCodeExistsAsync(posCode, null, cancellationToken))
+                throw new InvalidOperationException("This POS Verification Code is already used by another showroom.");
+        }
+
         var outlet = _mapper.Map<Outlet>(dto);
         outlet.Id = Guid.NewGuid();
+        outlet.PosVerificationCode = posCode;
         outlet.CreatedById = userId;
         outlet.UpdatedById = userId;
         outlet.CreatedAt = DateTime.UtcNow;
@@ -121,6 +131,20 @@ public sealed class OutletService : IOutletService
         }
 
         _mapper.Map(dto, outlet);
+
+        if (dto.PosVerificationCode != null)
+        {
+            var posCode = NormalizePosVerificationCode(dto.PosVerificationCode);
+            if (posCode != null)
+            {
+                if (string.Equals(posCode, dto.Code.Trim(), StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("POS Verification Code cannot be the same as the showroom Code.");
+                if (await PosVerificationCodeExistsAsync(posCode, id, cancellationToken))
+                    throw new InvalidOperationException("This POS Verification Code is already used by another showroom.");
+            }
+            outlet.PosVerificationCode = posCode;
+        }
+
         outlet.UpdatedById = userId;
         outlet.UpdatedAt = DateTime.UtcNow;
 
@@ -162,5 +186,55 @@ public sealed class OutletService : IOutletService
         }
 
         return await query.AnyAsync(cancellationToken);
+    }
+
+    public async Task<PosShowroomBindDto?> ResolveByPosVerificationCodeAsync(
+        string code,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = NormalizePosVerificationCode(code);
+        if (normalized == null)
+            return null;
+
+        var outlet = await _context.Outlets
+            .AsNoTracking()
+            .Where(o => o.IsActive && o.PosVerificationCode != null)
+            .FirstOrDefaultAsync(
+                o => o.PosVerificationCode!.ToLower() == normalized.ToLower(),
+                cancellationToken);
+
+        if (outlet == null)
+            return null;
+
+        return new PosShowroomBindDto
+        {
+            Id = outlet.Id,
+            Code = outlet.Code,
+            Name = outlet.Name,
+            Address = outlet.Address,
+            Phone = outlet.Phone,
+        };
+    }
+
+    private async Task<bool> PosVerificationCodeExistsAsync(
+        string code,
+        Guid? excludeId,
+        CancellationToken cancellationToken)
+    {
+        var lower = code.ToLower();
+        var query = _context.Outlets
+            .IgnoreQueryFilters()
+            .Where(o => o.PosVerificationCode != null && o.PosVerificationCode.ToLower() == lower);
+
+        if (excludeId.HasValue)
+            query = query.Where(o => o.Id != excludeId.Value);
+
+        return await query.AnyAsync(cancellationToken);
+    }
+
+    private static string? NormalizePosVerificationCode(string? raw)
+    {
+        var s = (raw ?? string.Empty).Trim();
+        return string.IsNullOrEmpty(s) ? null : s;
     }
 }

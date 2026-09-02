@@ -21,9 +21,11 @@ public sealed class OutletProfile : Profile
                 opt => opt.MapFrom(src => src.OutletEmployees.Count));
 
         CreateMap<CreateOutletDto, Outlet>()
-            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address ?? string.Empty));
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address ?? string.Empty))
+            .ForMember(dest => dest.PosVerificationCode, opt => opt.Ignore());
 
         CreateMap<UpdateOutletDto, Outlet>()
-            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address ?? string.Empty));
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address ?? string.Empty))
+            .ForMember(dest => dest.PosVerificationCode, opt => opt.Ignore());
     }
 }

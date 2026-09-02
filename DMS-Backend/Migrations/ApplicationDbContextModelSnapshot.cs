@@ -3011,6 +3011,11 @@ namespace DMS_Backend.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("phone");
 
+                    b.Property<string>("PosVerificationCode")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("pos_verification_code");
+
                     b.Property<bool>("ShowInDashboard")
                         .HasColumnType("boolean")
                         .HasColumnName("show_in_dashboard");

@@ -15,6 +15,13 @@ public class Outlet : BaseEntity
     [Column("code")]
     public string Code { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Secret till-bind key for POS clients. Not the public showroom Code.
+    /// </summary>
+    [MaxLength(40)]
+    [Column("pos_verification_code")]
+    public string? PosVerificationCode { get; set; }
+
     [Required]
     [MaxLength(100)]
     [Column("name")]

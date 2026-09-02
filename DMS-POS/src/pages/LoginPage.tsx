@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import axios from 'axios'
 import { Eye, EyeOff } from 'lucide-react'
 import { loginRequest } from '../lib/api'
 import { useAuthStore } from '../lib/auth-store'
@@ -42,6 +43,7 @@ export function LoginPage() {
         toast(`Signed in, but catalogue download failed: ${msg}`, 'error')
       }
     } catch (err: unknown) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined
       const msg =
         err && typeof err === 'object' && 'message' in err
           ? String((err as { message?: string }).message)
@@ -50,10 +52,16 @@ export function LoginPage() {
         msg.includes('Network Error') ||
         msg.includes('ERR_CONNECTION_REFUSED') ||
         msg.includes('ECONNREFUSED')
+      const isInvalidLogin =
+        status === 401 ||
+        status === 400 ||
+        /401|unauthorized|invalid.*(user|email|password)|wrong password/i.test(msg)
       setError(
-        isNetwork
-          ? 'Cannot reach the server. Check the network connection and try again.'
-          : msg || 'Login failed. Check your credentials and try again.',
+        isInvalidLogin
+          ? 'Invalid Username or Password'
+          : isNetwork
+            ? 'Cannot reach the server. Check the network connection and try again.'
+            : msg || 'Login failed. Check your credentials and try again.',
       )
     } finally {
       setLoading(false)

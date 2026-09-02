@@ -59,9 +59,12 @@
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "public/icon.ico",
+      "public/icon.png"
     ],
     "win": {
+      "icon": "public/icon.ico",
       "forceCodeSigning": false,
       "cscLink": null,
       "cscKeyPassword": null,
@@ -79,11 +82,13 @@
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": true,
       "allowToChangeInstallationDirectory": true,
       "allowElevation": true,
       "installerIcon": "public/icon.ico",
       "uninstallerIcon": "public/icon.ico",
       "installerHeaderIcon": "public/icon.ico",
+      "include": "nsis/installer.nsh",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Don & Sons POS",

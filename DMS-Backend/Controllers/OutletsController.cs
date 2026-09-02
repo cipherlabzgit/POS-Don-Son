@@ -42,6 +42,22 @@ public class OutletsController : ControllerBase
         }));
     }
 
+    [HttpGet("by-pos-verification-code")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<PosShowroomBindDto>>> ResolveByPosVerificationCode(
+        [FromQuery] string? code,
+        CancellationToken cancellationToken = default)
+    {
+        var outlet = await _outletService.ResolveByPosVerificationCodeAsync(code ?? string.Empty, cancellationToken);
+        if (outlet == null)
+        {
+            return NotFound(ApiResponse<PosShowroomBindDto>.FailureResponse(
+                Error.NotFound("Showroom", "POS Verification Code")));
+        }
+
+        return Ok(ApiResponse<PosShowroomBindDto>.SuccessResponse(outlet));
+    }
+
     [HttpGet("{id:guid}")]
     [HasPermission("showroom:view")]
     public async Task<ActionResult<ApiResponse<OutletDetailDto>>> GetById(

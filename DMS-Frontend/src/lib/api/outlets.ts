@@ -1,8 +1,18 @@
 import apiClient from './api-client';
 
+const POS_VERIFY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+/** Uncommon till-bind key — not the public showroom Code. */
+export function generatePosVerificationCode(): string {
+  const pick = (n: number) =>
+    Array.from({ length: n }, () => POS_VERIFY_ALPHABET[Math.floor(Math.random() * POS_VERIFY_ALPHABET.length)]).join('');
+  return `PV-${pick(4)}-${pick(4)}-${pick(4)}`;
+}
+
 export interface Outlet {
   id: string;
   code: string;
+  posVerificationCode?: string;
   name: string;
   description?: string;
   address: string;
@@ -27,6 +37,7 @@ export interface Outlet {
 
 export interface CreateOutletDto {
   code: string;
+  posVerificationCode?: string;
   name: string;
   description?: string;
   address?: string;
@@ -47,6 +58,7 @@ export interface CreateOutletDto {
 
 export interface UpdateOutletDto {
   code: string;
+  posVerificationCode?: string;
   name: string;
   description?: string;
   address?: string;
@@ -78,6 +90,7 @@ function normalizeOutlet(raw: any): Outlet {
   return {
     id: n('id'),
     code: n('code') ?? '',
+    posVerificationCode: n('posVerificationCode') ?? raw.PosVerificationCode ?? '',
     name: n('name') ?? '',
     description: n('description'),
     address: n('address') ?? '',

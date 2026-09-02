@@ -31,6 +31,8 @@ export interface PosSale {
   rejectedAt?: string;
   rejectedByName?: string;
   rejectionReason?: string;
+  cancelRequested?: boolean;
+  cancellationReason?: string;
   clientMutationId?: string;
 }
 
@@ -80,5 +82,21 @@ export const posSalesApi = {
   reject: async (id: string, reason?: string): Promise<PosSale> => {
     const response = await api.post<any>(`${BASE_URL}/${id}/reject`, { reason: reason ?? null });
     return response.data.data || response.data;
+  },
+
+  requestCancel: async (id: string, reason: string): Promise<PosSale> => {
+    const response = await api.post<any>(`${BASE_URL}/${id}/request-cancel`, { reason });
+    return response.data.data || response.data;
+  },
+
+  approveCancelRequest: async (queueId: string, reason?: string): Promise<PosSale> => {
+    const response = await api.post<any>(`${BASE_URL}/cancel-requests/${queueId}/approve`, {
+      reason: reason ?? null,
+    });
+    return response.data.data || response.data;
+  },
+
+  rejectCancelRequest: async (queueId: string, reason: string): Promise<void> => {
+    await api.post(`${BASE_URL}/cancel-requests/${queueId}/reject`, { reason });
   },
 };

@@ -9,7 +9,10 @@ import { DeliveryReturnPage } from './pages/DeliveryReturnPage'
 import { CashSubmissionPage } from './pages/CashSubmissionPage'
 import { OrderRequestPage } from './pages/OrderRequestPage'
 import { NetworkDiagnosticsPage } from './pages/NetworkDiagnosticsPage'
+import { BackstageAdminPanel } from './backstage/view/BackstageAdminPanel'
+import { IdleLogoutBanner } from './components/IdleLogoutBanner'
 import { ToastHost } from './components/ToastHost'
+import { useIdleLogout } from './hooks/use-idle-logout'
 import { SyncProgressIndicator } from './components/SyncProgressIndicator'
 import { useAuthStore } from './lib/auth-store'
 import { useSettingsStore } from './lib/settings-store'
@@ -21,11 +24,16 @@ export default function App() {
   const token = useAuthStore((s) => s.accessToken)
   const online = useOnlineStatus(Boolean(token))
   const [screen, setScreen] = useState<Screen>('pos')
+  const idle = useIdleLogout(Boolean(token))
 
   // Apply theme colors on mount and when theme changes
   useEffect(() => {
     useSettingsStore.getState().applyThemeColors()
   }, [])
+
+  useEffect(() => {
+    if (!token) setScreen('pos')
+  }, [token])
 
   useEffect(() => {
     void window.dmsPos?.isFullscreen?.().then((full) => {
@@ -50,6 +58,7 @@ export default function App() {
     return (
       <>
         <ToastHost />
+        <BackstageAdminPanel />
         <LoginPage />
       </>
     )
@@ -58,6 +67,14 @@ export default function App() {
   return (
     <>
       <ToastHost />
+      <BackstageAdminPanel />
+      {idle.warning ? (
+        <IdleLogoutBanner
+          secondsLeft={idle.secondsLeft}
+          onStay={idle.staySignedIn}
+          onLogout={idle.logoutNow}
+        />
+      ) : null}
       <SyncProgressIndicator />
       {screen === 'pos' ? (
         <PosMainPage

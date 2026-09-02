@@ -2,7 +2,7 @@
 # Deploy Don & Sons POS (Portable Version)
 # ===========================================================================
 # Copies the POS application to a target location with all dependencies
-# Creates desktop and start menu shortcuts
+# Creates desktop, start menu, and common Startup shortcuts
 # ===========================================================================
 
 param(
@@ -93,6 +93,7 @@ if ($CreateShortcuts) {
     $Shortcut.TargetPath = $exePath
     $Shortcut.WorkingDirectory = $DestinationPath
     $Shortcut.Description = "Don & Sons Point of Sale System"
+    $Shortcut.IconLocation = "$exePath,0"
     $Shortcut.Save()
     Write-Host "      ✓ Desktop shortcut created" -ForegroundColor Green
     
@@ -106,8 +107,27 @@ if ($CreateShortcuts) {
     $Shortcut.TargetPath = $exePath
     $Shortcut.WorkingDirectory = $DestinationPath
     $Shortcut.Description = "Don & Sons Point of Sale System"
+    $Shortcut.IconLocation = "$exePath,0"
     $Shortcut.Save()
     Write-Host "      ✓ Start Menu shortcut created" -ForegroundColor Green
+
+    # Common (all-users) Startup folder
+    $commonStartup = Join-Path $env:ProgramData "Microsoft\Windows\Start Menu\Programs\StartUp"
+    try {
+        if (-not (Test-Path $commonStartup)) {
+            New-Item -Path $commonStartup -ItemType Directory -Force | Out-Null
+        }
+        $shortcutPath = Join-Path $commonStartup "Don & Sons POS.lnk"
+        $Shortcut = $WshShell.CreateShortcut($shortcutPath)
+        $Shortcut.TargetPath = $exePath
+        $Shortcut.WorkingDirectory = $DestinationPath
+        $Shortcut.Description = "Don & Sons Point of Sale System"
+        $Shortcut.IconLocation = "$exePath,0"
+        $Shortcut.Save()
+        Write-Host "      ✓ Common Startup shortcut created" -ForegroundColor Green
+    } catch {
+        Write-Host "      ! Common Startup shortcut failed (run as Administrator): $($_.Exception.Message)" -ForegroundColor Yellow
+    }
 } else {
     Write-Host ""
     Write-Host "[4/4] Skipping shortcut creation" -ForegroundColor Yellow

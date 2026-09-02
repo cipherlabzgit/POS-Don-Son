@@ -10,6 +10,7 @@ import { createDeliveryReturn, submitDeliveryReturn } from '../lib/api'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError } from '../lib/api-errors'
+import { SearchKeyboard } from '../components/SearchKeyboard'
 
 type Props = { onBack: () => void }
 type DRow = { productId: string; name: string; code: string; qty: number }
@@ -34,7 +35,10 @@ export function DeliveryReturnPage({ onBack }: Props) {
   const [qty, setQty]                   = useState('1')
   const [rows, setRows]                 = useState<DRow[]>([])
   const [submitting, setSubmitting]     = useState(false)
+  const [kbField, setKbField]           = useState<'comment' | 'search' | null>(null)
+  const [pendingProduct, setPendingProduct] = useState<ProductRow | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  const qtyRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     void (async () => {
@@ -62,16 +66,38 @@ export function DeliveryReturnPage({ onBack }: Props) {
     return products.filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q)).slice(0, 12)
   }, [products, search])
 
-  function addRow(p: ProductRow) {
+  function focusQtySelected() {
+    setQty('1')
+    window.setTimeout(() => {
+      const el = qtyRef.current
+      if (!el) return
+      el.focus()
+      el.select()
+    }, 0)
+  }
+
+  function selectProduct(p: ProductRow) {
+    setPendingProduct(p)
+    setSearch(`${p.code} — ${p.name}`)
+    setShowDrop(false)
+    setKbField(null)
+    focusQtySelected()
+  }
+
+  function addRow(p?: ProductRow) {
+    const target = p ?? pendingProduct ?? filtered[0]
+    if (!target) { toast('Select an item first.', 'info'); return }
     const qn = parseFloat(qty.replace(',', '.'))
     if (!Number.isFinite(qn) || qn <= 0) { toast('Enter a valid quantity.', 'error'); return }
     setRows((prev) => {
-      const existing = prev.find((x) => x.productId === p.id)
-      if (existing) return prev.map((x) => x.productId === p.id ? { ...x, qty: x.qty + qn } : x)
-      return [...prev, { productId: p.id, name: p.name, code: p.code, qty: qn }]
+      const existing = prev.find((x) => x.productId === target.id)
+      if (existing) return prev.map((x) => x.productId === target.id ? { ...x, qty: x.qty + qn } : x)
+      return [...prev, { productId: target.id, name: target.name, code: target.code, qty: qn }]
     })
-    setSearch(''); setQty('1'); setShowDrop(false)
-    searchRef.current?.focus()
+    setPendingProduct(null)
+    setSearch('')
+    setQty('1')
+    setShowDrop(false)
   }
 
   function removeRow(id: string) { setRows((prev) => prev.filter((r) => r.productId !== id)) }
@@ -139,8 +165,13 @@ export function DeliveryReturnPage({ onBack }: Props) {
         {/* Optional comment */}
         <div className="mb-5">
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Comment (optional)</label>
-          <input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Optional comment"
-            className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-[var(--foreground)] placeholder:text-[var(--neutral-400)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20" />
+          <button
+            type="button"
+            onPointerDown={(e) => { e.preventDefault(); setKbField('comment') }}
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-left text-[var(--foreground)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
+          >
+            {comment || <span className="text-[var(--neutral-400)]">Optional comment</span>}
+          </button>
         </div>
 
         {/* Header fields */}
@@ -166,18 +197,23 @@ export function DeliveryReturnPage({ onBack }: Props) {
         <div className="relative mb-4 flex flex-wrap items-end gap-3">
           <div className="relative min-w-[220px] flex-1">
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Item</label>
-            <input ref={searchRef} value={search}
-              onChange={(e) => { setSearch(e.target.value); setShowDrop(true) }}
-              onFocus={() => setShowDrop(true)}
+            <input
+              ref={searchRef}
+              value={search}
+              readOnly
+              inputMode="none"
               placeholder="Search item code or name"
+              onPointerDown={(e) => { e.preventDefault(); setShowDrop(true); setKbField('search') }}
+              onFocus={(e) => { e.currentTarget.blur(); setShowDrop(true); setKbField('search') }}
               className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-[var(--foreground)] placeholder:text-[var(--neutral-400)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
-              autoComplete="off" />
+              autoComplete="off"
+            />
             {showDrop && filtered.length > 0 ? (
               <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-auto rounded-xl border border-[var(--border)] bg-white shadow-xl">
                 {filtered.map((p) => (
                   <li key={p.id}>
                     <button type="button" className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--neutral-50)]"
-                      onMouseDown={(e) => { e.preventDefault(); addRow(p) }}>
+                      onMouseDown={(e) => { e.preventDefault(); selectProduct(p) }}>
                       <span className="font-mono text-xs text-[var(--neutral-400)]">{p.code}</span>
                       <span className="ml-2 font-medium text-[var(--foreground)]">{p.name}</span>
                     </button>
@@ -188,12 +224,25 @@ export function DeliveryReturnPage({ onBack }: Props) {
           </div>
           <div className="w-28">
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Qty</label>
-            <input value={qty} onChange={(e) => setQty(e.target.value)} inputMode="decimal"
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-center text-[var(--foreground)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20" />
+            <input
+              ref={qtyRef}
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              onFocus={(e) => e.currentTarget.select()}
+              onClick={(e) => e.currentTarget.select()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addRow()
+                }
+              }}
+              inputMode="decimal"
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-center text-[var(--foreground)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
+            />
           </div>
           <button type="button"
             className="pos-tap flex items-center gap-2 rounded-xl bg-[var(--brand-primary)] px-6 py-3 font-bold text-white shadow hover:bg-[var(--brand-primary-dark)]"
-            onClick={() => { const p = filtered[0]; if (p) addRow(p); else toast('No match — type more.', 'info') }}>
+            onClick={() => addRow()}>
             <Plus className="h-4 w-4" /> Add
           </button>
         </div>
@@ -229,6 +278,26 @@ export function DeliveryReturnPage({ onBack }: Props) {
             </tbody>
           </table>
         </div>
+
+        {kbField ? (
+          <SearchKeyboard
+            value={kbField === 'comment' ? comment : search}
+            onChange={(next) => {
+              if (kbField === 'comment') {
+                setComment(next)
+                return
+              }
+              setSearch(next)
+              setShowDrop(true)
+            }}
+            onClose={() => setKbField(null)}
+            onEnter={() => {
+              if (kbField === 'search' && filtered[0]) selectProduct(filtered[0])
+            }}
+            label={kbField === 'comment' ? 'Comment' : 'Item search'}
+            placeholder={kbField === 'comment' ? 'Optional comment' : 'Search item code or name'}
+          />
+        ) : null}
 
         <div className="mt-6 flex flex-wrap gap-3">
           <button type="button" disabled={submitting || !online || rows.length === 0}

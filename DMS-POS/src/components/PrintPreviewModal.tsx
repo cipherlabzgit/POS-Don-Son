@@ -17,7 +17,7 @@ export function PrintPreviewModal({ opts, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="relative flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -69,22 +69,28 @@ export function PrintPreviewModal({ opts, onClose }: Props) {
             <div className="my-2 border-t border-dashed border-gray-400" />
 
             {/* Items table */}
-            <table className="w-full text-[10px]">
+            <table className="w-full table-fixed text-[10px]">
+              <colgroup>
+                <col className="w-[40%]" />
+                <col className="w-[22%]" />
+                <col className="w-[14%]" />
+                <col className="w-[24%]" />
+              </colgroup>
               <thead>
                 <tr className="border-b border-dashed border-gray-400">
-                  <th className="pb-1 text-left font-bold">Item</th>
-                  <th className="pb-1 text-right font-bold">Each</th>
-                  <th className="pb-1 text-center font-bold">Qty</th>
-                  <th className="pb-1 text-right font-bold">Total</th>
+                  <th className="pb-1 pr-2 text-left font-bold">Item</th>
+                  <th className="pb-1 px-1 text-right font-bold whitespace-nowrap">Each</th>
+                  <th className="pb-1 px-1 text-center font-bold whitespace-nowrap">Qty</th>
+                  <th className="pb-1 pl-1 text-right font-bold whitespace-nowrap">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {opts.lines.map((line, i) => (
                   <tr key={i}>
-                    <td className="py-1 pr-1">{line.name}</td>
-                    <td className="py-1 text-right">{line.unitPrice.toFixed(2)}</td>
-                    <td className="py-1 text-center">{line.qty}</td>
-                    <td className="py-1 text-right">{line.amount.toFixed(2)}</td>
+                    <td className="py-1 pr-2 align-top break-words">{line.name}</td>
+                    <td className="py-1 px-1 text-right align-top tabular-nums whitespace-nowrap">{line.unitPrice.toFixed(2)}</td>
+                    <td className="py-1 px-1 text-center align-top tabular-nums whitespace-nowrap">{line.qty}</td>
+                    <td className="py-1 pl-1 text-right align-top tabular-nums whitespace-nowrap">{line.amount.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>

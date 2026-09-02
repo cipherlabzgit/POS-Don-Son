@@ -12,6 +12,14 @@ public sealed class UpdateOutletValidator : AbstractValidator<UpdateOutletDto>
             .MaximumLength(20).WithMessage("Code cannot exceed 20 characters")
             .Matches(@"^[A-Z0-9_-]+$").WithMessage("Code must contain only uppercase letters, numbers, hyphens, and underscores");
 
+        RuleFor(x => x.PosVerificationCode)
+            .MinimumLength(8).WithMessage("POS Verification Code must be at least 8 characters")
+            .MaximumLength(40).WithMessage("POS Verification Code cannot exceed 40 characters")
+            .Matches(@"^[A-Za-z0-9#@$%_\-]+$").WithMessage("POS Verification Code may contain letters, numbers, and # @ $ % _ -")
+            .Must((dto, code) => !string.Equals(code?.Trim(), dto.Code?.Trim(), StringComparison.OrdinalIgnoreCase))
+            .WithMessage("POS Verification Code cannot be the same as the showroom Code")
+            .When(x => !string.IsNullOrWhiteSpace(x.PosVerificationCode));
+
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Outlet name is required")
             .MaximumLength(100).WithMessage("Name cannot exceed 100 characters");

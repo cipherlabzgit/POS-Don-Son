@@ -1,9 +1,13 @@
+import { createPortal } from 'react-dom'
 import { Delete, X } from 'lucide-react'
 
 type Props = {
   value: string
   onChange: (value: string) => void
   onClose: () => void
+  label?: string
+  placeholder?: string
+  onEnter?: () => void
 }
 
 const ROW1 = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
@@ -14,7 +18,14 @@ const ROW4 = ['z', 'x', 'c', 'v', 'b', 'n', 'm']
 const KEY =
   'pos-tap flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg bg-white/15 text-base font-bold uppercase text-white shadow-sm hover:bg-white/25 active:scale-95'
 
-export function SearchKeyboard({ value, onChange, onClose }: Props) {
+export function SearchKeyboard({
+  value,
+  onChange,
+  onClose,
+  label = 'Item search',
+  placeholder = 'Search item name or code',
+  onEnter,
+}: Props) {
   function press(ch: string) {
     onChange(value + ch)
   }
@@ -23,8 +34,8 @@ export function SearchKeyboard({ value, onChange, onClose }: Props) {
     onChange(value.slice(0, -1))
   }
 
-  return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-3 sm:items-center">
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 p-3 sm:items-center">
       <div className="w-full max-w-3xl rounded-2xl bg-[var(--brand-primary)] p-4 shadow-2xl">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-bold text-white">Keyboard</h2>
@@ -40,10 +51,10 @@ export function SearchKeyboard({ value, onChange, onClose }: Props) {
 
         <div className="mb-4 rounded-xl bg-[#f5f0e6] px-4 py-3">
           <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--brand-primary)]">
-            Item search
+            {label}
           </p>
           <p className="min-h-[1.75rem] text-xl font-semibold text-neutral-900">
-            {value || <span className="font-normal text-neutral-400">Search item name or code</span>}
+            {value || <span className="font-normal text-neutral-400">{placeholder}</span>}
           </p>
         </div>
 
@@ -89,13 +100,17 @@ export function SearchKeyboard({ value, onChange, onClose }: Props) {
             <button
               type="button"
               className="pos-tap h-12 rounded-lg bg-[var(--brand-accent)] px-6 text-sm font-bold text-neutral-900 hover:brightness-105"
-              onClick={onClose}
+              onClick={() => {
+                onEnter?.()
+                onClose()
+              }}
             >
               Enter
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

@@ -1,4 +1,4 @@
-import { KeyRound, Lock, Shield, X } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Lock, Shield, X } from 'lucide-react'
 import { useBackstageViewModel } from '../viewmodel/use-backstage-view-model'
 
 export function BackstageAdminPanel() {
@@ -41,15 +41,25 @@ export function BackstageAdminPanel() {
               <span className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
                 <KeyRound className="h-3.5 w-3.5" /> Verification Admin Key
               </span>
-              <input
-                type="password"
-                autoFocus
-                autoComplete="off"
-                value={vm.password}
-                onChange={(e) => vm.setPassword(e.target.value)}
-                className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-amber-400"
-                placeholder="••••••••••••"
-              />
+              <div className="flex gap-2">
+                <input
+                  type={vm.showPassword ? 'text' : 'password'}
+                  autoFocus
+                  autoComplete="off"
+                  value={vm.password}
+                  onChange={(e) => vm.setPassword(e.target.value)}
+                  className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-amber-400"
+                  placeholder="••••••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => vm.setShowPassword(!vm.showPassword)}
+                  className="shrink-0 rounded-lg border border-neutral-700 px-3 text-neutral-300 hover:bg-white/10"
+                  aria-label={vm.showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {vm.showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </label>
             {vm.error ? <p className="text-sm text-red-400">{vm.error}</p> : null}
             {!vm.desktop ? (

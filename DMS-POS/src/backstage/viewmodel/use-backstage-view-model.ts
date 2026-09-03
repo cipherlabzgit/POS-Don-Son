@@ -14,6 +14,7 @@ export function useBackstageViewModel() {
   const [visible, setVisible] = useState(false)
   const [phase, setPhase] = useState<BackstagePhase>('locked')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [apiBaseUrl, setApiBaseUrl] = useState('')
   const [posVerificationCode, setPosVerificationCode] = useState('')
   const [showroomCode, setShowroomCode] = useState('')
@@ -28,6 +29,7 @@ export function useBackstageViewModel() {
     setVisible(true)
     setPhase('locked')
     setPassword('')
+    setShowPassword(false)
     setError('')
   }, [])
 
@@ -36,6 +38,7 @@ export function useBackstageViewModel() {
     setVisible(false)
     setPhase('locked')
     setPassword('')
+    setShowPassword(false)
     setError('')
   }, [])
 
@@ -70,7 +73,8 @@ export function useBackstageViewModel() {
       setError('Backstage is available only on the POS desktop app.')
       return
     }
-    if (!password.trim()) {
+    const key = password.trim()
+    if (!key) {
       setError('Verification Admin Key is required.')
       return
     }
@@ -80,22 +84,21 @@ export function useBackstageViewModel() {
       let unlocked = false
       try {
         const { data } = await axios.post(`${getApiBaseUrl()}/api/pos-backstage/verify`, {
-          key: password,
+          key,
         })
-        const ok = Boolean(
-          (data as { success?: boolean })?.success ?? (data as { Success?: boolean })?.Success,
-        )
+        const root = data as { success?: boolean; Success?: boolean }
+        const ok = root.success === true || root.Success === true
         if (ok) {
           const granted = await window.dmsPos?.grantBackstageSession?.()
-          unlocked = Boolean(granted?.ok)
+          unlocked = granted?.ok !== false
         }
       } catch {
         /* offline or old API — fall back to the baked-in hash */
       }
       if (!unlocked) {
-        const result = (await window.dmsPos?.unlockBackstage?.(password)) as UnlockResult | undefined
+        const result = (await window.dmsPos?.unlockBackstage?.(key)) as UnlockResult | undefined
         if (!result?.ok) {
-          setError(result?.message || 'Invalid verification key.')
+          setError(result?.message || 'Invalid verification key. Use the Current POS password from DMS → POS Admin Key.')
           return
         }
       }
@@ -161,6 +164,7 @@ export function useBackstageViewModel() {
     visible,
     phase,
     password,
+    showPassword,
     apiBaseUrl,
     posVerificationCode,
     showroomCode,
@@ -171,6 +175,7 @@ export function useBackstageViewModel() {
     saving,
     desktop,
     setPassword,
+    setShowPassword,
     setApiBaseUrl,
     setPosVerificationCode,
     setShowroomCode,

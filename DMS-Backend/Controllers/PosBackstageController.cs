@@ -97,10 +97,15 @@ public sealed class PosBackstageController : ControllerBase
         CancellationToken cancellationToken)
     {
         var attempt = (body.Key ?? "").Trim();
-        var setting = await _context.SystemSettings.AsNoTracking()
+        var current = await _context.SystemSettings.AsNoTracking()
             .FirstOrDefaultAsync(s => s.SettingKey == CurrentKeyName && s.IsActive, cancellationToken);
-        var expected = (setting?.SettingValue ?? "Don&son2026#").Trim();
-        var ok = attempt.Length > 0 && string.Equals(attempt, expected, StringComparison.Ordinal);
+        var next = await _context.SystemSettings.AsNoTracking()
+            .FirstOrDefaultAsync(s => s.SettingKey == NextKeyName && s.IsActive, cancellationToken);
+        var expected = (current?.SettingValue ?? "Don&son2026#").Trim();
+        var expectedNext = (next?.SettingValue ?? "").Trim();
+        var ok = attempt.Length > 0 && (
+            string.Equals(attempt, expected, StringComparison.Ordinal)
+            || (!string.IsNullOrEmpty(expectedNext) && string.Equals(attempt, expectedNext, StringComparison.Ordinal)));
         if (!ok)
             return Unauthorized(ApiResponse<object>.FailureResponse(
                 Error.Unauthorized("Invalid verification key.")));

@@ -13,8 +13,16 @@ const MODE_SAFE = 1
 const MODE_AES = 2
 
 const PBKDF2_ITER = 210_000
-const ADMIN_SALT = Buffer.from('53fe79f3322e9d5a622bf332045ad8c6', 'hex')
-const ADMIN_HASH = Buffer.from('4b9a4f083e334ce925f962a222a5a039f5ca629a009ccb201bff70ee37c45fb7', 'hex')
+const ADMIN_KEYS = [
+  {
+    salt: Buffer.from('53fe79f3322e9d5a622bf332045ad8c6', 'hex'),
+    hash: Buffer.from('4b9a4f083e334ce925f962a222a5a039f5ca629a009ccb201bff70ee37c45fb7', 'hex'),
+  },
+  {
+    salt: Buffer.from('e3b77c5da90c5861ded5b9369942f0cb', 'hex'),
+    hash: Buffer.from('095eb86278c619a32708a932975865e36b36572765ed1608f3e70d2999549883', 'hex'),
+  },
+]
 
 /** Split pepper — not a usable password; only AES fallback material. */
 const PEPPER_A = Buffer.from([0x4b, 0x91, 0x2e, 0x7c, 0xd4, 0x18, 0xa3, 0x5f])
@@ -35,9 +43,11 @@ export function verifyAdminKey(password) {
     return { ok: false, locked: true, message: `Too many attempts. Wait ${wait}s.` }
   }
 
-  const pwd = typeof password === 'string' ? password : ''
-  const digest = crypto.pbkdf2Sync(pwd, ADMIN_SALT, PBKDF2_ITER, 32, 'sha512')
-  const ok = digest.length === ADMIN_HASH.length && crypto.timingSafeEqual(digest, ADMIN_HASH)
+  const pwd = typeof password === 'string' ? password.trim() : ''
+  const ok = ADMIN_KEYS.some((entry) => {
+    const digest = crypto.pbkdf2Sync(pwd, entry.salt, PBKDF2_ITER, 32, 'sha512')
+    return digest.length === entry.hash.length && crypto.timingSafeEqual(digest, entry.hash)
+  })
   if (!ok) {
     failures += 1
     if (failures >= MAX_FAILURES) {

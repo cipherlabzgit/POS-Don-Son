@@ -1042,8 +1042,8 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       {/* ── Operations drawer (slides from left) ── */}
       {drawer ? (
         <div className="fixed inset-0 z-40 flex">
-          <aside className="flex w-72 max-w-[85vw] flex-col border-r border-[var(--border)] bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--brand-primary)] px-4 py-4">
+          <aside className="flex h-full w-72 max-w-[85vw] min-h-0 flex-col border-r border-[var(--border)] bg-white shadow-2xl">
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--brand-primary)] px-4 py-4">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-white/70">Menu</p>
                 <span className="font-pos-title text-lg font-bold text-white">Operations</span>
@@ -1053,6 +1053,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               </button>
             </div>
 
+            <div className="pos-scroll-visible min-h-0 flex-1">
             <nav className="flex flex-col gap-1.5 p-3">
               <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Daily tasks</p>
               {canStockBfCreate || canStockBfView ? (
@@ -1138,8 +1139,9 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               ) : null}
             </div>
 
-            <div className="mt-auto border-t border-[var(--border)] px-4 py-3 text-[11px] text-[var(--muted-foreground)]">
+            <div className="border-t border-[var(--border)] px-4 py-3 text-[11px] text-[var(--muted-foreground)]">
               Connect online at least once to cache the product catalogue for offline use.
+            </div>
             </div>
           </aside>
           <button type="button" className="flex-1 bg-black/50" aria-label="Close menu" onClick={() => setDrawer(false)} />

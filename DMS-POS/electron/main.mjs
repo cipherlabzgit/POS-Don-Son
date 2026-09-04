@@ -44,6 +44,7 @@ function publicPosConfig() {
 
 function resolveWindowIcon() {
   const candidates = [
+    path.join(__dirname, '../build/icon.ico'),
     path.join(__dirname, '../public/icon.ico'),
     path.join(__dirname, '../public/icon.png'),
     path.join(process.resourcesPath || '', 'icon.ico'),
@@ -116,6 +117,8 @@ function createMainWindow() {
   })
 
   mainWin.once('ready-to-show', () => {
+    const iconPath = resolveWindowIcon()
+    if (iconPath) mainWin.setIcon(iconPath)
     mainWin.setFullScreen(true)
     mainWin.show()
   })

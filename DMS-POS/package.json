@@ -55,7 +55,8 @@
       "**/node_modules/better-sqlite3/**"
     ],
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",

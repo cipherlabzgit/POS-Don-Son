@@ -8,8 +8,8 @@ const fieldCls =
 
 export function PosAccessDeniedPage({ onReady }: Props) {
   const vm = useBackstageViewModel({
-    startOpen: true,
-    listenHotkey: false,
+    startOpen: false,
+    listenHotkey: true,
     onSaved: onReady,
   })
 
@@ -37,6 +37,7 @@ export function PosAccessDeniedPage({ onReady }: Props) {
           <p className="font-pos-title text-xl font-bold text-white">Unauthorized Access</p>
         </div>
 
+        {vm.visible || vm.phase === 'unlocked' ? (
         <div className="mt-8 text-left">
           {vm.phase === 'locked' ? (
             <form
@@ -136,6 +137,7 @@ export function PosAccessDeniedPage({ onReady }: Props) {
             </form>
           )}
         </div>
+        ) : null}
 
         <p className="mt-8 font-pos-title text-sm font-semibold tracking-wide text-[var(--brand-accent)]">
           ★ Powered By Don &amp; Sons DMS ★

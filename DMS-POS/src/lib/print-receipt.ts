@@ -183,19 +183,29 @@ function printViaIframe(html: string): Promise<boolean> {
  * Prints a receipt: Electron sends silently to the default printer;
  * browser mode falls back to the system print dialog.
  */
-export async function printReceiptHtml(opts: PrintReceiptOpts): Promise<boolean> {
+/** Desktop POS client (Electron). Browser/sample UI is everything else. */
+export function isElectronPos() {
+  return typeof window !== 'undefined' && window.dmsPos?.mode === 'electron'
+}
+
+export async function printReceiptHtml(
+  opts: PrintReceiptOpts,
+  flags?: { silentOnly?: boolean },
+): Promise<boolean> {
   const html = buildReceiptDocumentHtml(opts)
 
-  if (window.dmsPos?.printSilent) {
+  if (isElectronPos() && window.dmsPos?.printSilent) {
     try {
       const result = await window.dmsPos.printSilent(html)
       if (result?.success) return true
-      console.warn('[PRINT] Electron print failed, trying iframe fallback:', result?.error)
+      console.warn('[PRINT] Silent print failed:', result?.error)
     } catch (error) {
-      console.warn('[PRINT] Electron print exception, trying iframe fallback:', error)
+      console.warn('[PRINT] Silent print exception:', error)
     }
+    return false
   }
 
+  if (flags?.silentOnly) return false
   return printViaIframe(html)
 }
 

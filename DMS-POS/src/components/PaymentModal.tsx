@@ -5,7 +5,6 @@ type Props = {
   open: boolean
   onClose: () => void
   onPay: (method: 'Cash' | 'Card', cashReceived?: number, change?: number) => void
-  onDisplayBill: (cashReceived?: number, change?: number) => void
   total: number
 }
 
@@ -13,7 +12,7 @@ const KEY_CLS =
   'pos-tap flex h-14 items-center justify-center rounded-xl text-lg font-bold ' +
   'bg-[var(--brand-primary)] text-white shadow-sm hover:bg-[var(--brand-primary-dark)] active:scale-95'
 
-export function PaymentModal({ open, onClose, onPay, onDisplayBill, total }: Props) {
+export function PaymentModal({ open, onClose, onPay, total }: Props) {
   const [method, setMethod] = useState<'Cash' | 'Card'>('Cash')
   const [cashReceived, setCashReceived] = useState('')
 
@@ -158,14 +157,6 @@ export function PaymentModal({ open, onClose, onPay, onDisplayBill, total }: Pro
             )}
           </div>
         )}
-
-        <button
-          type="button"
-          className="pos-tap mb-3 w-full rounded-xl border-2 border-[var(--brand-primary)] bg-white py-3 text-base font-semibold text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/5"
-          onClick={() => onDisplayBill(method === 'Cash' ? cashAmount : total, method === 'Cash' ? change : 0)}
-        >
-          Display Bill
-        </button>
 
         <div className="grid grid-cols-2 gap-2">
           <button

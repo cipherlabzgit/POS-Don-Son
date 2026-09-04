@@ -11,6 +11,19 @@ contextBridge.exposeInMainWorld('dmsPos', {
   sqliteOp: (op, payload) => ipcRenderer.invoke('offline:op', { op, payload }),
   /** Silent print HTML content without showing print dialog */
   printSilent: (html) => ipcRenderer.invoke('app:print-silent', html),
+  openCashDrawer: () => ipcRenderer.invoke('app:open-cash-drawer'),
+  getDisplayStatus: () => ipcRenderer.invoke('display:status'),
+  openCustomerDisplay: () => ipcRenderer.invoke('display:open-customer'),
+  listComPorts: () => ipcRenderer.invoke('pole:list-ports'),
+  getPoleConfig: () => ipcRenderer.invoke('pole:get-config'),
+  setPolePort: (port) => ipcRenderer.invoke('pole:set-port', port),
+  writePole: (line1, line2) => ipcRenderer.invoke('pole:write', { line1, line2 }),
+  pushCustomerCart: (payload) => ipcRenderer.send('customer:push-cart', payload),
+  onCustomerCart: (cb) => {
+    const listener = (_event, payload) => cb(payload)
+    ipcRenderer.on('customer:cart', listener)
+    return () => ipcRenderer.removeListener('customer:cart', listener)
+  },
   unlockBackstage: (password) => ipcRenderer.invoke('backstage:unlock', password),
   grantBackstageSession: () => ipcRenderer.invoke('backstage:grant-session'),
   lockBackstage: () => ipcRenderer.invoke('backstage:lock'),

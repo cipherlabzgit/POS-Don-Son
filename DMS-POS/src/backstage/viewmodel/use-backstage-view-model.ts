@@ -9,8 +9,14 @@ import type { SaveConfigResult, UnlockResult } from '../model/till-config'
 
 export type BackstagePhase = 'locked' | 'unlocked'
 
+type BackstageVmOptions = {
+  startOpen?: boolean
+  listenHotkey?: boolean
+  onSaved?: () => void
+}
+
 /** View-model for the hidden backstage panel (MVVM). */
-export function useBackstageViewModel() {
+export function useBackstageViewModel(options: BackstageVmOptions = {}) {
   const [visible, setVisible] = useState(false)
   const [phase, setPhase] = useState<BackstagePhase>('locked')
   const [password, setPassword] = useState('')
@@ -24,6 +30,8 @@ export function useBackstageViewModel() {
   const [unlocking, setUnlocking] = useState(false)
   const [saving, setSaving] = useState(false)
   const desktop = Boolean(window.dmsPos?.unlockBackstage)
+  const listenHotkey = options.listenHotkey !== false
+  const onSaved = options.onSaved
 
   const openCommand = useCallback(() => {
     setVisible(true)
@@ -43,6 +51,11 @@ export function useBackstageViewModel() {
   }, [])
 
   useEffect(() => {
+    if (options.startOpen) openCommand()
+  }, [options.startOpen, openCommand])
+
+  useEffect(() => {
+    if (!listenHotkey) return
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
         e.preventDefault()
@@ -56,7 +69,7 @@ export function useBackstageViewModel() {
       window.removeEventListener('keydown', onKey, true)
       off?.()
     }
-  }, [openCommand])
+  }, [listenHotkey, openCommand])
 
   const loadConfigCommand = useCallback(async () => {
     const cfg = (await window.dmsPos?.getSecureConfig?.()) ?? (await window.dmsPos?.getConfig?.())
@@ -151,14 +164,15 @@ export function useBackstageViewModel() {
       await applyBootstrapConfig()
       setEncrypted(true)
       setConfigPath(result.config?.configPath ?? configPath)
-      toast('Encrypted till configuration saved.', 'success')
+      toast('Location saved. Sign in to open the till.', 'success')
+      onSaved?.()
       closeCommand()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed.')
     } finally {
       setSaving(false)
     }
-  }, [apiBaseUrl, posVerificationCode, showroomCode, configPath, closeCommand])
+  }, [apiBaseUrl, posVerificationCode, showroomCode, configPath, closeCommand, onSaved])
 
   return {
     visible,

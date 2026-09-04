@@ -1,10 +1,25 @@
-import { app, BrowserWindow, Menu, ipcMain, shell, dialog } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, shell, dialog, screen } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { registerSqliteIpc, closeSqliteDb } from './sqlite-ipc.mjs'
 import { registerBackstageIpc } from './backstage-ipc.mjs'
 import { loadTillConfig, migrateLegacyIfNeeded } from './backstage-crypto.mjs'
+import { openCashDrawer } from './cash-drawer.mjs'
+import {
+  getDisplayStatus,
+  openCustomerDisplay,
+  sendCustomerCart,
+  syncCustomerDisplay,
+  closeCustomerDisplay,
+} from './customer-display.mjs'
+import {
+  listComPorts,
+  loadPoleConfig,
+  savePoleConfig,
+  writePoleFromCart,
+  writePoleLines,
+} from './pole-display.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL)
@@ -107,6 +122,7 @@ function createMainWindow() {
 
   mainWin.on('closed', () => {
     mainWin = null
+    closeCustomerDisplay()
   })
 
   // Block navigation away from app origin
@@ -174,6 +190,33 @@ ipcMain.handle('app:toggle-fullscreen', () => {
 })
 
 ipcMain.handle('app:is-fullscreen', () => mainWin?.isFullScreen() ?? false)
+
+ipcMain.handle('display:status', () => getDisplayStatus())
+ipcMain.handle('display:open-customer', () =>
+  openCustomerDisplay({
+    isDev,
+    icon: resolveWindowIcon(),
+    preload: path.join(__dirname, 'preload.mjs'),
+  }),
+)
+ipcMain.handle('pole:list-ports', () => listComPorts())
+ipcMain.handle('pole:get-config', () => loadPoleConfig())
+ipcMain.handle('pole:set-port', (_event, port) => savePoleConfig(port))
+ipcMain.handle('pole:write', (_event, payload) =>
+  writePoleLines(payload?.line1 ?? '', payload?.line2 ?? ''),
+)
+ipcMain.on('customer:push-cart', (_event, payload) => {
+  sendCustomerCart(payload)
+  void writePoleFromCart(payload)
+})
+
+ipcMain.handle('app:open-cash-drawer', async () => {
+  try {
+    return await openCashDrawer()
+  } catch (error) {
+    return { success: false, error: error?.message || String(error) }
+  }
+})
 
 ipcMain.handle('app:print-silent', async (_event, html) => {
   if (!mainWin || mainWin.isDestroyed()) {
@@ -275,6 +318,11 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
 
 // ─── App lifecycle ─────────────────────────────────────────────────────────────
 
+app.setName('Don & Sons POS')
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.donandsons.dms-pos')
+}
+
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null)
   posConfig = migrateLegacyIfNeeded() ?? loadTillConfig()
@@ -284,6 +332,15 @@ app.whenReady().then(() => {
   registerBackstageIpc()
   registerSqliteIpc()
   createMainWindow()
+
+  const customerOpts = () => ({
+    isDev,
+    icon: resolveWindowIcon(),
+    preload: path.join(__dirname, 'preload.mjs'),
+  })
+  syncCustomerDisplay(customerOpts())
+  screen.on('display-added', () => syncCustomerDisplay(customerOpts()))
+  screen.on('display-removed', () => syncCustomerDisplay(customerOpts()))
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow()

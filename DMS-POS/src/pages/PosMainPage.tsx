@@ -2,11 +2,11 @@ import {
   useCallback, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react'
 import {
-  ChevronDown, ChevronRight, ChevronUp, Check,
+  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Check,
   Cloud, History, Inbox, LogOut, Menu,
   Minus, Package, Plus, Printer,
   Search, Settings2, Star, Truck, Undo2,
-  Users, Wallet, X, Maximize2, Power, Stethoscope,
+  Trash2, Wallet, X, Maximize2, Power, Stethoscope,
 } from 'lucide-react'
 import { useAuthStore } from '../lib/auth-store'
 import { useCartStore } from '../lib/cart-store'
@@ -16,10 +16,12 @@ import { syncCatalogFromServer } from '../lib/catalog-sync'
 import { fetchOutletsPage, postPosSale, resolveOutletByPosVerificationCode } from '../lib/api'
 import { enqueueMutation, processPendingQueue } from '../lib/sync-queue'
 import { useOnlineStatus } from '../lib/use-online-status'
-import { printReceiptHtml, type PrintReceiptOpts } from '../lib/print-receipt'
+import { isElectronPos, printReceiptHtml, type PrintReceiptOpts } from '../lib/print-receipt'
 import { toast } from '../lib/toast-store'
 import { OnlineBadge } from '../components/OnlineBadge'
 import { PaymentModal } from '../components/PaymentModal'
+import { PostSalePopups, type PostSaleState } from '../components/PostSalePopups'
+import { pushCustomerThankYou } from '../hooks/use-customer-display-sync'
 import { PrintPreviewModal } from '../components/PrintPreviewModal'
 import { TransactionHistoryModal } from '../components/TransactionHistoryModal'
 import { QtyNumpad } from '../components/QtyNumpad'
@@ -45,10 +47,9 @@ type NumpadTarget = { productId: string; name: string; currentQty: number }
 
 type PosMainPageProps = {
   onOpenScreen: (s: Screen) => void
-  onCustomerView: () => void
 }
 
-export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) {
+export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const user        = useAuthStore((s) => s.user)
   const logout      = useAuthStore((s) => s.logout)
   const accessToken = useAuthStore((s) => s.accessToken)
@@ -119,7 +120,14 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   const [diagnosticOpen, setDiagnosticOpen] = useState(false)
   const [searchKbOpen, setSearchKbOpen] = useState(false)
   const [previewOpts, setPreviewOpts] = useState<PrintReceiptOpts | null>(null)
+  const [postSale, setPostSale] = useState<PostSaleState | null>(null)
+  const [confirmClear, setConfirmClear] = useState(false)
   const [catsExpanded, setCatsExpanded] = useState(false)
+  const [comPorts, setComPorts] = useState<string[]>([])
+  const [polePort, setPolePort] = useState('')
+  const [secondaryReady, setSecondaryReady] = useState(false)
+  const [catPage, setCatPage] = useState(0)
+  const CATS_PER_PAGE = 7
 
   const catalogScrollRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -298,6 +306,21 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
     return cols
   }, [categories])
 
+  const catPageCount = Math.max(1, Math.ceil(catRow.length / CATS_PER_PAGE))
+  const visibleCats = catsExpanded
+    ? catRow
+    : catRow.slice(catPage * CATS_PER_PAGE, catPage * CATS_PER_PAGE + CATS_PER_PAGE)
+
+  useEffect(() => {
+    setCatPage((p) => Math.min(p, catPageCount - 1))
+  }, [catPageCount])
+
+  useEffect(() => {
+    void window.dmsPos?.getDisplayStatus?.().then((s) => setSecondaryReady(Boolean(s?.secondaryAvailable)))
+    void window.dmsPos?.listComPorts?.().then((ports) => setComPorts(ports ?? []))
+    void window.dmsPos?.getPoleConfig?.().then((cfg) => setPolePort(cfg?.port ?? ''))
+  }, [])
+
   function selectCategory(id: string) {
     setCategoryId(id)
   }
@@ -308,6 +331,42 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
   const currentOutlet = useMemo(() => outlets.find((o) => o.id === outletId), [outlets, outletId])
   const receiptCompanyAddress = currentOutlet?.address || receiptAddress || 'NO: 302/D, OLD KANDY ROAD,\nDALUGAMA, KELANIYA'
   const receiptCompanyPhone = currentOutlet?.phone || receiptPhone || '011-2911412/076-8214432'
+
+  function beginPostSale(receipt: {
+    outletLabel: string
+    total: number
+    paymentMethod: string
+    cash: number
+    change: number
+    dateTime: string
+    saleNo?: string
+    lines: { name: string; unitPrice: number; qty: number; amount: number }[]
+  }) {
+    setLastReceipt(receipt)
+    clear()
+    setPayOpen(false)
+    pushCustomerThankYou(receipt.change)
+    setPostSale({
+      change: receipt.change,
+      cash: receipt.cash,
+      total: receipt.total,
+      receiptOpts: {
+        title: 'DON & SONS (PVT) LTD',
+        companyAddress: receiptCompanyAddress,
+        companyPhone: `Tel:${receiptCompanyPhone}`,
+        outletLabel: receipt.outletLabel,
+        lines: receipt.lines,
+        total: receipt.total,
+        cash: receipt.cash,
+        change: receipt.change,
+        dateTime: receipt.dateTime,
+        cashier: user ? `${user.firstName} ${user.lastName}`.trim() : '',
+        paymentMethod: receipt.paymentMethod,
+        saleNo: receipt.saleNo,
+        footerLines: ['FOOD ARE NOT RETURNABLE', 'COMPLAINT MUST BE LODGED BEFORE', '12 NOON NEXT DAY'],
+      },
+    })
+  }
 
   // ── Payment ─────────────────────────────────────────────────────────────────
   async function handlePay(method: 'Cash' | 'Card', cashReceived?: number, change?: number) {
@@ -395,57 +454,20 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
         await saveLocal()
         receiptSnapshot = { outletLabel, total: totalSnap, paymentMethod: method, cash: cashPaid, change: changeAmount, dateTime: dateTimeStr, lines: snapshot }
       }
-      setLastReceipt(receiptSnapshot)
-      clear()
-      setPayOpen(false)
       toast(
         online
           ? 'Sale completed successfully.'
           : 'Sale queued — will sync when online.',
         'success',
       )
-      // Always print receipt after completing sale
-      const ok = await printReceiptHtml({
-        title: 'DON & SONS (PVT) LTD',
-        companyAddress: receiptCompanyAddress,
-        companyPhone: `Tel:${receiptCompanyPhone}`,
-        outletLabel: receiptSnapshot.outletLabel,
-        lines: receiptSnapshot.lines,
-        total: receiptSnapshot.total,
-        cash: receiptSnapshot.cash,
-        change: receiptSnapshot.change,
-        dateTime: receiptSnapshot.dateTime,
-        cashier: user ? `${user.firstName} ${user.lastName}`.trim() : '',
-        paymentMethod: receiptSnapshot.paymentMethod,
-        saleNo: receiptSnapshot.saleNo,
-        footerLines: ['FOOD ARE NOT RETURNABLE', 'COMPLAINT MUST BE LODGED BEFORE', '12 NOON NEXT DAY'],
-      })
-      if (!ok) toast('Unable to print — try again.', 'error')
+      beginPostSale(receiptSnapshot)
     } catch (e) {
       try {
         await enqueueMutation({ id: body.clientMutationId, type: 'pos-sale', payload: body, createdAt: Date.now() })
         await saveLocal()
         const receiptSnapshot = { outletLabel, total: totalSnap, paymentMethod: method, cash: cashPaid, change: changeAmount, dateTime: dateTimeStr, lines: snapshot }
-        setLastReceipt(receiptSnapshot)
-        clear()
-        setPayOpen(false)
         toast('Server unreachable. Sale queued for sync.', 'info')
-        // Always print receipt after completing sale
-        const ok = await printReceiptHtml({
-          title: 'DON & SONS (PVT) LTD',
-          companyAddress: receiptCompanyAddress,
-          companyPhone: `Tel:${receiptCompanyPhone}`,
-          outletLabel: receiptSnapshot.outletLabel,
-          lines: receiptSnapshot.lines,
-          total: receiptSnapshot.total,
-          cash: receiptSnapshot.cash,
-          change: receiptSnapshot.change,
-          dateTime: receiptSnapshot.dateTime,
-          cashier: user ? `${user.firstName} ${user.lastName}`.trim() : '',
-          paymentMethod: receiptSnapshot.paymentMethod,
-          footerLines: ['FOOD ARE NOT RETURNABLE', 'COMPLAINT MUST BE LODGED BEFORE', '12 NOON NEXT DAY'],
-        })
-        if (!ok) toast('Unable to print — try again.', 'error')
+        beginPostSale(receiptSnapshot)
       } catch {
         toast((e as Error).message, 'error')
       }
@@ -496,32 +518,12 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
       toast('Add items or complete a sale first.', 'info')
       return
     }
-    const ok = await printReceiptHtml(opts)
-    if (!ok) toast('Unable to print — try again.', 'error')
-  }
-
-  // ── Display Bill (during payment) ──────────────────────────────────────────
-  function handleDisplayBill(cashReceived?: number, change?: number) {
-    if (lines.length === 0) {
-      toast('Add items to the bill first.', 'info')
+    if (isElectronPos()) {
+      const ok = await printReceiptHtml(opts, { silentOnly: true })
+      if (!ok) toast('Unable to print — try again.', 'error')
       return
     }
-    const now = new Date()
-    const dateTimeStr = now.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) + ' ' +
-                       now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
-    setPreviewOpts({
-      title: 'DON & SONS (PVT) LTD',
-      companyAddress: receiptCompanyAddress,
-      companyPhone: `Tel:${receiptCompanyPhone}`,
-      outletLabel,
-      lines: lines.map((l) => ({ name: l.name, unitPrice: l.unitPrice, qty: l.qty, amount: l.qty * l.unitPrice })),
-      total: sub,
-      cash: cashReceived ?? sub,
-      change: change ?? 0,
-      dateTime: dateTimeStr,
-      cashier: user ? `${user.firstName} ${user.lastName}`.trim() : '',
-      footerLines: ['FOOD ARE NOT RETURNABLE', 'COMPLAINT MUST BE LODGED BEFORE', '12 NOON NEXT DAY'],
-    })
+    setPreviewOpts(opts)
   }
 
   // ── Product tile click → quick add or long press for numpad ────────────────
@@ -713,25 +715,30 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
       ) : null}
 
       {/* ── Main body: bill | catalog ── */}
-      <div className="relative min-h-0 flex-1">
-      <div className="grid min-h-0 h-full grid-cols-1 md:grid-cols-[minmax(280px,32%)_1fr]"
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <div className="grid h-full min-h-0 min-w-0 grid-cols-1 overflow-hidden md:grid-cols-[minmax(380px,42%)_minmax(0,1fr)]"
         style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: `${100 / scale}%`, height: `${100 / scale}%` }}>
 
         {/* ── LEFT: Bill panel ── */}
-        <section className="flex min-h-0 flex-col border-r border-[var(--border)] bg-white">
+        <section className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-[var(--border)] bg-white">
 
           <div className="flex-shrink-0 border-b border-[var(--border)] px-4 py-3">
             <h2 className="font-pos-title text-xl font-bold text-[var(--foreground)]">Bill</h2>
           </div>
 
-          <div className="pos-scroll-visible min-h-0 flex-1">
+          <div className="pos-scroll-visible min-h-0 flex-1 overflow-x-hidden">
             {lines.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
                 <p className="text-sm font-semibold text-[var(--neutral-500)]">No items yet</p>
                 <p className="max-w-xs text-xs text-[var(--neutral-400)]">Tap a product on the right to add it.</p>
               </div>
             ) : (
-              <table className="w-full text-left text-sm">
+              <table className="w-full table-fixed text-left text-sm">
+                <colgroup>
+                  <col />
+                  <col className="w-[9.5rem]" />
+                  <col className="w-[5.75rem]" />
+                </colgroup>
                 <thead className="sticky top-0 z-10 border-b border-[var(--border)] bg-white text-xs font-semibold text-[var(--muted-foreground)]">
                   <tr>
                     <th className="px-3 py-2">Item</th>
@@ -742,7 +749,7 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
                 <tbody className="divide-y divide-[var(--border)]">
                   {lines.map((l) => (
                     <tr key={l.productId}>
-                      <td className="px-3 py-2.5 text-sm font-medium text-[var(--foreground)]">{l.name}</td>
+                      <td className="truncate px-3 py-2.5 text-sm font-medium text-[var(--foreground)]" title={l.name}>{l.name}</td>
                       <td className="px-2 py-2.5">
                         <div className="flex items-center justify-center gap-1.5">
                           <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand-primary)] text-white" onClick={() => remove(l.productId)} aria-label={`Remove ${l.name}`}>
@@ -771,25 +778,11 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
           </div>
 
           <div className="flex-shrink-0 border-t border-[var(--border)] bg-white px-4 py-3 space-y-3">
-            <div className="flex items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Total</p>
-                <p className="font-pos-title text-2xl font-bold tabular-nums text-[var(--foreground)]">
-                  Rs {sub.toFixed(2)}
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={lines.length === 0}
-                onClick={() => {
-                  if (lines.length === 0) return
-                  setNumpad(null)
-                  clear()
-                }}
-                className="pos-tap rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-medium text-[var(--neutral-500)] hover:bg-[var(--neutral-50)] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Clear bill
-              </button>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Total</p>
+              <p className="font-pos-title text-2xl font-bold tabular-nums text-[var(--foreground)]">
+                Rs {sub.toFixed(2)}
+              </p>
             </div>
 
             <button type="button" disabled={lines.length === 0 || !outletId || !canSaleCreate} onClick={() => lines.length > 0 && outletId && canSaleCreate && setPayOpen(true)}
@@ -798,8 +791,14 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             </button>
 
             <div className="grid grid-cols-3 gap-2">
-              <button type="button" onClick={onCustomerView} className="pos-tap flex h-14 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-white" aria-label="Customer">
-                <Users className="h-6 w-6" />
+              <button
+                type="button"
+                disabled={lines.length === 0}
+                onClick={() => { if (lines.length > 0) setConfirmClear(true) }}
+                className="pos-tap flex h-14 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-white disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Clear bill"
+              >
+                <Trash2 className="h-6 w-6" />
               </button>
               <button type="button" onClick={handlePrint} className="pos-tap flex h-14 items-center justify-center rounded-lg bg-[var(--brand-accent)] text-neutral-900" aria-label="Print">
                 <Printer className="h-6 w-6" />
@@ -812,7 +811,7 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
         </section>
 
         {/* ── RIGHT: Catalog ── */}
-        <section className="flex min-h-0 flex-col bg-[var(--pos-catalog-surface)] p-3">
+        <section className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-[var(--pos-catalog-surface)] p-3">
 
           {/* Search */}
           <div className="relative mb-3">
@@ -832,36 +831,61 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
             ) : null}
           </div>
 
-          <div className="mb-3 flex items-start gap-2">
-            <div
-              className={
-                catsExpanded
-                  ? 'grid min-w-0 flex-1 grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-7'
-                  : 'pos-scroll-x flex min-w-0 flex-1 gap-2 pb-1'
-              }
-            >
-              {catRow.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => selectCategory(c.id)}
-                  className={`flex h-10 items-center justify-center rounded-lg px-2 text-center text-xs font-bold leading-tight shadow ${c.colour} ${
-                    catsExpanded ? 'w-full' : 'w-[7.25rem] shrink-0'
-                  } ${categoryId === c.id ? 'ring-2 ring-[var(--brand-accent)] ring-offset-1' : ''}`}
-                >
-                  <span className="line-clamp-2">{c.name.replace('★ ', '')}</span>
-                </button>
-              ))}
+          <div className="mb-3 min-w-0">
+            <div className="flex min-w-0 items-start gap-1.5">
+              <button
+                type="button"
+                disabled={catsExpanded || catPage <= 0}
+                onClick={() => setCatPage((p) => Math.max(0, p - 1))}
+                className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
+                aria-label="Previous categories"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <div
+                className="grid min-w-0 flex-1 gap-2"
+                style={{ gridTemplateColumns: `repeat(${CATS_PER_PAGE}, minmax(0, 1fr))` }}
+              >
+                {visibleCats.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => selectCategory(c.id)}
+                    className={`flex h-10 min-w-0 items-center justify-center rounded-lg px-1.5 text-center text-xs font-bold leading-tight shadow ${c.colour} ${
+                      categoryId === c.id ? 'ring-2 ring-[var(--brand-accent)] ring-offset-1' : ''
+                    }`}
+                  >
+                    <span className="line-clamp-2 break-words">{c.name.replace('★ ', '')}</span>
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                disabled={catsExpanded || catPage >= catPageCount - 1}
+                onClick={() => setCatPage((p) => Math.min(catPageCount - 1, p + 1))}
+                className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
+                aria-label="Next categories"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white"
+                onClick={() => setCatsExpanded((open) => !open)}
+                aria-label={catsExpanded ? 'Collapse categories' : 'Show all categories'}
+                aria-expanded={catsExpanded}
+              >
+                {catsExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </button>
             </div>
-            <button
-              type="button"
-              className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white"
-              onClick={() => setCatsExpanded((open) => !open)}
-              aria-label={catsExpanded ? 'Collapse categories' : 'Show all categories'}
-              aria-expanded={catsExpanded}
-            >
-              {catsExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-            </button>
+            {!catsExpanded && catPageCount > 1 ? (
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--neutral-200)]">
+                <div
+                  className="h-full rounded-full bg-[var(--brand-primary)] transition-all"
+                  style={{ width: `${((catPage + 1) / catPageCount) * 100}%` }}
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="mb-2 flex items-center justify-between">
@@ -881,7 +905,7 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
 
           <div
             ref={catalogScrollRef}
-            className="pos-scroll-visible pos-product-grid grid min-h-0 flex-1 p-0.5"
+            className="pos-scroll-visible pos-product-grid grid min-h-0 min-w-0 w-full flex-1 overflow-x-hidden p-0.5"
             style={{
               ['--pos-tile-min' as string]: `${Math.round(128 * (productTilePercent / 100))}px`,
               ['--pos-tile-font' as string]: `${(0.8 * (productTilePercent / 100)).toFixed(3)}rem`,
@@ -960,8 +984,43 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
       </div>
 
       {/* ── Modals ── */}
-      <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} onPay={handlePay} onDisplayBill={handleDisplayBill} total={sub} />
-      {previewOpts ? (
+      {confirmClear ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-white p-6 text-center shadow-2xl">
+            <p className="font-pos-title text-xl font-bold text-[var(--foreground)]">Clear this bill?</p>
+            <p className="mt-2 text-sm text-[var(--muted-foreground)]">All items will be removed. This cannot be undone.</p>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                className="pos-tap rounded-xl bg-[var(--brand-primary)] py-3 text-base font-bold text-white"
+                onClick={() => {
+                  setNumpad(null)
+                  clear()
+                  setConfirmClear(false)
+                }}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                className="pos-tap rounded-xl border border-[var(--border)] py-3 text-base font-semibold text-[var(--foreground)]"
+                onClick={() => setConfirmClear(false)}
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} onPay={handlePay} total={sub} />
+      {postSale ? (
+        <PostSalePopups
+          state={postSale}
+          onDone={() => setPostSale(null)}
+          onBrowserPreview={(opts) => setPreviewOpts(opts)}
+        />
+      ) : null}
+      {previewOpts && !isElectronPos() ? (
         <PrintPreviewModal opts={previewOpts} onClose={() => setPreviewOpts(null)} />
       ) : null}
       <TransactionHistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} outletId={outletId} outletLabel={outletLabel} />
@@ -1034,6 +1093,32 @@ export function PosMainPage({ onOpenScreen, onCustomerView }: PosMainPageProps) 
                     </div>
                     <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">Catalogue cards only — does not change screen zoom.</p>
                   </div>
+                  <div>
+                    <p className="mb-1 font-semibold text-[var(--muted-foreground)]">Customer display</p>
+                    <p className="text-[11px] text-[var(--foreground)]">
+                      Secondary / extended screen: {secondaryReady ? 'Detected' : 'Not found'}
+                    </p>
+                  </div>
+                  <label className="block">
+                    <span className="font-semibold text-[var(--muted-foreground)]">2-line pole display (COM)</span>
+                    <select
+                      value={polePort}
+                      onChange={(e) => {
+                        const next = e.target.value
+                        setPolePort(next)
+                        void window.dmsPos?.setPolePort?.(next)
+                      }}
+                      className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-2 py-1.5 text-[var(--foreground)]"
+                    >
+                      <option value="">{comPorts.length ? 'Select COM port' : 'No COM ports found'}</option>
+                      {comPorts.map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+                      Set only when a 2-line pole display is connected. 9600 8N1.
+                    </p>
+                  </label>
                   <label className="flex cursor-pointer items-center gap-2">
                     <input type="checkbox" checked={autoPrint} onChange={(e) => setAutoPrint(e.target.checked)} className="h-4 w-4 rounded accent-[var(--brand-primary)]" />
                     <span className="font-semibold text-[var(--foreground)]">Auto-print receipt after payment</span>

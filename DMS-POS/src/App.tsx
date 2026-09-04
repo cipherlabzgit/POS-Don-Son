@@ -3,13 +3,14 @@ import { PosMainPage } from './pages/PosMainPage'
 import { LoginPage } from './pages/LoginPage'
 import { StockBfPage } from './pages/StockBfPage'
 import { PendingTransfersPage } from './pages/PendingTransfersPage'
-import { CustomerViewPage } from './pages/CustomerViewPage'
+import { CustomerViewPage, isCustomerDisplayWindow } from './pages/CustomerViewPage'
+import { useCustomerDisplaySync } from './hooks/use-customer-display-sync'
 import { NewTransferPage } from './pages/NewTransferPage'
 import { DeliveryReturnPage } from './pages/DeliveryReturnPage'
 import { CashSubmissionPage } from './pages/CashSubmissionPage'
 import { OrderRequestPage } from './pages/OrderRequestPage'
 import { NetworkDiagnosticsPage } from './pages/NetworkDiagnosticsPage'
-import { BackstageAdminPanel } from './backstage/view/BackstageAdminPanel'
+import { PosAccessDeniedPage } from './pages/PosAccessDeniedPage'
 import { IdleLogoutBanner } from './components/IdleLogoutBanner'
 import { ToastHost } from './components/ToastHost'
 import { useIdleLogout } from './hooks/use-idle-logout'
@@ -21,7 +22,17 @@ import { useOnlineStatus } from './lib/use-online-status'
 import type { Screen } from './screen-types'
 
 export default function App() {
+  if (isCustomerDisplayWindow()) {
+    return <CustomerViewPage standalone />
+  }
+
+  return <CashierApp />
+}
+
+function CashierApp() {
+  useCustomerDisplaySync()
   const token = useAuthStore((s) => s.accessToken)
+  const tillReady = useSettingsStore((s) => Boolean(s.assignedShowroomCode.trim()))
   const online = useOnlineStatus(Boolean(token))
   const [screen, setScreen] = useState<Screen>('pos')
   const idle = useIdleLogout(Boolean(token))
@@ -54,11 +65,19 @@ export default function App() {
     }
   }, [token, online])
 
+  if (!tillReady) {
+    return (
+      <>
+        <ToastHost />
+        <PosAccessDeniedPage onReady={() => undefined} />
+      </>
+    )
+  }
+
   if (!token) {
     return (
       <>
         <ToastHost />
-        <BackstageAdminPanel />
         <LoginPage />
       </>
     )
@@ -67,7 +86,6 @@ export default function App() {
   return (
     <>
       <ToastHost />
-      <BackstageAdminPanel />
       {idle.warning ? (
         <IdleLogoutBanner
           secondsLeft={idle.secondsLeft}
@@ -78,12 +96,8 @@ export default function App() {
       <SyncProgressIndicator />
       {screen === 'pos' ? (
         <PosMainPage
-          onCustomerView={() => setScreen('customer')}
           onOpenScreen={(s: Screen) => setScreen(s)}
         />
-      ) : null}
-      {screen === 'customer' ? (
-        <CustomerViewPage onBack={() => setScreen('pos')} />
       ) : null}
       {screen === 'stock-bf' ? <StockBfPage onBack={() => setScreen('pos')} /> : null}
       {screen === 'transfers' ? <PendingTransfersPage onBack={() => setScreen('pos')} /> : null}

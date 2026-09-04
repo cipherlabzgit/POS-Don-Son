@@ -21,8 +21,24 @@ function KeyField({
   const [show, setShow] = useState(false)
   const copy = async () => {
     if (!value) return
-    await navigator.clipboard.writeText(value)
-    toast.success('Copied.')
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value)
+      } else {
+        const el = document.createElement('textarea')
+        el.value = value
+        el.setAttribute('readonly', '')
+        el.style.position = 'fixed'
+        el.style.left = '-9999px'
+        document.body.appendChild(el)
+        el.select()
+        document.execCommand('copy')
+        document.body.removeChild(el)
+      }
+      toast.success('Copied.')
+    } catch {
+      toast.error('Could not copy. Select the password and copy it manually.')
+    }
   }
   return (
     <label className="block">
@@ -74,6 +90,14 @@ function PosBackstageKeyContent() {
     else setLoading(false)
   }, [user?.isSuperAdmin, load])
 
+  useEffect(() => {
+    if (!user?.isSuperAdmin) return
+    const id = window.setInterval(() => {
+      void posBackstageApi.getKey().then(apply).catch(() => undefined)
+    }, 4000)
+    return () => window.clearInterval(id)
+  }, [user?.isSuperAdmin])
+
   const generateNext = async () => {
     setBusy(true)
     try {
@@ -114,7 +138,8 @@ function PosBackstageKeyContent() {
           POS Admin Key
         </h1>
         <p className="mt-1 text-sm text-neutral-500">
-          One password for the POS app (Ctrl+Shift+A). The next password is generated here automatically.
+          One current password for one POS app. After a till unlocks with it, that key stops working
+          and Next is loaded into Current automatically.
         </p>
       </div>
 
@@ -130,12 +155,12 @@ function PosBackstageKeyContent() {
               <KeyField
                 label="Current POS password"
                 value={current}
-                hint="Use this on every POS till until you activate the next one."
+                hint="Use this on the next POS till only. After unlock it cannot be used on another till."
               />
               <KeyField
                 label="Next POS password (auto-generated)"
                 value={next}
-                hint="Not active yet. Activate when you want tills to start using it."
+                hint="This becomes Current automatically after a POS uses the current key."
               />
               <div className="flex flex-wrap gap-2">
                 <Button type="button" variant="secondary" disabled={busy} onClick={() => void generateNext()}>

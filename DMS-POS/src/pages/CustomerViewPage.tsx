@@ -1,84 +1,125 @@
+import { useEffect, useMemo, useState } from 'react'
 import { useCartStore } from '../lib/cart-store'
 import { useSettingsStore } from '../lib/settings-store'
+import { isElectronPos } from '../lib/print-receipt'
 
-type Props = { onBack: () => void }
+type CartSnap = {
+  lines: { productId: string; name: string; qty: number; unitPrice: number }[]
+  total: number
+  change?: number
+  thankYou?: boolean
+}
 
-/**
- * Full-screen customer-facing display — intended for a second monitor or
- * turned screen facing the shopper. Shows the live bill and total in large text.
- */
-export function CustomerViewPage({ onBack }: Props) {
-  const lines      = useCartStore((s) => s.lines)
-  const total      = useCartStore((s) => s.subtotal())
+type Props = { onBack?: () => void; standalone?: boolean }
+
+export function isCustomerDisplayWindow() {
+  return typeof window !== 'undefined' && window.location.hash.includes('customer-display')
+}
+
+export function CustomerViewPage({ onBack, standalone = false }: Props) {
+  const storeLines = useCartStore((s) => s.lines)
+  const storeTotal = useCartStore((s) => s.subtotal())
   const outletLabel = useSettingsStore((s) => s.outletLabel)
+  const [remote, setRemote] = useState<CartSnap | null>(null)
+  const [clock, setClock] = useState(() => new Date())
+
+  useEffect(() => {
+    useSettingsStore.getState().applyThemeColors()
+    const id = setInterval(() => setClock(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    if (!standalone) return
+    return window.dmsPos?.onCustomerCart?.((payload) => setRemote(payload))
+  }, [standalone])
+
+  const lines = standalone && remote ? remote.lines : storeLines
+  const total = standalone && remote ? remote.total : storeTotal
+  const thankYou = Boolean(standalone && remote?.thankYou)
+  const change = standalone && remote ? Number(remote.change ?? 0) : 0
+  const lastId = lines[lines.length - 1]?.productId
+
+  const timeLabel = useMemo(
+    () => clock.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    [clock],
+  )
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--neutral-900)] text-white">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-[var(--brand-primary)] px-6 py-4 text-center">
-        <h1 className="font-pos-title text-2xl font-bold text-white sm:text-3xl">
-          {outletLabel || 'Don & Sons'}
-        </h1>
-        <p className="mt-0.5 text-sm text-white/70">Customer View</p>
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-[#fff7f8] text-stone-900">
+      <header className="flex flex-shrink-0 items-center justify-between bg-[var(--brand-primary)] px-8 py-4 text-white shadow-md">
+        <div>
+          <p className="font-pos-title text-3xl font-extrabold leading-none">Don &amp; Sons</p>
+          <p className="mt-1 text-sm text-white/80">{outletLabel || 'Point of Sale'}</p>
+        </div>
+        <div className="text-right">
+          <p className="font-pos-title text-3xl font-bold tabular-nums">{timeLabel}</p>
+          <p className="text-xs uppercase tracking-widest text-white/70">Customer Display</p>
+        </div>
       </header>
 
-      {/* Bill area */}
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-8">
-        <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
-          {lines.length === 0 ? (
-            <div className="flex flex-col items-center justify-center px-8 py-20 text-center">
-              <p className="text-2xl font-semibold text-white/60">No items yet</p>
-              <p className="mt-2 text-sm text-white/40">
-                The cashier is preparing your order…
-              </p>
+      <main className="flex min-h-0 flex-1 flex-col px-8 py-6">
+        {thankYou ? (
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <p className="font-pos-title text-5xl font-extrabold text-[var(--brand-primary)]">Thank you</p>
+            <p className="mt-3 text-xl text-stone-600">Please collect your change</p>
+            <p className="font-pos-title mt-6 text-6xl font-extrabold tabular-nums text-[var(--brand-primary)]">
+              Rs {change.toFixed(2)}
+            </p>
+          </div>
+        ) : lines.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <p className="font-pos-title text-5xl font-extrabold text-[var(--brand-primary)]">Welcome</p>
+            <p className="mt-3 max-w-xl text-xl text-stone-600">
+              Your bill will appear here as items are added.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-[1fr_6rem_9rem] gap-4 border-b-2 border-[var(--brand-primary)] pb-2 text-sm font-bold uppercase tracking-widest text-[var(--brand-primary)]">
+              <span>Item</span>
+              <span className="text-center">Qty</span>
+              <span className="text-right">Amount</span>
             </div>
-          ) : (
-            <>
-              {/* Column headers */}
-              <div className="grid grid-cols-[1fr_auto_auto] gap-4 border-b border-white/10 px-6 py-4 text-sm font-bold uppercase tracking-widest text-white/50">
-                <span>Item</span>
-                <span className="text-center">Qty</span>
-                <span className="text-right">Amount</span>
-              </div>
-
-              {/* Lines */}
-              <div className="divide-y divide-white/10">
-                {lines.map((l) => (
-                  <div key={l.productId} className="grid grid-cols-[1fr_auto_auto] gap-4 px-6 py-4 text-lg">
-                    <span className="font-medium text-white">{l.name}</span>
-                    <span className="text-center tabular-nums text-white/70">{l.qty}</span>
-                    <span className="text-right tabular-nums font-semibold text-[var(--brand-accent)]">
+            <div className="min-h-0 flex-1 overflow-y-auto py-2">
+              {lines.map((l) => {
+                const active = l.productId === lastId
+                return (
+                  <div
+                    key={l.productId}
+                    className={`grid grid-cols-[1fr_6rem_9rem] gap-4 rounded-xl px-3 py-3 text-2xl ${
+                      active ? 'bg-[var(--brand-accent)]/35' : ''
+                    }`}
+                  >
+                    <span className="font-semibold">{l.name}</span>
+                    <span className="text-center tabular-nums">{l.qty}</span>
+                    <span className="text-right font-bold tabular-nums">
                       {(l.qty * l.unitPrice).toFixed(2)}
                     </span>
                   </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+                )
+              })}
+            </div>
+          </>
+        )}
+      </main>
 
-        {/* Total */}
-        <div className="mt-6 w-full max-w-2xl rounded-2xl border-2 border-[var(--brand-accent)]/50 bg-[var(--brand-accent)]/10 px-8 py-6 text-center">
-          <p className="text-sm font-bold uppercase tracking-widest text-[var(--brand-accent)]/70">Total</p>
-          <p className="font-pos-title mt-1 text-5xl font-extrabold tabular-nums text-[var(--brand-accent)] sm:text-6xl">
-            Rs {total.toFixed(2)}
-          </p>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="border-t border-white/10 px-6 py-3 text-center">
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-white/30">Don &amp; Sons (Pvt) Ltd — DMS POS</p>
-          <button
-            type="button"
-            onClick={onBack}
-            className="rounded-lg border border-white/20 px-4 py-2 text-xs font-semibold text-white/60 hover:border-white/40 hover:text-white"
-          >
-            ← Back to POS
-          </button>
-        </div>
+      <footer className="flex flex-shrink-0 items-center justify-between bg-[var(--brand-primary)] px-8 py-5 text-white">
+        <p className="text-lg font-semibold uppercase tracking-wide text-white/80">Total</p>
+        <p className="font-pos-title text-5xl font-extrabold tabular-nums text-[var(--brand-accent)]">
+          Rs {thankYou ? change.toFixed(2) : total.toFixed(2)}
+        </p>
       </footer>
+
+      {!standalone && !isElectronPos() && onBack ? (
+        <button
+          type="button"
+          onClick={onBack}
+          className="absolute bottom-3 left-3 rounded-lg border border-white/30 bg-black/20 px-3 py-1.5 text-xs text-white/80"
+        >
+          Back to POS
+        </button>
+      ) : null}
     </div>
   )
 }

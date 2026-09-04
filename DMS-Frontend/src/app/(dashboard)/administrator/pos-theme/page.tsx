@@ -88,6 +88,22 @@ function ThemeFormModal({
 
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setFormData({
+      themeName: initialData?.themeName || '',
+      description: initialData?.description || '',
+      primaryColor: initialData?.primaryColor || '#C8102E',
+      primaryLight: initialData?.primaryLight || '#E31837',
+      primaryDark: initialData?.primaryDark || '#A00D26',
+      accentColor: initialData?.accentColor || '#FFD100',
+      accentLight: initialData?.accentLight || '#FFDC33',
+      accentDark: initialData?.accentDark || '#CCAA00',
+      categoryColors: initialData?.categoryColors || defaultCategoryColors,
+      displayOrder: initialData?.displayOrder || 0,
+    });
+  }, [isOpen, initialData]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.themeName.trim()) {

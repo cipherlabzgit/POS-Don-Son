@@ -785,7 +785,10 @@ public sealed class ApplicationDbContext : DbContext
         // Apply global query filter for soft delete on all BaseEntity types
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+            // PosThemeConfig.IsActive means "applied to POS", not soft-delete.
+            // Filtering it here hid every newly created (inactive) theme after save.
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType)
+                && entityType.ClrType != typeof(PosThemeConfig))
             {
                 var parameter = Expression.Parameter(entityType.ClrType, "e");
                 var property = Expression.Property(parameter, nameof(BaseEntity.IsActive));

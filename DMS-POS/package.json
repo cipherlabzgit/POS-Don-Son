@@ -63,6 +63,16 @@
       "public/icon.ico",
       "public/icon.png"
     ],
+    "extraResources": [
+      {
+        "from": "public/icon.ico",
+        "to": "icon.ico"
+      },
+      {
+        "from": "public/icon.png",
+        "to": "icon.png"
+      }
+    ],
     "win": {
       "icon": "public/icon.ico",
       "forceCodeSigning": false,

@@ -72,17 +72,7 @@ public sealed class PosBackstageController : ControllerBase
             return StatusCode(403, ApiResponse<object>.FailureResponse(
                 Error.Forbidden("Only a Super Admin can activate the next POS admin key.")));
 
-        var pair = await EnsureKeyPairAsync(cancellationToken);
-        var promoted = pair.Next;
-        if (string.IsNullOrWhiteSpace(promoted))
-            promoted = GenerateKey();
-
-        pair.Current = promoted;
-        pair.Next = GenerateKey();
-        await UpsertSettingAsync(CurrentKeyName, "POS Hidden Admin Key", pair.Current, cancellationToken);
-        await UpsertSettingAsync(NextKeyName, "POS Hidden Admin Key (next)", pair.Next, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
-
+        var pair = await RotateCurrentToNextAsync(cancellationToken);
         return Ok(ApiResponse<object>.SuccessResponse(new
         {
             pair.Current,
@@ -97,20 +87,26 @@ public sealed class PosBackstageController : ControllerBase
         CancellationToken cancellationToken)
     {
         var attempt = (body.Key ?? "").Trim();
-        var current = await _context.SystemSettings.AsNoTracking()
-            .FirstOrDefaultAsync(s => s.SettingKey == CurrentKeyName && s.IsActive, cancellationToken);
-        var next = await _context.SystemSettings.AsNoTracking()
-            .FirstOrDefaultAsync(s => s.SettingKey == NextKeyName && s.IsActive, cancellationToken);
-        var expected = (current?.SettingValue ?? "Don&son2026#").Trim();
-        var expectedNext = (next?.SettingValue ?? "").Trim();
-        var ok = attempt.Length > 0 && (
-            string.Equals(attempt, expected, StringComparison.Ordinal)
-            || (!string.IsNullOrEmpty(expectedNext) && string.Equals(attempt, expectedNext, StringComparison.Ordinal)));
-        if (!ok)
+        var pair = await EnsureKeyPairAsync(cancellationToken);
+        if (attempt.Length == 0 || !string.Equals(attempt, pair.Current, StringComparison.Ordinal))
             return Unauthorized(ApiResponse<object>.FailureResponse(
                 Error.Unauthorized("Invalid verification key.")));
 
-        return Ok(ApiResponse<object>.SuccessResponse(new { Ok = true }));
+        // One POS app per current key: consume it and load Next into Current.
+        await RotateCurrentToNextAsync(cancellationToken);
+        return Ok(ApiResponse<object>.SuccessResponse(new { Ok = true, Rotated = true }));
+    }
+
+    private async Task<(string Current, string Next)> RotateCurrentToNextAsync(CancellationToken cancellationToken)
+    {
+        var pair = await EnsureKeyPairAsync(cancellationToken);
+        var promoted = string.IsNullOrWhiteSpace(pair.Next) ? GenerateKey() : pair.Next;
+        pair.Current = promoted;
+        pair.Next = GenerateKey();
+        await UpsertSettingAsync(CurrentKeyName, "POS Hidden Admin Key", pair.Current, cancellationToken);
+        await UpsertSettingAsync(NextKeyName, "POS Hidden Admin Key (next)", pair.Next, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+        return (pair.Current, pair.Next);
     }
 
     private async Task<(string Current, string Next, DateTimeOffset? UpdatedAt)> EnsureKeyPairAsync(

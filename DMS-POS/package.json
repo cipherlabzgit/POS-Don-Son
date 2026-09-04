@@ -80,7 +80,7 @@
       "cscLink": null,
       "cscKeyPassword": null,
       "verifyUpdateCodeSignature": false,
-      "signAndEditExecutable": false,
+      "signAndEditExecutable": true,
       "target": [
         {
           "target": "nsis",
@@ -106,6 +106,7 @@
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false
     },
+    "afterPack": "./scripts/stamp-win-icon.cjs",
     "extraMetadata": {
       "main": "electron/main.mjs"
     }

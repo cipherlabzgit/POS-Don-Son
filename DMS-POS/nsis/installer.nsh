@@ -6,7 +6,7 @@
     StrCpy $R9 "C:\ProgramData"
   CreateDirectory "$R9\Microsoft\Windows\Start Menu\Programs\StartUp"
   SetOutPath "$INSTDIR"
-  CreateShortCut "$R9\Microsoft\Windows\Start Menu\Programs\StartUp\${PRODUCT_FILENAME}.lnk" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" "" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" 0
+  CreateShortCut "$R9\Microsoft\Windows\Start Menu\Programs\StartUp\${PRODUCT_FILENAME}.lnk" "$INSTDIR\${APP_EXECUTABLE_FILENAME}" "" "$INSTDIR\resources\icon.ico" 0
 !macroend
 
 !macro customUnInstall

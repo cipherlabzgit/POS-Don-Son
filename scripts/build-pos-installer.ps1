@@ -66,6 +66,10 @@ $posEnvFile = Join-Path $posDir ".env"
 Write-Host "Wrote $posEnvFile" -ForegroundColor Cyan
 
 Set-Location $posDir
+$buildRes = Join-Path $posDir "build"
+New-Item -ItemType Directory -Force -Path $buildRes | Out-Null
+Copy-Item (Join-Path $posDir "public\icon.ico") (Join-Path $buildRes "icon.ico") -Force
+Copy-Item (Join-Path $posDir "public\icon.png") (Join-Path $buildRes "icon.png") -Force
 
 Write-Host "[1/5] Cleaning previous build..." -ForegroundColor Yellow
 if (Test-Path "release") {

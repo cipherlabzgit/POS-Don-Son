@@ -6,7 +6,6 @@ import {
   Cloud, History, Inbox, LogOut, Menu,
   Minus, Package, Plus, Printer, Bell,
   Search, Shield, Star, Truck, Undo2,
-  Search, Shield, Star, Truck, Undo2,
   Trash2, Wallet, X, Maximize2, Power, Stethoscope,
 } from 'lucide-react'
 import { useAuthStore } from '../lib/auth-store'

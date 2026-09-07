@@ -99,7 +99,7 @@ export async function loginRequest(email: string, password: string): Promise<Log
   )
   const root = (data ?? {}) as Record<string, unknown>
   const inner = (root.data ?? root.Data ?? data) as LoginResponse & Record<string, unknown>
-  const userRaw = (inner.user ?? inner.User ?? {}) as Record<string, unknown>
+  const userRaw = (inner.user ?? inner.User ?? {}) as unknown as Record<string, unknown>
   return {
     accessToken: String(inner.accessToken ?? inner.AccessToken ?? ''),
     refreshToken: String(inner.refreshToken ?? inner.RefreshToken ?? ''),

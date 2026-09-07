@@ -35,9 +35,8 @@ export function BackstageAdminPanel() {
             }}
           >
             <p className="text-sm text-neutral-300">
-              Enter the Verification Admin Key. After unlock you can set the API URL, POS Verification Code, and
-              <span className="font-semibold text-white"> Customer Display</span> (2-line pole COM). Receipt phone,
-              address, and auto-print are not configured here.
+              Enter the Verification Admin Key to edit the encrypted API URL, POS Verification Code, showroom code,
+              and 2-line pole display.
             </p>
             <label className="block">
               <span className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
@@ -122,6 +121,12 @@ export function BackstageAdminPanel() {
                   Set only when a 2-line pole display is connected. 9600 8N1. Saved immediately.
                 </p>
               </label>
+              <p className="text-[11px] text-neutral-400">
+                Cache: {vm.cacheUpdatedAt ? new Date(vm.cacheUpdatedAt).toLocaleString() : 'never'}
+              </p>
+              <p className="text-[11px] text-neutral-400">
+                Connect online at least once to cache the product catalogue for offline use.
+              </p>
             </div>
             <label className="block">
               <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-neutral-400">

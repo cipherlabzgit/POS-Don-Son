@@ -6,7 +6,7 @@ import {
   Cloud, History, Inbox, LogOut, Menu,
   Minus, Package, Plus, Printer, Bell,
   Search, Star, Truck, Undo2,
-  Trash2, Wallet, X, Maximize2, Power, Stethoscope, UserRound, Shield,
+  Trash2, Wallet, X, Maximize2, Power, Stethoscope, UserRound,
 } from 'lucide-react'
 import { useAuthStore } from '../lib/auth-store'
 import { useCartStore } from '../lib/cart-store'
@@ -29,7 +29,6 @@ import { TransactionHistoryModal } from '../components/TransactionHistoryModal'
 import { QtyNumpad } from '../components/QtyNumpad'
 import { SearchKeyboard } from '../components/SearchKeyboard'
 import { DiagnosticPage } from './DiagnosticPage'
-import { openBackstagePanel } from '../backstage/viewmodel/use-backstage-view-model'
 import type { CategoryRow, ProductRow } from '../lib/types'
 import { offlineDb } from '../lib/offline-db'
 import type { Screen } from '../screen-types'
@@ -1138,17 +1137,26 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               ) : null}
 
               <p className="mt-3 px-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Till</p>
-              <OpBtn
-                icon={<Shield className="h-5 w-5" />}
-                label="Admin Panel"
-                hint="Customer display (COM). Unlock with POS admin key."
-                onClick={() => { setDrawer(false); openBackstagePanel() }}
-              />
+              <div className="rounded-xl border border-[var(--border)] px-3 py-3">
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-semibold text-[var(--foreground)]">Receipt phone (printed footer)</span>
+                  <input
+                    readOnly
+                    value={receiptCompanyPhone}
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  />
+                </label>
+                <label className="mt-3 block">
+                  <span className="mb-1 block text-[11px] font-semibold text-[var(--foreground)]">Receipt address line</span>
+                  <textarea
+                    readOnly
+                    rows={2}
+                    value={receiptCompanyAddress}
+                    className="w-full resize-none rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  />
+                </label>
+              </div>
             </nav>
-
-            <div className="border-t border-[var(--border)] px-4 py-3 text-[11px] text-[var(--muted-foreground)]">
-              Connect online at least once to cache the product catalogue for offline use.
-            </div>
             </div>
           </aside>
           <button type="button" className="flex-1 bg-black/50" aria-label="Close menu" onClick={() => setDrawer(false)} />

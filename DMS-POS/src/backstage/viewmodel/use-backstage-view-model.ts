@@ -39,6 +39,7 @@ export function useBackstageViewModel(options: BackstageVmOptions = {}) {
   const [comPorts, setComPorts] = useState<string[]>([])
   const [polePort, setPolePort] = useState('')
   const [secondaryReady, setSecondaryReady] = useState(false)
+  const cacheUpdatedAt = useSettingsStore((s) => s.cacheUpdatedAt)
   const desktop = Boolean(window.dmsPos?.unlockBackstage)
   const listenHotkey = options.listenHotkey !== false
   const onSaved = options.onSaved
@@ -224,6 +225,7 @@ export function useBackstageViewModel(options: BackstageVmOptions = {}) {
     comPorts,
     polePort,
     secondaryReady,
+    cacheUpdatedAt,
     setPassword,
     setShowPassword,
     setApiBaseUrl,

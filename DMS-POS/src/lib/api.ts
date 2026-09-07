@@ -93,12 +93,28 @@ export function readPagedPayload(
 }
 
 export async function loginRequest(email: string, password: string): Promise<LoginResponse> {
-  const { data } = await axios.post<LoginResponse>(`${getApiBaseUrl()}/api/auth/login`, {
-    email,
-    password,
-    client: 'pos',
-  })
-  return data
+  const { data } = await axios.post<LoginResponse & Record<string, unknown>>(
+    `${getApiBaseUrl()}/api/auth/login`,
+    { email, password, client: 'pos' },
+  )
+  const root = (data ?? {}) as Record<string, unknown>
+  const inner = (root.data ?? root.Data ?? data) as LoginResponse & Record<string, unknown>
+  const userRaw = (inner.user ?? inner.User ?? {}) as Record<string, unknown>
+  return {
+    accessToken: String(inner.accessToken ?? inner.AccessToken ?? ''),
+    refreshToken: String(inner.refreshToken ?? inner.RefreshToken ?? ''),
+    expiresIn: Number(inner.expiresIn ?? inner.ExpiresIn ?? 0),
+    user: {
+      id: String(userRaw.id ?? userRaw.Id ?? ''),
+      email: String(userRaw.email ?? userRaw.Email ?? ''),
+      firstName: String(userRaw.firstName ?? userRaw.FirstName ?? ''),
+      lastName: String(userRaw.lastName ?? userRaw.LastName ?? ''),
+      isSuperAdmin: Boolean(userRaw.isSuperAdmin ?? userRaw.IsSuperAdmin),
+      isActive: userRaw.isActive !== false && userRaw.IsActive !== false,
+      permissions: (userRaw.permissions ?? userRaw.Permissions ?? []) as string[],
+      roles: (userRaw.roles ?? userRaw.Roles ?? []) as LoginResponse['user']['roles'],
+    },
+  }
 }
 
 export async function fetchProductsPage(

@@ -16,7 +16,7 @@ import { IdleLogoutBanner } from './components/IdleLogoutBanner'
 import { ToastHost } from './components/ToastHost'
 import { useIdleLogout } from './hooks/use-idle-logout'
 import { SyncProgressIndicator } from './components/SyncProgressIndicator'
-import { useAuthStore } from './lib/auth-store'
+import { canUsePosTill, useAuthStore } from './lib/auth-store'
 import { useSettingsStore } from './lib/settings-store'
 import { syncThemeFromServer } from './lib/theme-sync'
 import { useOnlineStatus } from './lib/use-online-status'
@@ -50,10 +50,11 @@ function CashierApp() {
     if (!token) setScreen('pos')
   }, [token])
 
-  const isCashier = Boolean(user?.roles?.some((r) => r.name.toLowerCase() === 'cashier'))
   useEffect(() => {
-    if (token && user && !isCashier) logout()
-  }, [token, user, isCashier, logout])
+    if (token && user && !canUsePosTill(user)) {
+      logout()
+    }
+  }, [token, user, logout])
 
   useEffect(() => {
     void window.dmsPos?.isFullscreen?.().then((full) => {

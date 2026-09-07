@@ -4,7 +4,6 @@ import { Eye, EyeOff } from 'lucide-react'
 import { loginRequest } from '../lib/api'
 import { useAuthStore } from '../lib/auth-store'
 import { syncCatalogFromServer } from '../lib/catalog-sync'
-import { offlineDb } from '../lib/offline-db'
 import { toast } from '../lib/toast-store'
 
 export function LoginPage() {
@@ -32,10 +31,7 @@ export function LoginPage() {
         permissions: res.user.permissions ?? [],
         roles: res.user.roles ?? [],
       })
-      // Login succeeded — clear stale local cache and download catalogue from server.
       try {
-        await offlineDb.products.clear()
-        await offlineDb.categories.clear()
         await syncCatalogFromServer()
       } catch (syncErr) {
         const msg = (syncErr as Error).message

@@ -46,6 +46,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       user: {
         ...user,
         permissions: normalizePermissions(user.permissions),
+        roles: (user.roles ?? []).map((r) => ({
+          id: String((r as { id?: string; Id?: string }).id ?? (r as { Id?: string }).Id ?? ''),
+          name: String((r as { name?: string; Name?: string }).name ?? (r as { Name?: string }).Name ?? ''),
+        })),
       },
     }),
 
@@ -60,3 +64,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     return u.permissions.includes(code) || u.permissions.includes('*')
   },
 }))
+
+/** POS till: cashier role, or any POS sale permission, or Super Admin. */
+export function canUsePosTill(user: User | null): boolean {
+  if (!user) return false
+  if (user.isSuperAdmin) return true
+  if (user.roles.some((r) => /cashier/i.test(r.name || ''))) return true
+  return user.permissions.some((p) => p === '*' || p.startsWith('pos:sale:'))
+}

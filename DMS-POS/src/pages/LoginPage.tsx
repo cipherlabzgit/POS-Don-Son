@@ -97,7 +97,7 @@ export function LoginPage() {
         <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-white p-8 shadow-xl">
           <h2 className="mb-6 text-center text-xl font-semibold text-[var(--foreground)]">Sign in to open the till</h2>
 
-          <form onSubmit={submit} className="flex flex-col gap-4">
+          <form onSubmit={submit} className="flex flex-col gap-4" autoComplete="off">
             {/* Email */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
@@ -105,7 +105,10 @@ export function LoginPage() {
               </label>
               <input
                 type="email"
-                autoComplete="username"
+                name="pos-email"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="cashier@donandsons.lk"
@@ -122,7 +125,8 @@ export function LoginPage() {
               <div className="relative">
                 <input
                   type={showPw ? 'text' : 'password'}
-                  autoComplete="current-password"
+                  name="pos-password"
+                  autoComplete="off"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"

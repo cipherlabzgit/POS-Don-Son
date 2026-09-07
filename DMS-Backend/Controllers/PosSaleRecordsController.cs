@@ -11,6 +11,7 @@ namespace DMS_Backend.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/pos/sale-records")]
+[Route("api/pos-sale-records")]
 public sealed class PosSaleRecordsController : ControllerBase
 {
     private readonly ISaleRecordsService _saleRecordsService;

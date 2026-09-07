@@ -5,8 +5,8 @@ import {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Check,
   Cloud, History, Inbox, LogOut, Menu,
   Minus, Package, Plus, Printer, Bell,
-  Search, Shield, Star, Truck, Undo2,
-  Trash2, Wallet, X, Maximize2, Power, Stethoscope,
+  Search, Star, Truck, Undo2,
+  Trash2, Wallet, X, Maximize2, Power, Stethoscope, UserRound,
 } from 'lucide-react'
 import { useAuthStore } from '../lib/auth-store'
 import { useCartStore } from '../lib/cart-store'
@@ -29,7 +29,6 @@ import { TransactionHistoryModal } from '../components/TransactionHistoryModal'
 import { QtyNumpad } from '../components/QtyNumpad'
 import { SearchKeyboard } from '../components/SearchKeyboard'
 import { DiagnosticPage } from './DiagnosticPage'
-import { openBackstagePanel } from '../backstage/viewmodel/use-backstage-view-model'
 import type { CategoryRow, ProductRow } from '../lib/types'
 import { offlineDb } from '../lib/offline-db'
 import type { Screen } from '../screen-types'
@@ -80,6 +79,11 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const setZoom     = useSettingsStore((s) => s.setZoomPercent)
   const productTilePercent = useSettingsStore((s) => s.productTilePercent)
   const setProductTilePercent = useSettingsStore((s) => s.setProductTilePercent)
+
+  const cashierName = [user?.firstName, user?.lastName].filter((p) => Boolean(p && p.trim())).join(' ').trim()
+    || user?.email
+    || 'User'
+  const cashierRole = user?.roles?.find((r) => r.name)?.name || (user?.isSuperAdmin ? 'Admin' : 'Cashier')
 
   const lines    = useCartStore((s) => s.lines)
   const add      = useCartStore((s) => s.add)
@@ -703,18 +707,26 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
             </button>
           ) : null}
 
-          {/* User dropdown */}
+          {/* Logged-in cashier */}
           <div className="relative">
             <button type="button" onClick={() => setUserMenu((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20">
-              <span className="max-w-[6rem] truncate">{user?.firstName ?? 'User'}</span>
+              className="flex max-w-[16rem] items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-white hover:bg-white/20"
+              title={`${cashierName} (${cashierRole})`}
+              aria-label={`Logged in as ${cashierName}`}>
+              <UserRound className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 text-left">
+                <span className="block truncate text-[10px] font-semibold uppercase tracking-wide text-white/70">User</span>
+                <span className="block truncate text-xs font-semibold leading-tight">{cashierName}</span>
+              </span>
               <ChevronRight className="h-3.5 w-3.5 shrink-0 rotate-90" />
             </button>
             {userMenu ? (
               <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-[var(--border)] bg-white py-2 shadow-xl">
                 <div className="border-b border-[var(--border)] px-4 pb-2">
                   <p className="text-[10px] font-semibold uppercase text-[var(--muted-foreground)]">Logged in as</p>
-                  <p className="text-sm font-semibold text-[var(--foreground)]">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-sm font-semibold text-[var(--foreground)]">{cashierName}</p>
+                  <p className="text-xs text-[var(--muted-foreground)]">{cashierRole}</p>
+                  {user?.email ? <p className="truncate text-[11px] text-[var(--muted-foreground)]">{user.email}</p> : null}
                 </div>
                 <div className="border-b border-[var(--border)] px-3 py-2 space-y-2">
                   <div>
@@ -1123,14 +1135,6 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               {canSaleRecordsView ? (
                 <OpBtn icon={<Bell className="h-5 w-5" />} label="Sale Records" hint="Showroom vs system difference" onClick={() => { onOpenScreen('sale-records'); setDrawer(false) }} />
               ) : null}
-
-              <p className="mt-3 px-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Till</p>
-              <OpBtn
-                icon={<Shield className="h-5 w-5" />}
-                label="Change showroom"
-                hint="Ctrl+Shift+A — POS admin key required"
-                onClick={() => { setDrawer(false); openBackstagePanel() }}
-              />
             </nav>
 
             <div className="border-t border-[var(--border)] px-4 py-3 text-[11px] text-[var(--muted-foreground)]">

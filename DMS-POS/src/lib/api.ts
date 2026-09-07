@@ -112,7 +112,10 @@ export async function loginRequest(email: string, password: string): Promise<Log
       isSuperAdmin: Boolean(userRaw.isSuperAdmin ?? userRaw.IsSuperAdmin),
       isActive: userRaw.isActive !== false && userRaw.IsActive !== false,
       permissions: (userRaw.permissions ?? userRaw.Permissions ?? []) as string[],
-      roles: (userRaw.roles ?? userRaw.Roles ?? []) as LoginResponse['user']['roles'],
+      roles: ((userRaw.roles ?? userRaw.Roles ?? []) as Record<string, unknown>[]).map((r) => ({
+        id: String(r.id ?? r.Id ?? ''),
+        name: String(r.name ?? r.Name ?? ''),
+      })),
     },
   }
 }
@@ -418,8 +421,31 @@ function pickRec<T>(row: Record<string, unknown>, camel: string, pascal: string)
   return (row[camel] ?? row[pascal]) as T | undefined
 }
 
+const SALE_RECORDS_PATHS = [
+  '/api/pos-sales/sale-records',
+  '/api/pos-sale-records',
+  '/api/pos/sale-records',
+] as const
+
+async function getFirstOk<T>(paths: readonly string[], method: 'get' | 'post'): Promise<T> {
+  let last: unknown
+  for (const path of paths) {
+    try {
+      const { data } = method === 'get'
+        ? await api.get<T>(path)
+        : await api.post<T>(path)
+      return data
+    } catch (e) {
+      last = e
+      const status = (e as { response?: { status?: number } })?.response?.status
+      if (status !== 404) throw e
+    }
+  }
+  throw last
+}
+
 export async function fetchPosSaleRecords(): Promise<PosSaleRecords> {
-  const { data } = await api.get<ApiEnvelope<Record<string, unknown>>>('/api/pos/sale-records')
+  const data = await getFirstOk<ApiEnvelope<Record<string, unknown>>>(SALE_RECORDS_PATHS, 'get')
   const raw = (unwrap(data) ?? {}) as Record<string, unknown>
   const weeksRaw = (pickRec<unknown[]>(raw, 'weeks', 'Weeks') ?? []) as Record<string, unknown>[]
   return {
@@ -451,12 +477,34 @@ export async function fetchPosSaleRecords(): Promise<PosSaleRecords> {
 }
 
 export async function fetchPosSaleRecordsUnreadCount(): Promise<number> {
-  const { data } = await api.get<ApiEnvelope<Record<string, unknown>>>('/api/pos/sale-records/unread-count')
-  const raw = unwrap(data) as Record<string, unknown>
-  return Number(pickRec(raw, 'unreadCount', 'UnreadCount') ?? 0)
+  try {
+    const data = await getFirstOk<ApiEnvelope<Record<string, unknown>>>(
+      [
+        '/api/pos-sales/sale-records/unread-count',
+        '/api/pos-sale-records/unread-count',
+        '/api/pos/sale-records/unread-count',
+      ],
+      'get',
+    )
+    const raw = unwrap(data) as Record<string, unknown>
+    return Number(pickRec(raw, 'unreadCount', 'UnreadCount') ?? 0)
+  } catch {
+    return 0
+  }
 }
 
 export async function markPosSaleRecordsRead(): Promise<void> {
-  const { data } = await api.post<ApiEnvelope<unknown>>('/api/pos/sale-records/mark-read')
-  unwrap(data)
+  try {
+    const data = await getFirstOk<ApiEnvelope<unknown>>(
+      [
+        '/api/pos-sales/sale-records/mark-read',
+        '/api/pos-sale-records/mark-read',
+        '/api/pos/sale-records/mark-read',
+      ],
+      'post',
+    )
+    unwrap(data)
+  } catch {
+    /* older APIs may not expose mark-read */
+  }
 }

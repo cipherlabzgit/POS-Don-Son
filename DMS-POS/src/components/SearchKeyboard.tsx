@@ -22,8 +22,6 @@ export function SearchKeyboard({
   value,
   onChange,
   onClose,
-  label = 'Item search',
-  placeholder = 'Search item name or code',
   onEnter,
 }: Props) {
   function press(ch: string) {
@@ -35,10 +33,9 @@ export function SearchKeyboard({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/50 p-3 sm:items-center">
-      <div className="w-full max-w-3xl rounded-2xl bg-[var(--brand-primary)] p-4 shadow-2xl">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">Keyboard</h2>
+    <div className="pointer-events-none fixed inset-0 z-[200] flex flex-col justify-end">
+      <div className="pointer-events-auto w-full rounded-t-2xl bg-[var(--brand-primary)] px-3 pb-3 pt-2 shadow-[0_-8px_30px_rgba(0,0,0,0.35)]">
+        <div className="mb-2 flex items-center justify-end">
           <button
             type="button"
             onClick={onClose}
@@ -47,15 +44,6 @@ export function SearchKeyboard({
           >
             <X className="h-4 w-4" />
           </button>
-        </div>
-
-        <div className="mb-4 rounded-xl bg-[#f5f0e6] px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--brand-primary)]">
-            {label}
-          </p>
-          <p className="min-h-[1.75rem] text-xl font-semibold text-neutral-900">
-            {value || <span className="font-normal text-neutral-400">{placeholder}</span>}
-          </p>
         </div>
 
         <div className="space-y-1.5">

@@ -1,5 +1,6 @@
 using DMS_Backend.Common;
 using DMS_Backend.Models.DTOs.PosSales;
+using DMS_Backend.Models.DTOs.SaleRecords;
 using DMS_Backend.Services.Implementations;
 using DMS_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -16,15 +17,18 @@ public sealed class PosSalesController : ControllerBase
     private readonly IPosSaleService _posSaleService;
     private readonly IPosSaleReceiptService _receiptService;
     private readonly IApprovalQueueService _approvalQueueService;
+    private readonly ISaleRecordsService _saleRecordsService;
 
     public PosSalesController(
         IPosSaleService posSaleService,
         IPosSaleReceiptService receiptService,
-        IApprovalQueueService approvalQueueService)
+        IApprovalQueueService approvalQueueService,
+        ISaleRecordsService saleRecordsService)
     {
         _posSaleService = posSaleService;
         _receiptService = receiptService;
         _approvalQueueService = approvalQueueService;
+        _saleRecordsService = saleRecordsService;
     }
 
     [HttpGet]
@@ -284,6 +288,36 @@ public sealed class PosSalesController : ControllerBase
         {
             return BadRequest(ApiResponse<PosSaleDetailDto>.FailureResponse(Error.Validation(ex.Message)));
         }
+    }
+
+    [HttpGet("sale-records")]
+    [HasPermission("pos:sale-records:view|pos:sale:view")]
+    public async Task<ActionResult<ApiResponse<PosSaleRecordsDto>>> GetSaleRecords(
+        CancellationToken cancellationToken)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var dto = await _saleRecordsService.GetPosRecordsAsync(userId, cancellationToken);
+        return Ok(ApiResponse<PosSaleRecordsDto>.SuccessResponse(dto));
+    }
+
+    [HttpGet("sale-records/unread-count")]
+    [HasPermission("pos:sale-records:view|pos:sale:view")]
+    public async Task<ActionResult<ApiResponse<PosSaleRecordsUnreadDto>>> GetSaleRecordsUnreadCount(
+        CancellationToken cancellationToken)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var dto = await _saleRecordsService.GetUnreadCountAsync(userId, cancellationToken);
+        return Ok(ApiResponse<PosSaleRecordsUnreadDto>.SuccessResponse(dto));
+    }
+
+    [HttpPost("sale-records/mark-read")]
+    [HasPermission("pos:sale-records:view|pos:sale:view")]
+    public async Task<ActionResult<ApiResponse<object>>> MarkSaleRecordsRead(
+        CancellationToken cancellationToken)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        await _saleRecordsService.MarkReadAsync(userId, cancellationToken);
+        return Ok(ApiResponse<object>.SuccessResponse(new { Message = "Sale records marked as read." }));
     }
 
     [HttpGet("{id:guid}/receipt")]

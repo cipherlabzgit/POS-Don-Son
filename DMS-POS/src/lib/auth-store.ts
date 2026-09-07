@@ -30,6 +30,7 @@ interface AuthState {
 
 try {
   localStorage.removeItem('dms-pos-auth')
+  localStorage.removeItem('dms-pos-auth-token')
 } catch {
   /* ignore */
 }

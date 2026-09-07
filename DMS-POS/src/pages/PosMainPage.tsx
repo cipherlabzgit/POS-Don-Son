@@ -6,7 +6,7 @@ import {
   Cloud, History, Inbox, LogOut, Menu,
   Minus, Package, Plus, Printer, Bell,
   Search, Star, Truck, Undo2,
-  Trash2, Wallet, X, Maximize2, Power, Stethoscope, UserRound,
+  Trash2, Wallet, X, Maximize2, Power, Stethoscope, UserRound, Shield,
 } from 'lucide-react'
 import { useAuthStore } from '../lib/auth-store'
 import { useCartStore } from '../lib/cart-store'
@@ -29,6 +29,7 @@ import { TransactionHistoryModal } from '../components/TransactionHistoryModal'
 import { QtyNumpad } from '../components/QtyNumpad'
 import { SearchKeyboard } from '../components/SearchKeyboard'
 import { DiagnosticPage } from './DiagnosticPage'
+import { openBackstagePanel } from '../backstage/viewmodel/use-backstage-view-model'
 import type { CategoryRow, ProductRow } from '../lib/types'
 import { offlineDb } from '../lib/offline-db'
 import type { Screen } from '../screen-types'
@@ -1135,6 +1136,14 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               {canSaleRecordsView ? (
                 <OpBtn icon={<Bell className="h-5 w-5" />} label="Sale Records" hint="Showroom vs system difference" onClick={() => { onOpenScreen('sale-records'); setDrawer(false) }} />
               ) : null}
+
+              <p className="mt-3 px-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Till</p>
+              <OpBtn
+                icon={<Shield className="h-5 w-5" />}
+                label="Admin Panel"
+                hint="Ctrl+Shift+A — POS admin key. Customer display only."
+                onClick={() => { setDrawer(false); openBackstagePanel() }}
+              />
             </nav>
 
             <div className="border-t border-[var(--border)] px-4 py-3 text-[11px] text-[var(--muted-foreground)]">

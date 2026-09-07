@@ -1141,7 +1141,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               <OpBtn
                 icon={<Shield className="h-5 w-5" />}
                 label="Admin Panel"
-                hint="Ctrl+Shift+A — POS admin key. Customer display only."
+                hint="Customer display (COM). Unlock with POS admin key."
                 onClick={() => { setDrawer(false); openBackstagePanel() }}
               />
             </nav>

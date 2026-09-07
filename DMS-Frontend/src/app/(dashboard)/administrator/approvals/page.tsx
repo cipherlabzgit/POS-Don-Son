@@ -38,7 +38,7 @@ type SubsectionKey =
   | 'deliveries' | 'transfers' | 'disposals' | 'cancellations' | 'labelPrintRequests'
   | 'stockBFs' | 'deliveryReturns' | 'posSales' | 'posCancellationRequests' | 'showroomLabelRequests'
   | 'dailyProductions' | 'productionCancels' | 'stockAdjustments' | 'dailyProductionPlans'
-  | 'immediateOrders' | 'adminApprovals';
+  | 'immediateOrders' | 'cashierBalances' | 'adminApprovals';
 
 interface Subsection {
   key: SubsectionKey;
@@ -90,6 +90,7 @@ const SECTIONS: Section[] = [
     id: 'administrator',
     label: 'Administrator',
     subsections: [
+      { key: 'cashierBalances', label: 'Cash Submission', approvalType: 'Cashier Balance' },
       { key: 'adminApprovals', label: 'Admin / Generic', approvalType: 'Generic' },
     ],
   },
@@ -111,6 +112,7 @@ const APPROVAL_TYPE_PERMISSIONS: Record<string, { approve: string; reject?: stri
   'Stock Adjustment':  { approve: 'production:stock-adjustment:approve',reject: 'production:stock-adjustment:reject' },
   'Production Plan':   { approve: 'production:plan:approve' },
   'Immediate Order':   { approve: 'order:approve',                      reject: 'order:reject' },
+  'Cashier Balance':   { approve: 'approval:approve',                   reject: 'approval:reject' },
   Generic:             { approve: 'approval:approve',                    reject: 'approval:reject' },
 };
 
@@ -279,7 +281,9 @@ export default function ApprovalsPage() {
         case 'Stock Adjustment':  data = await stockAdjustmentsApi.getById(item.id); break;
         case 'Production Plan':   data = await productionPlansApi.getById(item.id); break;
         case 'Generic':
-        case 'Admin':             data = await approvalsApi.getById(item.id); break;
+        case 'Admin':
+        case 'Cashier Balance':
+          data = await approvalsApi.getById(item.id); break;
         case 'Showroom Label':
           setDetailsData(item);
           setIsLoadingDetails(false);
@@ -329,6 +333,7 @@ export default function ApprovalsPage() {
         case 'Production Plan':   await productionPlansApi.approve(id); break;
         case 'Generic':
         case 'Admin':
+        case 'Cashier Balance':
           // open modal for notes
           setModalApproval(selectedApproval);
           setShowApproveModal(true);
@@ -376,7 +381,7 @@ export default function ApprovalsPage() {
       setPosRejectOpen(true);
       return;
     }
-    if (type === 'Generic' || type === 'Admin' || type === 'POS Cancellation Request') {
+    if (type === 'Generic' || type === 'Admin' || type === 'POS Cancellation Request' || type === 'Cashier Balance') {
       setModalApproval(selectedApproval);
       setShowRejectModal(true);
       return;
@@ -782,7 +787,8 @@ export default function ApprovalsPage() {
                               <ProductionDetailsView production={detailsData as DailyProduction} />
                             )}
                             {(selectedApproval.approvalType === 'Generic' ||
-                              selectedApproval.approvalType === 'Admin') && (
+                              selectedApproval.approvalType === 'Admin' ||
+                              selectedApproval.approvalType === 'Cashier Balance') && (
                               <AdminApprovalDetailsView approval={detailsData} />
                             )}
                           </div>

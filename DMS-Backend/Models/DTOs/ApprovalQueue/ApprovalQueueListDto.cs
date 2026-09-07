@@ -16,6 +16,7 @@ public sealed class ApprovalQueueListDto
     public string? RejectionReason { get; set; }
     public int Priority { get; set; }
     public string? Notes { get; set; }
+    public string? RequestData { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
 

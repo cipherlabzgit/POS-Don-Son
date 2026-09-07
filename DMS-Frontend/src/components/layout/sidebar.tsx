@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { navigationMenu, filterMenuByPermissions, type MenuItem } from '@/lib/navigation/menu-items';
@@ -16,6 +16,7 @@ interface SidebarProps {
 export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { user, hasPermission } = useAuthStore();
   const { pageColor } = useTheme();
@@ -27,14 +28,22 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
     user?.isSuperAdmin || false
   );
 
-  // Toggle expanded state for menu items with children
+  // Toggle expanded state for menu items with children (one section at a time)
   const toggleExpanded = (itemName: string) => {
-    setExpandedItems((prev) =>
-      prev.includes(itemName)
-        ? prev.filter((name) => name !== itemName)
-        : [...prev, itemName]
-    );
+    setExpandedItems((prev) => (prev.includes(itemName) ? [] : [itemName]));
   };
+
+  useEffect(() => {
+    if (expandedItems.length === 0) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const root = sidebarRef.current;
+      if (!root) return;
+      if (root.contains(event.target as Node)) return;
+      setExpandedItems([]);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [expandedItems.length]);
 
   const handleNavClick = () => {
     // Close mobile menu when clicking a nav item
@@ -157,6 +166,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
 
   return (
     <div
+      ref={sidebarRef}
       className={`text-white transition-all duration-300 flex flex-col flex-shrink-0 ${
         collapsed ? 'w-16' : 'w-64'
       } fixed lg:static inset-y-0 left-0 z-50 transform ${

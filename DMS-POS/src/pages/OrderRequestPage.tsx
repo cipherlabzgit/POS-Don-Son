@@ -9,6 +9,7 @@ import { fetchDeliveryTurnsPage, createImmediateOrder } from '../lib/api'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError } from '../lib/api-errors'
+import { todayCalendarISO } from '../lib/calendar-date'
 import type { ProductRow } from '../lib/types'
 
 type OrderRow = {
@@ -38,13 +39,13 @@ export function OrderRequestPage({ onBack }: OrderRequestPageProps) {
   const [selectedProduct, setSelectedProduct] = useState<ProductRow | null>(null)
   const [quantity, setQuantity] = useState('1')
   const [rows, setRows] = useState<OrderRow[]>([])
-  const [orderDate] = useState(new Date().toISOString().slice(0, 10))
+  const [orderDate] = useState(() => todayCalendarISO())
   const [orderBillNo, setOrderBillNo] = useState('')
-  const [needByDate, setNeedByDate] = useState(new Date().toISOString().slice(0, 10))
+  const [needByDate, setNeedByDate] = useState(() => todayCalendarISO())
   const [needByTime, setNeedByTime] = useState('12:00')
-  const [deliveryDate, setDeliveryDate] = useState(new Date().toISOString().slice(0, 10))
+  const [deliveryDate, setDeliveryDate] = useState(() => todayCalendarISO())
   const [deliveryTime, setDeliveryTime] = useState('10:00')
-  const [productionStartingDate, setProductionStartingDate] = useState(new Date().toISOString().slice(0, 10))
+  const [productionStartingDate, setProductionStartingDate] = useState(() => todayCalendarISO())
   const [productionStartingTime, setProductionStartingTime] = useState('08:00')
   const [recipeRequestNumber, setRecipeRequestNumber] = useState('')
   const [notes, setNotes] = useState('')

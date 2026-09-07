@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Delete } from 'lucide-react'
 
 type Props = {
@@ -10,17 +10,32 @@ type Props = {
 
 export function QtyNumpad({ productName, initialQty = 1, onConfirm, onCancel }: Props) {
   const [input, setInput] = useState(String(initialQty))
+  // Default qty is selected so the next digit replaces it (5 → 5, not 15).
+  const [selected, setSelected] = useState(true)
+  const selectedRef = useRef(true)
+  selectedRef.current = selected
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         e.preventDefault()
         onCancel()
+        return
       }
       if (e.key === 'Enter') {
         e.preventDefault()
         const q = Math.max(1, Math.min(999, Number(input) || 0))
         if (q > 0) onConfirm(q)
+        return
+      }
+      if (e.key === 'Backspace') {
+        e.preventDefault()
+        backspace()
+        return
+      }
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault()
+        press(e.key)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -28,15 +43,24 @@ export function QtyNumpad({ productName, initialQty = 1, onConfirm, onCancel }: 
   }, [input, onConfirm, onCancel])
 
   function press(digit: string) {
+    if (digit === 'C') {
+      setInput('0')
+      setSelected(true)
+      return
+    }
     setInput((prev) => {
-      if (digit === 'C') return '0'
-      const next = prev === '0' ? digit : prev + digit
-      // Cap at 999
+      const next = (selectedRef.current || prev === '0') ? digit : prev + digit
       return Number(next) > 999 ? prev : next
     })
+    setSelected(false)
   }
 
   function backspace() {
+    if (selectedRef.current) {
+      setInput('0')
+      setSelected(true)
+      return
+    }
     setInput((prev) => (prev.length <= 1 ? '0' : prev.slice(0, -1)))
   }
 
@@ -61,9 +85,23 @@ export function QtyNumpad({ productName, initialQty = 1, onConfirm, onCancel }: 
         {/* Display */}
         <div className="px-6 pt-5 pb-3">
           <div className="flex items-center justify-end gap-2 rounded-xl border-2 border-[var(--neutral-200)] bg-[var(--neutral-50)] px-4 py-3">
-            <span className="flex-1 text-right text-4xl font-bold tabular-nums text-[var(--foreground)] tracking-tight">
-              {input}
-            </span>
+            <button
+              type="button"
+              className="flex-1 text-right"
+              onClick={() => setSelected(true)}
+              aria-label="Quantity value"
+            >
+              <span
+                className={
+                  'inline-block min-w-[1ch] text-4xl font-bold tabular-nums tracking-tight ' +
+                  (selected
+                    ? 'rounded-md bg-[var(--brand-primary)] px-1.5 text-white'
+                    : 'text-[var(--foreground)]')
+                }
+              >
+                {input}
+              </span>
+            </button>
             <button
               type="button"
               className="pos-tap rounded-lg p-1 text-[var(--neutral-400)] hover:text-[var(--brand-primary)]"

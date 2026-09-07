@@ -1,6 +1,23 @@
 import { create } from 'zustand'
 import type { User } from './types'
 
+function normalizePermissions(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  const codes: string[] = []
+  for (const item of raw) {
+    if (typeof item === 'string' && item.trim()) {
+      codes.push(item.trim())
+      continue
+    }
+    if (item && typeof item === 'object') {
+      const rec = item as Record<string, unknown>
+      const code = rec.code ?? rec.Code
+      if (typeof code === 'string' && code.trim()) codes.push(code.trim())
+    }
+  }
+  return codes
+}
+
 interface AuthState {
   user: User | null
   accessToken: string | null
@@ -23,7 +40,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   refreshToken: null,
 
   login: (accessToken, refreshToken, user) =>
-    set({ accessToken, refreshToken, user }),
+    set({
+      accessToken,
+      refreshToken,
+      user: {
+        ...user,
+        permissions: normalizePermissions(user.permissions),
+      },
+    }),
 
   logout: () => set({ accessToken: null, refreshToken: null, user: null }),
 

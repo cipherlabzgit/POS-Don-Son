@@ -62,16 +62,20 @@ export function LoginPage() {
         msg.includes('Network Error') ||
         msg.includes('ERR_CONNECTION_REFUSED') ||
         msg.includes('ECONNREFUSED')
+      const isDenied = /access denied/i.test(serverMsg)
       const isInvalidLogin =
-        status === 401 ||
-        status === 400 ||
-        /401|unauthorized|invalid.*(user|email|password)|wrong password/i.test(msg)
+        !isDenied &&
+        (status === 401 ||
+          status === 400 ||
+          /401|unauthorized|invalid.*(user|email|password)|wrong password/i.test(msg))
       setError(
-        isInvalidLogin
-          ? 'Invalid Username or Password'
-          : isNetwork
-            ? 'Cannot reach the server. Check the network connection and try again.'
-            : msg || 'Login failed. Check your credentials and try again.',
+        isDenied
+          ? serverMsg
+          : isInvalidLogin
+            ? 'Invalid Username or Password'
+            : isNetwork
+              ? 'Cannot reach the server. Check the network connection and try again.'
+              : msg || 'Login failed. Check your credentials and try again.',
       )
     } finally {
       setLoading(false)

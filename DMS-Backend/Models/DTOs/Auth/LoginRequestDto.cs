@@ -11,4 +11,9 @@ public sealed class LoginRequestDto
     [Required(ErrorMessage = "Password is required")]
     [MinLength(8, ErrorMessage = "Password must be at least 8 characters")]
     public string Password { get; set; } = string.Empty;
+
+    /// <summary>
+    /// <c>pos</c> or <c>dms</c>. POS accepts Cashier only; DMS rejects cashier-only accounts.
+    /// </summary>
+    public string? Client { get; set; }
 }

@@ -124,9 +124,21 @@ function unwrapCashiersList(response: { data: unknown }): DayEndCashierOption[] 
 export function getDayEndApiErrorMessage(err: unknown): string {
   if (isAxiosError(err)) {
     const data = err.response?.data as
-      | { error?: { message?: string }; message?: string }
+      | {
+          error?: { message?: string };
+          Error?: { message?: string };
+          message?: string;
+          Message?: string;
+        }
       | undefined;
-    return data?.error?.message ?? data?.message ?? err.message ?? 'Request failed';
+    return (
+      data?.error?.message ??
+      data?.Error?.message ??
+      data?.message ??
+      data?.Message ??
+      err.message ??
+      'Request failed'
+    );
   }
   if (err instanceof Error) return err.message;
   return 'Request failed';
@@ -181,4 +193,96 @@ export const dayEndApi = {
       throw new Error(msg);
     }
   },
+
+  async getSaleRecordsSettings(): Promise<SaleRecordsSettings> {
+    const res = await api.get(`${BASE}/sale-records-settings`);
+    return unwrapData(res, parseSettings);
+  },
+
+  async updateSaleRecordsSettings(payload: {
+    weekStartDay: number;
+    weeksToShow: number;
+  }): Promise<SaleRecordsSettings> {
+    const res = await api.put(`${BASE}/sale-records-settings`, payload);
+    return unwrapData(res, parseSettings);
+  },
+
+  async getNotifyTargets(processDate: string): Promise<SaleRecordNotifyTarget[]> {
+    const res = await api.get(`${BASE}/notify-targets`, { params: { processDate } });
+    return unwrapNotifyTargets(res);
+  },
+
+  async notifyCashiers(payload: {
+    processDate: string;
+    outletIds: string[];
+    confirmRenotify: boolean;
+  }): Promise<void> {
+    const res = await api.post(`${BASE}/notify-cashiers`, payload);
+    const body = res.data as Record<string, unknown> | undefined;
+    const success = Boolean(body?.success ?? body?.Success);
+    if (!success) {
+      const err = (body?.error ?? body?.Error) as { message?: string } | undefined;
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String(err.message ?? 'Notify failed')
+          : 'Notify failed';
+      throw new Error(msg);
+    }
+  },
 };
+
+export interface SaleRecordsSettings {
+  weekStartDay: number;
+  weekStartDayName: string;
+  weeksToShow: number;
+}
+
+export interface SaleRecordNotifyTarget {
+  outletId: string;
+  outletName: string;
+  outletEmployeeId: string | null;
+  cashierName: string;
+  alreadyNotified: boolean;
+  canNotify: boolean;
+  status: string;
+}
+
+function parseSettings(raw: Record<string, unknown>): SaleRecordsSettings {
+  return {
+    weekStartDay: Number(pick(raw, 'weekStartDay', 'WeekStartDay') ?? 3),
+    weekStartDayName: String(pick<string>(raw, 'weekStartDayName', 'WeekStartDayName') ?? 'Wednesday'),
+    weeksToShow: Number(pick(raw, 'weeksToShow', 'WeeksToShow') ?? 2),
+  };
+}
+
+function parseNotifyTarget(o: Record<string, unknown>): SaleRecordNotifyTarget {
+  const emp = pick<string>(o, 'outletEmployeeId', 'OutletEmployeeId');
+  return {
+    outletId: String(pick<string>(o, 'outletId', 'OutletId') ?? ''),
+    outletName: String(pick<string>(o, 'outletName', 'OutletName') ?? ''),
+    outletEmployeeId: emp ? String(emp) : null,
+    cashierName: String(pick<string>(o, 'cashierName', 'CashierName') ?? '—'),
+    alreadyNotified: Boolean(pick(o, 'alreadyNotified', 'AlreadyNotified')),
+    canNotify: Boolean(pick(o, 'canNotify', 'CanNotify')),
+    status: String(pick<string>(o, 'status', 'Status') ?? 'Locked'),
+  };
+}
+
+function unwrapNotifyTargets(response: { data: unknown }): SaleRecordNotifyTarget[] {
+  const body = response.data as Record<string, unknown> | undefined;
+  if (!body || typeof body !== 'object') {
+    throw new Error('Invalid response');
+  }
+  const success = Boolean(body.success ?? body.Success);
+  if (!success) {
+    const err = (body.error ?? body.Error) as { message?: string } | undefined;
+    const msg =
+      err && typeof err === 'object' && 'message' in err
+        ? String(err.message ?? 'Request failed')
+        : 'Request failed';
+    throw new Error(msg);
+  }
+  const data = body.data ?? body.Data;
+  if (!Array.isArray(data)) return [];
+  return (data as Record<string, unknown>[]).map(parseNotifyTarget);
+}

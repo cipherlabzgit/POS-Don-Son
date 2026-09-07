@@ -5,9 +5,7 @@ import {
   postPosSalesBulk,
   postStockBfBulk,
   createTransfer,
-  submitTransfer,
   createDeliveryReturn,
-  submitDeliveryReturn,
   submitCashierBalance,
 } from './api'
 import { localLinesFromPosSaleApi, parsePosSaleDetailPayload } from './pos-sale-response'
@@ -199,20 +197,14 @@ export async function processPendingQueue(isOnline: boolean): Promise<void> {
           }
 
           case 'transfer': {
-            const payload = row.payload as Parameters<typeof createTransfer>[0] & { submitAfter?: boolean }
-            const created = await createTransfer(payload) as { id?: string }
-            if (payload.submitAfter && created?.id) {
-              await submitTransfer(String(created.id))
-            }
+            const payload = row.payload as Parameters<typeof createTransfer>[0]
+            await createTransfer(payload)
             break
           }
 
           case 'delivery-return': {
-            const payload = row.payload as Parameters<typeof createDeliveryReturn>[0] & { submitAfter?: boolean }
-            const created = await createDeliveryReturn(payload) as { id?: string }
-            if (payload.submitAfter && created?.id) {
-              await submitDeliveryReturn(String(created.id))
-            }
+            const payload = row.payload as Parameters<typeof createDeliveryReturn>[0]
+            await createDeliveryReturn(payload)
             break
           }
 

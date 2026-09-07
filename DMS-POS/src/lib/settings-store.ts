@@ -29,10 +29,6 @@ interface SettingsState {
   /** Product card/button size in catalogue only (not whole dashboard zoom). */
   productTilePercent: number
   cacheUpdatedAt: number | null
-  /** When true, print receipt automatically after a successful payment */
-  autoPrint: boolean
-  receiptPhone: string
-  receiptAddress: string
   themeColors: ThemeColors | null
   setApiBaseUrl: (url: string) => void
   setOutlet: (id: string | null, label: string) => void
@@ -41,9 +37,6 @@ interface SettingsState {
   setZoomPercent: (p: number) => void
   setProductTilePercent: (p: number) => void
   setCacheUpdatedAt: (t: number | null) => void
-  setAutoPrint: (v: boolean) => void
-  setReceiptPhone: (v: string) => void
-  setReceiptAddress: (v: string) => void
   setThemeColors: (colors: ThemeColors) => void
   applyThemeColors: () => void
 }
@@ -59,9 +52,6 @@ export const useSettingsStore = create<SettingsState>()(
       zoomPercent: 100,
       productTilePercent: 100,
       cacheUpdatedAt: null,
-      autoPrint: false,
-      receiptPhone: '',
-      receiptAddress: '',
       themeColors: null,
 
       setApiBaseUrl: (apiBaseUrl) => set({ apiBaseUrl: normalizeApiBaseUrl(apiBaseUrl) }),
@@ -77,9 +67,6 @@ export const useSettingsStore = create<SettingsState>()(
           productTilePercent: Math.min(160, Math.max(70, Math.round(productTilePercent / 10) * 10)),
         }),
       setCacheUpdatedAt: (cacheUpdatedAt) => set({ cacheUpdatedAt }),
-      setAutoPrint: (autoPrint) => set({ autoPrint }),
-      setReceiptPhone: (receiptPhone) => set({ receiptPhone: receiptPhone }),
-      setReceiptAddress: (receiptAddress) => set({ receiptAddress }),
       setThemeColors: (themeColors) => {
         set({ themeColors })
         get().applyThemeColors()
@@ -150,14 +137,11 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'dms-pos-settings',
-      version: 10,
+      version: 11,
       partialize: (s) => ({
         zoomPercent: s.zoomPercent,
         productTilePercent: s.productTilePercent,
         cacheUpdatedAt: s.cacheUpdatedAt,
-        autoPrint: s.autoPrint,
-        receiptPhone: s.receiptPhone,
-        receiptAddress: s.receiptAddress,
         themeColors: s.themeColors,
       }),
       migrate: (persisted: unknown, version: number) => {
@@ -178,9 +162,9 @@ export const useSettingsStore = create<SettingsState>()(
             ...(persisted as object),
             state: {
               ...s,
-              autoPrint: s.autoPrint ?? false,
-              receiptPhone: s.receiptPhone ?? '',
-              receiptAddress: s.receiptAddress ?? '',
+              autoPrint: (s as { autoPrint?: boolean }).autoPrint ?? false,
+              receiptPhone: (s as { receiptPhone?: string }).receiptPhone ?? '',
+              receiptAddress: (s as { receiptAddress?: string }).receiptAddress ?? '',
             },
           }
         }
@@ -234,6 +218,16 @@ export const useSettingsStore = create<SettingsState>()(
           delete s.outletId
           delete s.outletLabel
           delete s.assignedShowroomCode
+          return {
+            ...(persisted as object),
+            state: s,
+          }
+        }
+        if (version < 11 && persisted && typeof persisted === 'object' && 'state' in persisted) {
+          const s = { ...(persisted as { state: Record<string, unknown> }).state }
+          delete s.autoPrint
+          delete s.receiptPhone
+          delete s.receiptAddress
           return {
             ...(persisted as object),
             state: s,

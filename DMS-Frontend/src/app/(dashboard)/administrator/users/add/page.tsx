@@ -153,6 +153,11 @@ export default function AddUserPage() {
                       className="rounded"
                     />
                     <span>{role.name}</span>
+                    {role.name.toLowerCase() === 'cashier' ? (
+                      <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                        (POS only)
+                      </span>
+                    ) : null}
                   </label>
                 ))}
               </div>

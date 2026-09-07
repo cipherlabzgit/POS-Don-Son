@@ -30,7 +30,10 @@ interface RowState {
   showroomName: string;
   selected: boolean;
   isClosed: boolean;
+  isLocked: boolean;
+  lineStatus: string;
   outletEmployeeId: string;
+  cashierName: string;
   balanceCash: string;
   balanceCard: string;
   balanceUber: string;
@@ -54,7 +57,10 @@ function mapContextOutletsToRows(outlets: CashierBalanceOutletRow[]): RowState[]
       showroomName: o.name,
       selected: true,
       isClosed: o.isShowroomClosed,
+      isLocked: Boolean(o.isLocked),
+      lineStatus: o.lineStatus ?? '',
       outletEmployeeId: o.outletEmployeeId ?? '',
+      cashierName: o.cashierName?.trim() || '',
       balanceCash: hasChannel ? num(o.balanceCash) : legacy,
       balanceCard: hasChannel ? num(o.balanceCard) : '',
       balanceUber: hasChannel ? num(o.balanceUber) : '',
@@ -144,7 +150,9 @@ function CashierBalanceContent() {
     void loadRecent();
   }, [loadRecent]);
 
-  const isLocked = isSubmitted;
+  const isDayApproved = isApproved;
+  const anyUnlocked = rows.some((r) => !r.isLocked);
+  const hasLockedRows = rows.some((r) => r.isLocked);
 
   const selectedRows = useMemo(() => rows.filter((r) => r.selected), [rows]);
 
@@ -157,10 +165,11 @@ function CashierBalanceContent() {
   const openCount = selectedRows.length - closedCount;
 
   const updateRow = (idx: number, patch: Partial<RowState>) => {
-    if (isLocked) return;
+    if (isDayApproved) return;
     setRows((prev) =>
       prev.map((r, i) => {
         if (i !== idx) return r;
+        if (r.isLocked) return r;
         const merged = { ...r, ...patch };
         if (patch.isClosed === true) {
           merged.outletEmployeeId = '';
@@ -175,26 +184,30 @@ function CashierBalanceContent() {
   };
 
   const handleSubmit = async () => {
-    if (isLocked) return;
+    if (isDayApproved) return;
+    const unlocked = rows.filter((r) => !r.isLocked);
+    if (unlocked.length === 0) {
+      toast.error('All showrooms for this date are locked pending approval.');
+      return;
+    }
 
-    for (const r of rows) {
-      if (!r.isClosed) {
-        const total = rowChannelTotal(r);
-        if (total <= 0 || !r.outletEmployeeId) {
-          toast.error(
-            `For each open showroom, select a cashier and enter amounts (Cash, Card, Uber, PickMe), or mark the showroom as closed. (${r.showroomCode} — ${r.showroomName})`
-          );
-          return;
-        }
+    for (const r of unlocked) {
+      if (r.isClosed) continue;
+      const total = rowChannelTotal(r);
+      if (total <= 0 || !r.outletEmployeeId) {
+        toast.error(
+          `For each open showroom, select a cashier and enter amounts (Cash, Card, Uber, PickMe), or mark the showroom as closed. (${r.showroomCode} — ${r.showroomName})`
+        );
+        return;
       }
     }
 
     setSubmitting(true);
     try {
-      const closedAtSubmit = rows.filter((r) => r.isClosed).length;
+      const closedAtSubmit = unlocked.filter((r) => r.isClosed).length;
       await cashierBalanceApi.submit({
         processDate: balanceDate,
-        lines: rows.map((r) =>
+        lines: unlocked.map((r) =>
           r.isClosed
             ? { outletId: r.outletId, isShowroomClosed: true }
             : {
@@ -232,8 +245,8 @@ function CashierBalanceContent() {
         </h1>
         <p className="mt-1" style={{ color: 'var(--muted-foreground)' }}>
           Record daily takings split by <strong>Cash</strong>, <strong>Card</strong>, <strong>Uber</strong>, and{' '}
-          <strong>PickMe</strong> for each showroom. Submitted dates are read-only. Closed showrooms are sent for
-          approval.
+          <strong>PickMe</strong> for each showroom. After a showroom submits, that row stays locked until an admin
+          rejects it in Approvals.
         </p>
       </div>
 
@@ -246,8 +259,8 @@ function CashierBalanceContent() {
             <p className="text-lg font-bold mt-1" style={{ color: 'var(--foreground)' }}>
               {formatSlDate(balanceDate + 'T12:00:00')}
             </p>
-            <p className="text-xs mt-1" style={{ color: isLocked ? '#DC2626' : '#10B981' }}>
-              {isLocked ? 'Submitted (locked)' : 'Open for entry'}
+            <p className="text-xs mt-1" style={{ color: hasLockedRows || isDayApproved ? '#DC2626' : '#10B981' }}>
+              {isDayApproved ? 'Approved (locked)' : hasLockedRows ? 'Some showrooms submitted' : 'Open for entry'}
             </p>
             {isApproved && (
               <p className="text-xs mt-1" style={{ color: '#059669' }}>
@@ -292,9 +305,9 @@ function CashierBalanceContent() {
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle>Balance Entry</CardTitle>
-            {isLocked && (
+            {hasLockedRows && (
               <Badge variant="warning" size="sm">
-                <Lock className="w-3 h-3 mr-1" /> Submitted — Read only
+                <Lock className="w-3 h-3 mr-1" /> Submitted rows are locked
               </Badge>
             )}
           </div>
@@ -314,14 +327,14 @@ function CashierBalanceContent() {
               />
             </div>
 
-            {isLocked && submittedAt && (
+            {isSubmitted && submittedAt && (
               <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
                 Submitted {formatSlDateTime(submittedAt)}
                 {submittedByName ? ` by ${submittedByName}` : ''}.
               </p>
             )}
 
-            {!isLocked && !loading && (
+            {anyUnlocked && !isDayApproved && !loading && (
               <div
                 className="p-3 rounded-lg flex items-start gap-2"
                 style={{ backgroundColor: '#EFF6FF', border: '1px solid #3B82F6' }}
@@ -373,21 +386,31 @@ function CashierBalanceContent() {
                   )}
                   {!loading &&
                     rows.map((r, idx) => {
-                      const cashierNameDisabled = isLocked || r.isClosed;
-                      const channelDisabled = isLocked || r.isClosed;
-                      const closedDisabled = isLocked;
+                      const rowLocked = isDayApproved || r.isLocked;
+                      const cashierNameDisabled = rowLocked || r.isClosed;
+                      const channelDisabled = rowLocked || r.isClosed;
+                      const closedDisabled = rowLocked;
                       const cashiers = cashiersByOutlet[r.outletId] ?? [];
                       const cashierOptions = cashiers.map((c) => ({
                         value: c.outletEmployeeId,
                         label: c.displayName,
                       }));
+                      if (
+                        r.outletEmployeeId &&
+                        !cashierOptions.some((o) => o.value === r.outletEmployeeId)
+                      ) {
+                        cashierOptions.unshift({
+                          value: r.outletEmployeeId,
+                          label: r.cashierName || 'Submitted cashier',
+                        });
+                      }
 
                       return (
                         <tr
                           key={r.outletId}
                           style={{
                             borderTop: '1px solid var(--border)',
-                            backgroundColor: r.selected && !isLocked ? '#F0FDF4' : 'white',
+                            backgroundColor: r.selected && !rowLocked ? '#F0FDF4' : 'white',
                           }}
                         >
                           <td className="p-3 align-top">
@@ -406,6 +429,11 @@ function CashierBalanceContent() {
                             <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                               {r.showroomName}
                             </div>
+                            {r.isLocked ? (
+                              <div className="text-[11px] mt-1 font-semibold" style={{ color: '#B45309' }}>
+                                {r.lineStatus === 'Approved' ? 'Approved — locked' : 'Submitted — locked until rejected'}
+                              </div>
+                            ) : null}
                           </td>
                           <td className="p-3 text-center align-top">
                             <input
@@ -483,7 +511,7 @@ function CashierBalanceContent() {
               </table>
             </div>
 
-            {!isLocked && closedCount > 0 && (
+            {anyUnlocked && !isDayApproved && closedCount > 0 && (
               <div
                 className="p-3 rounded-lg flex items-start gap-2"
                 style={{ backgroundColor: '#FFFBEB', border: '1px solid #FFD100' }}
@@ -496,7 +524,7 @@ function CashierBalanceContent() {
               </div>
             )}
 
-            {!isLocked && (
+            {anyUnlocked && !isDayApproved && (
               <div className="flex justify-end pt-2">
                 <PermissionButton
                   permission="cashier-balance:edit"

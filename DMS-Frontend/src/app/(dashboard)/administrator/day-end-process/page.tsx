@@ -5,20 +5,33 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Lock, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Bell, CheckCircle, Lock, AlertTriangle, ShieldAlert } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { previousCalendarDayUtcISO } from '@/lib/date-restrictions';
 import { useDayEndStore } from '@/lib/stores/day-end-store';
 import { ProtectedPage, PermissionButton } from '@/components/auth';
+import { Modal, ModalFooter } from '@/components/ui/modal';
 import {
   dayEndApi,
   getDayEndApiErrorMessage,
   type DayEndCashierOption,
   type DayEndOutletRow,
+  type SaleRecordNotifyTarget,
 } from '@/lib/api/day-end';
 import {
   cashierBalanceApi,
   getCashierBalanceApiErrorMessage,
 } from '@/lib/api/cashier-balance';
+
+const WEEKDAY_OPTIONS = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+];
 
 /**
  * 6.i Day-End Process
@@ -74,6 +87,14 @@ function DayEndProcessContent() {
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [weekStartDay, setWeekStartDay] = useState(3);
+  const [weeksToShow, setWeeksToShow] = useState(2);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const [notifyTargets, setNotifyTargets] = useState<SaleRecordNotifyTarget[]>([]);
+  const [notifySelected, setNotifySelected] = useState<Record<string, boolean>>({});
+  const [notifyLoading, setNotifyLoading] = useState(false);
+  const [notifySending, setNotifySending] = useState(false);
 
   const loadContext = useCallback(async () => {
     setLoading(true);
@@ -137,6 +158,18 @@ function DayEndProcessContent() {
     void loadContext();
   }, [loadContext]);
 
+  useEffect(() => {
+    void (async () => {
+      try {
+        const settings = await dayEndApi.getSaleRecordsSettings();
+        setWeekStartDay(settings.weekStartDay);
+        setWeeksToShow(settings.weeksToShow);
+      } catch {
+        /* settings stay at defaults until API is available */
+      }
+    })();
+  }, []);
+
   const blocked = !cashierApproved || dayLocked;
 
   const blockReason = useMemo(() => {
@@ -172,6 +205,106 @@ function DayEndProcessContent() {
       toast.error(getDayEndApiErrorMessage(e));
     } finally {
       setIsApproving(false);
+    }
+  };
+
+  const handleSaveSaleRecordsSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const saved = await dayEndApi.updateSaleRecordsSettings({
+        weekStartDay,
+        weeksToShow,
+      });
+      setWeekStartDay(saved.weekStartDay);
+      setWeeksToShow(saved.weeksToShow);
+      toast.success('POS sale records window saved.');
+    } catch (e) {
+      toast.error(getDayEndApiErrorMessage(e));
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const openNotifyModal = async () => {
+    if (!dayLocked) return;
+    setNotifyOpen(true);
+    setNotifyLoading(true);
+    try {
+      const list = await dayEndApi.getNotifyTargets(processDate);
+      setNotifyTargets(list);
+      const sel: Record<string, boolean> = {};
+      for (const t of list) {
+        sel[t.outletId] = t.canNotify;
+      }
+      setNotifySelected(sel);
+    } catch (e) {
+      toast.error(getDayEndApiErrorMessage(e));
+      setNotifyTargets([]);
+    } finally {
+      setNotifyLoading(false);
+    }
+  };
+
+  const notifySelectable = notifyTargets.filter((t) => t.canNotify);
+  const allNotifySelected =
+    notifySelectable.length > 0 && notifySelectable.every((t) => notifySelected[t.outletId]);
+
+  const toggleNotifyAll = (checked: boolean) => {
+    setNotifySelected((prev) => {
+      const next = { ...prev };
+      for (const t of notifyTargets) {
+        if (t.canNotify) next[t.outletId] = checked;
+      }
+      return next;
+    });
+  };
+
+  const handleNotifyCashiers = async () => {
+    const ids = notifyTargets.filter((t) => t.canNotify && notifySelected[t.outletId]).map((t) => t.outletId);
+    if (ids.length === 0) {
+      toast.error('Select at least one showroom.');
+      return;
+    }
+    const already = notifyTargets.filter((t) => ids.includes(t.outletId) && t.alreadyNotified);
+    let confirmRenotify = false;
+    if (already.length > 0) {
+      confirmRenotify = window.confirm(
+        'Already notified showrooms can be notified again. Send again to the selected showrooms?'
+      );
+      if (!confirmRenotify) return;
+    }
+
+    setNotifySending(true);
+    try {
+      await dayEndApi.notifyCashiers({
+        processDate,
+        outletIds: ids,
+        confirmRenotify,
+      });
+      toast.success('Cashiers notified.');
+      setNotifyOpen(false);
+    } catch (e) {
+      const msg = getDayEndApiErrorMessage(e);
+      if (/already notified/i.test(msg)) {
+        const ok = window.confirm(`${msg} Notify them again?`);
+        if (ok) {
+          try {
+            await dayEndApi.notifyCashiers({
+              processDate,
+              outletIds: ids,
+              confirmRenotify: true,
+            });
+            toast.success('Cashiers notified.');
+            setNotifyOpen(false);
+          } catch (e2) {
+            toast.error(getDayEndApiErrorMessage(e2));
+          }
+        }
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      setNotifySending(false);
     }
   };
 
@@ -248,6 +381,59 @@ function DayEndProcessContent() {
           Complete daily closing operations for selected showrooms. Page defaults to the previous day.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>POS sale records window</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm mb-4" style={{ color: 'var(--muted-foreground)' }}>
+            Cashier turn week and how many weeks (including the current week) cashiers can see on POS.
+          </p>
+          <div className="flex flex-wrap items-end gap-4">
+            <label className="text-sm font-medium">
+              <span className="block mb-1" style={{ color: 'var(--muted-foreground)' }}>
+                Cashier turn week starts
+              </span>
+              <select
+                value={weekStartDay}
+                onChange={(e) => setWeekStartDay(Number(e.target.value))}
+                className="px-3 py-2 rounded-lg text-sm min-w-[160px]"
+                style={{ border: '1px solid var(--input)' }}
+              >
+                {WEEKDAY_OPTIONS.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-medium">
+              <span className="block mb-1" style={{ color: 'var(--muted-foreground)' }}>
+                Weeks to allow on POS
+              </span>
+              <Input
+                type="number"
+                min={1}
+                max={12}
+                value={weeksToShow}
+                onChange={(e) => setWeeksToShow(Number(e.target.value))}
+                style={{ maxWidth: '120px' }}
+              />
+            </label>
+            <PermissionButton
+              permission="day-end:edit"
+              variant="outline"
+              size="sm"
+              onClick={() => void handleSaveSaleRecordsSettings()}
+              isLoading={savingSettings}
+              disabled={savingSettings}
+            >
+              Save window
+            </PermissionButton>
+          </div>
+        </CardContent>
+      </Card>
 
       {blockReason && (
         <div
@@ -444,7 +630,19 @@ function DayEndProcessContent() {
               </table>
             </div>
 
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end gap-3 pt-4">
+              {dayLocked ? (
+                <PermissionButton
+                  permission="day-end:notify"
+                  variant="outline"
+                  size="md"
+                  onClick={() => void openNotifyModal()}
+                  disabled={loading || notifyLoading}
+                >
+                  <Bell className="w-4 h-4 mr-2" />
+                  Notify To Cashier
+                </PermissionButton>
+              ) : null}
               <PermissionButton
                 permission="day-end:execute"
                 variant="primary"
@@ -466,6 +664,74 @@ function DayEndProcessContent() {
           </div>
         </CardContent>
       </Card>
+
+      <Modal
+        isOpen={notifyOpen}
+        onClose={() => setNotifyOpen(false)}
+        title="Notify Cashiers"
+        size="lg"
+        closeVariant="danger"
+      >
+        <p className="text-sm mb-4" style={{ color: 'var(--muted-foreground)' }}>
+          Select one or more showrooms for {processDate.split('-').reverse().join('/')}. Already notified
+          showrooms can be notified again after confirmation.
+        </p>
+        {notifyLoading ? (
+          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            Loading…
+          </p>
+        ) : (
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={allNotifySelected}
+                onChange={(e) => toggleNotifyAll(e.target.checked)}
+                className="rounded w-4 h-4"
+              />
+              Select all showrooms
+            </label>
+            <div className="max-h-80 overflow-y-auto divide-y" style={{ border: '1px solid var(--border)' }}>
+              {notifyTargets.map((t) => (
+                <label
+                  key={t.outletId}
+                  className="flex items-center gap-3 px-3 py-2 text-sm"
+                  style={{ opacity: t.canNotify ? 1 : 0.5 }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={Boolean(notifySelected[t.outletId])}
+                    disabled={!t.canNotify}
+                    onChange={(e) =>
+                      setNotifySelected((prev) => ({ ...prev, [t.outletId]: e.target.checked }))
+                    }
+                    className="rounded w-4 h-4"
+                  />
+                  <span className="flex-1 font-medium">{t.outletName}</span>
+                  <span className="min-w-[8rem]">{t.cashierName}</span>
+                  <Badge variant={t.alreadyNotified ? 'success' : 'danger'} size="sm">
+                    {t.alreadyNotified ? 'Notified' : t.status}
+                  </Badge>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+        <ModalFooter>
+          <Button type="button" variant="outline" onClick={() => setNotifyOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => void handleNotifyCashiers()}
+            isLoading={notifySending}
+            disabled={notifyLoading || notifySending}
+          >
+            Notify selected
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }

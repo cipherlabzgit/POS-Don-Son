@@ -9,6 +9,13 @@ import type { SaveConfigResult, UnlockResult } from '../model/till-config'
 
 export type BackstagePhase = 'locked' | 'unlocked'
 
+const OPEN_BACKSTAGE_EVENT = 'dms-pos-open-backstage'
+
+/** Open the hidden till admin panel (POS home button or Ctrl+Shift+A). */
+export function openBackstagePanel() {
+  window.dispatchEvent(new Event(OPEN_BACKSTAGE_EVENT))
+}
+
 type BackstageVmOptions = {
   startOpen?: boolean
   listenHotkey?: boolean
@@ -29,6 +36,9 @@ export function useBackstageViewModel(options: BackstageVmOptions = {}) {
   const [error, setError] = useState('')
   const [unlocking, setUnlocking] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [comPorts, setComPorts] = useState<string[]>([])
+  const [polePort, setPolePort] = useState('')
+  const [secondaryReady, setSecondaryReady] = useState(false)
   const desktop = Boolean(window.dmsPos?.unlockBackstage)
   const listenHotkey = options.listenHotkey !== false
   const onSaved = options.onSaved
@@ -55,6 +65,12 @@ export function useBackstageViewModel(options: BackstageVmOptions = {}) {
   }, [options.startOpen, openCommand])
 
   useEffect(() => {
+    const onOpenEvent = () => openCommand()
+    window.addEventListener(OPEN_BACKSTAGE_EVENT, onOpenEvent)
+    return () => window.removeEventListener(OPEN_BACKSTAGE_EVENT, onOpenEvent)
+  }, [openCommand])
+
+  useEffect(() => {
     if (!listenHotkey) return
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
@@ -71,6 +87,22 @@ export function useBackstageViewModel(options: BackstageVmOptions = {}) {
     }
   }, [listenHotkey, openCommand])
 
+  const loadCustomerDisplayCommand = useCallback(async () => {
+    const [status, ports, pole] = await Promise.all([
+      window.dmsPos?.getDisplayStatus?.(),
+      window.dmsPos?.listComPorts?.(),
+      window.dmsPos?.getPoleConfig?.(),
+    ])
+    setSecondaryReady(Boolean(status?.secondaryAvailable))
+    setComPorts(ports ?? [])
+    setPolePort(pole?.port ?? '')
+  }, [])
+
+  const setPolePortCommand = useCallback(async (port: string) => {
+    setPolePort(port)
+    await window.dmsPos?.setPolePort?.(port)
+  }, [])
+
   const loadConfigCommand = useCallback(async () => {
     const cfg = (await window.dmsPos?.getSecureConfig?.()) ?? (await window.dmsPos?.getConfig?.())
     const store = useSettingsStore.getState()
@@ -79,7 +111,8 @@ export function useBackstageViewModel(options: BackstageVmOptions = {}) {
     setShowroomCode(cfg?.showroomPublicCode || cfg?.showroomCode || store.assignedShowroomPublicCode)
     setConfigPath(cfg?.configPath ?? '')
     setEncrypted(Boolean(cfg?.encrypted))
-  }, [])
+    await loadCustomerDisplayCommand()
+  }, [loadCustomerDisplayCommand])
 
   const unlockCommand = useCallback(async () => {
     if (!desktop) {
@@ -188,11 +221,15 @@ export function useBackstageViewModel(options: BackstageVmOptions = {}) {
     unlocking,
     saving,
     desktop,
+    comPorts,
+    polePort,
+    secondaryReady,
     setPassword,
     setShowPassword,
     setApiBaseUrl,
     setPosVerificationCode,
     setShowroomCode,
+    setPolePortCommand,
     openCommand,
     closeCommand,
     unlockCommand,

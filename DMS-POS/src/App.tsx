@@ -9,6 +9,7 @@ import { NewTransferPage } from './pages/NewTransferPage'
 import { DeliveryReturnPage } from './pages/DeliveryReturnPage'
 import { CashSubmissionPage } from './pages/CashSubmissionPage'
 import { OrderRequestPage } from './pages/OrderRequestPage'
+import { SaleRecordsPage } from './pages/SaleRecordsPage'
 import { NetworkDiagnosticsPage } from './pages/NetworkDiagnosticsPage'
 import { PosAccessDeniedPage } from './pages/PosAccessDeniedPage'
 import { IdleLogoutBanner } from './components/IdleLogoutBanner'
@@ -19,6 +20,7 @@ import { useAuthStore } from './lib/auth-store'
 import { useSettingsStore } from './lib/settings-store'
 import { syncThemeFromServer } from './lib/theme-sync'
 import { useOnlineStatus } from './lib/use-online-status'
+import { BackstageAdminPanel } from './backstage/view/BackstageAdminPanel'
 import type { Screen } from './screen-types'
 
 export default function App() {
@@ -32,6 +34,8 @@ export default function App() {
 function CashierApp() {
   useCustomerDisplaySync()
   const token = useAuthStore((s) => s.accessToken)
+  const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
   const tillReady = useSettingsStore((s) => Boolean(s.assignedShowroomCode.trim()))
   const online = useOnlineStatus(Boolean(token))
   const [screen, setScreen] = useState<Screen>('pos')
@@ -45,6 +49,11 @@ function CashierApp() {
   useEffect(() => {
     if (!token) setScreen('pos')
   }, [token])
+
+  const isCashier = Boolean(user?.roles?.some((r) => r.name.toLowerCase() === 'cashier'))
+  useEffect(() => {
+    if (token && user && !isCashier) logout()
+  }, [token, user, isCashier, logout])
 
   useEffect(() => {
     void window.dmsPos?.isFullscreen?.().then((full) => {
@@ -69,6 +78,7 @@ function CashierApp() {
     return (
       <>
         <ToastHost />
+        <BackstageAdminPanel />
         <PosAccessDeniedPage onReady={() => undefined} />
       </>
     )
@@ -78,6 +88,7 @@ function CashierApp() {
     return (
       <>
         <ToastHost />
+        <BackstageAdminPanel />
         <LoginPage />
       </>
     )
@@ -86,6 +97,7 @@ function CashierApp() {
   return (
     <>
       <ToastHost />
+      <BackstageAdminPanel />
       {idle.warning ? (
         <IdleLogoutBanner
           secondsLeft={idle.secondsLeft}
@@ -105,6 +117,7 @@ function CashierApp() {
       {screen === 'return' ? <DeliveryReturnPage onBack={() => setScreen('pos')} /> : null}
       {screen === 'cash' ? <CashSubmissionPage onBack={() => setScreen('pos')} /> : null}
       {screen === 'order-request' ? <OrderRequestPage onBack={() => setScreen('pos')} /> : null}
+      {screen === 'sale-records' ? <SaleRecordsPage onBack={() => setScreen('pos')} /> : null}
       {screen === 'diagnostics' ? <NetworkDiagnosticsPage onBack={() => setScreen('pos')} /> : null}
     </>
   )

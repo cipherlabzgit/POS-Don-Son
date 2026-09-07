@@ -40,11 +40,12 @@ function buildReceiptDocumentHtml(opts: PrintReceiptOpts): string {
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Receipt</title>
 <style>
+html,body{width:80mm;max-width:80mm;height:auto!important;overflow:visible!important;background:#fff}
 @media print {
-  @page { margin: 5mm; size: 80mm auto; }
-  body { margin: 0; }
+  @page { margin: 0; size: 80mm auto; }
+  html,body{width:80mm;max-width:80mm;height:auto!important;overflow:visible!important;margin:0}
 }
-body{font-family:'Courier New',monospace;padding:8px;max-width:300px;margin:0 auto;color:#000;font-size:11px;line-height:1.4}
+body{font-family:'Courier New',monospace;padding:4mm 3mm 12mm;margin:0;color:#000;font-size:11px;line-height:1.4;box-sizing:border-box}
 .header{text-align:center;margin-bottom:8px}
 .company-name{font-size:14px;font-weight:bold;margin:2px 0}
 .company-info{font-size:9px;margin:2px 0}
@@ -115,7 +116,7 @@ function printViaIframe(html: string): Promise<boolean> {
     const iframe = document.createElement('iframe')
     iframe.setAttribute('aria-hidden', 'true')
     iframe.style.cssText =
-      'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none'
+      'position:fixed;left:-10000px;top:0;width:320px;height:1200px;border:0;opacity:0;pointer-events:none'
     document.body.appendChild(iframe)
 
     const win = iframe.contentWindow

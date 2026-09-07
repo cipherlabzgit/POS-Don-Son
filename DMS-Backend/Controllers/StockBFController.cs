@@ -146,8 +146,9 @@ public class StockBFController : ControllerBase
         try
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var permissions = User.FindAll("permission").Select(c => c.Value).ToList();
             var relaxedDates = StockBfAuthorization.HasRelaxedBfDateRules(User);
-            var stockBFs = await _stockBFService.CreateBulkAsync(dto, userId, relaxedDates, cancellationToken);
+            var stockBFs = await _stockBFService.CreateBulkAsync(dto, userId, permissions, relaxedDates, cancellationToken);
 
             return Ok(ApiResponse<List<StockBFDetailDto>>.SuccessResponse(stockBFs));
         }

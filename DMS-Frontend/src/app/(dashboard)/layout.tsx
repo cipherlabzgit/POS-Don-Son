@@ -26,6 +26,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       try {
         const user = await authApi.getCurrentUser();
+        const cashierOnly =
+          !user.isSuperAdmin &&
+          user.roles.length > 0 &&
+          user.roles.every((r) => r.name.toLowerCase() === 'cashier');
+        if (cashierOnly) {
+          logout();
+          router.push('/login');
+          return;
+        }
         setUser(user);
         setIsValidating(false);
       } catch (error) {

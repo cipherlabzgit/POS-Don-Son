@@ -4,7 +4,7 @@ import { PosSubPageLayout } from '../components/PosSubPageLayout'
 import { CatalogStaleBanner } from '../components/CatalogStaleBanner'
 import { useAuthStore } from '../lib/auth-store'
 import { useSettingsStore } from '../lib/settings-store'
-import { loadProductsIntoDb } from '../lib/catalog-sync'
+import { loadAllActiveProducts } from '../lib/catalog-sync'
 import { offlineDb } from '../lib/offline-db'
 import type { ProductRow } from '../lib/types'
 import { fetchStockBfRecords, postStockBfBulk } from '../lib/api'
@@ -12,7 +12,9 @@ import { enqueueMutation } from '../lib/sync-queue'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { printReceiptHtml } from '../lib/print-receipt'
 import { toast } from '../lib/toast-store'
-import { formatSubmitError } from '../lib/api-errors'
+import { formatSubmitError, isConflictStatus, isUnreachableNetworkError, isAlreadyRecordedError } from '../lib/api-errors'
+import { todayCalendarISO } from '../lib/calendar-date'
+import { SearchKeyboard } from '../components/SearchKeyboard'
 
 type Props = { onBack: () => void }
 type BfRow = { productId: string; code: string; name: string; qty: number }
@@ -43,14 +45,20 @@ export function StockBfPage({ onBack }: Props) {
   const [qty, setQty]           = useState('1')
   const [rows, setRows]         = useState<BfRow[]>([])
   const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
+  const [formLocked, setFormLocked] = useState(false)
   const [histRows, setHistRows] = useState<HistRow[]>([])
   const [histLoading, setHistLoading] = useState(false)
+  const [histNonce, setHistNonce] = useState(0)
   const searchRef = useRef<HTMLInputElement>(null)
+  const qtyRef = useRef<HTMLInputElement>(null)
+  const [kbField, setKbField] = useState<'search' | null>(null)
+  const [pendingProduct, setPendingProduct] = useState<ProductRow | null>(null)
 
   useEffect(() => {
     void (async () => {
       try {
-        const list = await loadProductsIntoDb()
+        const list = await loadAllActiveProducts()
         setProducts(list)
         if (list.length === 0) {
           toast(
@@ -68,9 +76,9 @@ export function StockBfPage({ onBack }: Props) {
   }, [online])
 
   useEffect(() => {
-    if (tab !== 'history' || !online || !outletId || !canView) return
-    const today = new Date().toISOString().slice(0, 10)
-    setHistLoading(true)
+    if (!online || !outletId || !canView) return
+    const today = todayCalendarISO()
+    if (tab === 'history') setHistLoading(true)
     void (async () => {
       try {
         const res = (await fetchStockBfRecords({
@@ -81,23 +89,26 @@ export function StockBfPage({ onBack }: Props) {
           pageSize: 200,
         })) as Record<string, unknown>
         const raw = (res.stockBFs ?? res.StockBFs ?? []) as Record<string, unknown>[]
-        setHistRows(
-          raw.map((r) => ({
-            id: String(r.id ?? r.Id ?? crypto.randomUUID()),
-            bfNo: String(r.bfNo ?? r.BFNo ?? '—'),
-            productName: String(r.productName ?? r.ProductName ?? '—'),
-            quantity: Number(r.quantity ?? r.Quantity ?? 0),
-            status: String(r.status ?? r.Status ?? '—'),
-          })),
-        )
+        const mapped = raw.map((r) => ({
+          id: String(r.id ?? r.Id ?? crypto.randomUUID()),
+          bfNo: String(r.bfNo ?? r.BFNo ?? '—'),
+          productName: String(r.productName ?? r.ProductName ?? '—'),
+          quantity: Number(r.quantity ?? r.Quantity ?? 0),
+          status: String(r.status ?? r.Status ?? '—'),
+        }))
+        setHistRows(mapped)
+        const blocking = mapped.some((r) => {
+          const s = r.status.toLowerCase()
+          return s !== 'rejected' && s !== 'cancelled'
+        })
+        setFormLocked(blocking)
       } catch (e) {
-        toast((e as Error).message, 'error')
-        setHistRows([])
+        if (tab === 'history') toast((e as Error).message, 'error')
       } finally {
         setHistLoading(false)
       }
     })()
-  }, [tab, online, outletId, canView])
+  }, [tab, online, outletId, canView, histNonce])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -108,22 +119,46 @@ export function StockBfPage({ onBack }: Props) {
       .slice(0, 12)
   }, [products, search])
 
-  function addRow(p: ProductRow) {
+  function focusQtySelected() {
+    setQty('1')
+    window.setTimeout(() => {
+      const el = qtyRef.current
+      if (!el) return
+      el.focus()
+      el.select()
+    }, 0)
+  }
+
+  function selectProduct(p: ProductRow) {
     if (p.requireOpenStock === false) {
+      toast('This product does not use showroom open stock — it cannot be added to Stock BF.', 'error')
+      return
+    }
+    setPendingProduct(p)
+    setSearch(`${p.code} — ${p.name}`)
+    setShowDrop(false)
+    setKbField(null)
+    focusQtySelected()
+  }
+
+  function addRow(p?: ProductRow) {
+    const target = p ?? pendingProduct ?? filtered[0]
+    if (!target) { toast('Select an item first.', 'info'); return }
+    if (target.requireOpenStock === false) {
       toast('This product does not use showroom open stock — it cannot be added to Stock BF.', 'error')
       return
     }
     const qn = parseFloat(qty.replace(',', '.'))
     if (!Number.isFinite(qn) || qn <= 0) { toast('Enter a valid quantity.', 'error'); return }
     setRows((prev) => {
-      const existing = prev.find((x) => x.productId === p.id)
-      if (existing) return prev.map((x) => x.productId === p.id ? { ...x, qty: x.qty + qn } : x)
-      return [...prev, { productId: p.id, code: p.code, name: p.name, qty: qn }]
+      const existing = prev.find((x) => x.productId === target.id)
+      if (existing) return prev.map((x) => x.productId === target.id ? { ...x, qty: x.qty + qn } : x)
+      return [...prev, { productId: target.id, code: target.code, name: target.name, qty: qn }]
     })
+    setPendingProduct(null)
     setSearch('')
     setQty('1')
     setShowDrop(false)
-    searchRef.current?.focus()
   }
 
   function removeRow(productId: string) {
@@ -137,24 +172,31 @@ export function StockBfPage({ onBack }: Props) {
   }
 
   async function submit(andPrint = false) {
+    if (submittingRef.current) return
+    if (formLocked) { toast('Opening stock for today is already submitted and locked.', 'error'); return }
     if (!canCreate) { toast('You do not have permission to submit opening stock.', 'error'); return }
     if (!outletId) { toast('Select a showroom on the main POS first.', 'error'); return }
     if (rows.length === 0) { toast('Add at least one product.', 'info'); return }
 
-    const d = new Date(); d.setHours(0, 0, 0, 0)
-    const processDateStr = d.toISOString().slice(0, 10)
+    const processDateStr = todayCalendarISO()
     const mutationId = crypto.randomUUID()
     const payload = {
-      bfDate: d.toISOString(),
+      // Date-only (Sri Lanka calendar), matching DMS web — not local midnight converted to UTC.
+      bfDate: processDateStr,
       outletId,
       clientMutationId: mutationId,
       items: rows.map((r) => ({ productId: r.productId, quantity: r.qty })),
     }
 
+    submittingRef.current = true
     setSubmitting(true)
     try {
       if (online) {
-        await postStockBfBulk(payload)
+        try {
+          await postStockBfBulk(payload)
+        } catch (firstErr) {
+          if (!isConflictStatus(firstErr) && !isAlreadyRecordedError(firstErr)) throw firstErr
+        }
         await offlineDb.stockBf.put({
           id: mutationId,
           outletId,
@@ -187,12 +229,13 @@ export function StockBfPage({ onBack }: Props) {
       }
 
       setRows([])
+      setHistNonce((n) => n + 1)
+      setFormLocked(true)
       toast(online ? 'Opening stock saved.' : 'Queued — will sync when online.', 'success')
       if (andPrint) onBack()
     } catch (e) {
-      if (online) {
+      if (online && isUnreachableNetworkError(e)) {
         try {
-          // Use the SAME mutationId that's already in the payload for idempotency
           await enqueueMutation({ id: mutationId, type: 'stock-bf-bulk', payload, createdAt: Date.now() })
           await offlineDb.stockBf.put({
             id: mutationId,
@@ -212,6 +255,7 @@ export function StockBfPage({ onBack }: Props) {
         toast(formatSubmitError(e), 'error')
       }
     } finally {
+      submittingRef.current = false
       setSubmitting(false)
     }
   }
@@ -298,12 +342,17 @@ export function StockBfPage({ onBack }: Props) {
       ) : (
         <div className="rounded-2xl border border-[var(--border)] bg-white p-6 shadow-lg sm:p-8">
           <CatalogStaleBanner online={online} />
+          {formLocked ? (
+            <div className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-sm font-medium text-[var(--foreground)]">
+              Today’s opening stock is submitted and locked. It can be entered again only if an administrator rejects it in Approvals.
+            </div>
+          ) : null}
           {/* Info strip */}
           <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-5 py-4 text-sm sm:grid-cols-4">
             <InfoField label="Showroom" value={outletLabel || '—'} />
             <InfoField label="Date" value={today} />
             <InfoField label="Cashier" value={cashier} />
-            <InfoField label="Status" value="Ready" />
+            <InfoField label="Status" value={formLocked ? 'Submitted' : 'Ready'} />
           </div>
 
           {/* Search row */}
@@ -313,9 +362,11 @@ export function StockBfPage({ onBack }: Props) {
               <input
                 ref={searchRef}
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setShowDrop(true) }}
-                onFocus={() => setShowDrop(true)}
+                readOnly
+                inputMode="none"
                 placeholder="Search item code or name"
+                onPointerDown={(e) => { e.preventDefault(); setShowDrop(true); setKbField('search') }}
+                onFocus={(e) => { e.currentTarget.blur(); setShowDrop(true); setKbField('search') }}
                 className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-[var(--foreground)] placeholder:text-[var(--neutral-400)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
                 autoComplete="off"
               />
@@ -324,7 +375,7 @@ export function StockBfPage({ onBack }: Props) {
                   {filtered.map((p) => (
                     <li key={p.id}>
                       <button type="button" className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--neutral-50)]"
-                        onMouseDown={(e) => { e.preventDefault(); addRow(p) }}>
+                        onMouseDown={(e) => { e.preventDefault(); selectProduct(p) }}>
                         <span className="font-mono text-xs text-[var(--neutral-400)]">{p.code}</span>
                         <span className="ml-2 font-medium text-[var(--foreground)]">{p.name}</span>
                       </button>
@@ -337,8 +388,17 @@ export function StockBfPage({ onBack }: Props) {
             <div className="w-28">
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Qty</label>
               <input
+                ref={qtyRef}
                 value={qty}
                 onChange={(e) => setQty(e.target.value)}
+                onFocus={(e) => e.currentTarget.select()}
+                onClick={(e) => e.currentTarget.select()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addRow()
+                  }
+                }}
                 inputMode="decimal"
                 className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-center text-[var(--foreground)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
               />
@@ -346,7 +406,7 @@ export function StockBfPage({ onBack }: Props) {
 
             <button type="button"
               className="pos-tap flex items-center gap-2 rounded-xl bg-[var(--brand-primary)] px-6 py-3 font-bold text-white shadow hover:bg-[var(--brand-primary-dark)]"
-              onClick={() => { const pick = filtered[0]; if (pick) addRow(pick); else toast('No match — type more of the name or code.', 'info') }}>
+              onClick={() => addRow()}>
               <Plus className="h-4 w-4" /> Add
             </button>
           </div>
@@ -395,14 +455,30 @@ export function StockBfPage({ onBack }: Props) {
             </table>
           </div>
 
+          {kbField ? (
+            <SearchKeyboard
+              value={search}
+              onChange={(next) => {
+                setSearch(next)
+                setShowDrop(true)
+              }}
+              onClose={() => setKbField(null)}
+              onEnter={() => {
+                if (filtered[0]) selectProduct(filtered[0])
+              }}
+              label="Item search"
+              placeholder="Search item code or name"
+            />
+          ) : null}
+
           {/* Actions */}
           <div className="mt-6 flex flex-wrap gap-3">
-            <button type="button" disabled={rows.length === 0 || submitting}
+            <button type="button" disabled={rows.length === 0 || submitting || formLocked}
               onClick={() => void submit(false)}
               className="pos-tap rounded-xl bg-[var(--brand-primary)] px-8 py-3 font-bold text-white shadow hover:bg-[var(--brand-primary-dark)] disabled:opacity-40">
               {submitting ? 'Submitting…' : 'Submit'}
             </button>
-            <button type="button" disabled={rows.length === 0 || submitting}
+            <button type="button" disabled={rows.length === 0 || submitting || formLocked}
               onClick={() => void submit(true)}
               className="pos-tap flex items-center gap-2 rounded-xl bg-[var(--brand-accent)] px-8 py-3 font-bold text-neutral-900 shadow hover:brightness-95 disabled:opacity-40">
               <Printer className="h-4 w-4" /> Submit &amp; Print

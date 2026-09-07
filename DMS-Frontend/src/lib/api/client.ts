@@ -10,7 +10,7 @@ export interface ApiEnvelope<T> {
 }
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5126',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -46,7 +46,7 @@ apiClient.interceptors.response.use(
 
       try {
         const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/refresh`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5126'}/api/auth/refresh`,
           { refreshToken }
         );
 

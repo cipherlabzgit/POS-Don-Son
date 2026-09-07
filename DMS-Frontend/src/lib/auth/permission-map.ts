@@ -85,6 +85,7 @@ export type ActionKey =
   | 'execute'
   | 'generate'
   | 'lock'
+  | 'notify'
   | 'allowBackDate'
   | 'allowFutureDate';
 
@@ -142,6 +143,7 @@ export const ACTION_LABELS: Record<ActionKey, string> = {
   execute: 'Execute',
   generate: 'Generate',
   lock: 'Lock',
+  notify: 'Notify',
   allowBackDate: 'Back Date',
   allowFutureDate: 'Future Date',
 };
@@ -185,6 +187,7 @@ const ACTION_CODE_SUFFIX: Record<ActionKey, string> = {
   execute: 'execute',
   generate: 'generate',
   lock: 'lock',
+  notify: 'notify',
   allowBackDate: 'allow-back-date',
   allowFutureDate: 'allow-future-date',
 };
@@ -755,7 +758,10 @@ export const PERMISSION_SECTIONS: SectionDef[] = [
         name: 'Day-End Process',
         href: '/administrator/day-end-process',
         icon: CalendarDays,
-        actions: fillActions('day-end'),
+        actions: {
+          ...fillActions('day-end'),
+          notify: 'day-end:notify',
+        },
       },
       {
         id: 'admin-cashier-balance',
@@ -875,6 +881,13 @@ export const PERMISSION_SECTIONS: SectionDef[] = [
         href: '/administrator/pos-sales',
         icon: ShoppingCart,
         actions: fillCoreActions('pos:sale'),
+      },
+      {
+        id: 'admin-pos-sale-records',
+        name: 'POS Sale Records',
+        hideFromSidebar: true,
+        icon: FileBarChart,
+        actions: fillCoreActions('pos:sale-records'),
       },
       {
         id: 'admin-showroom-employee',

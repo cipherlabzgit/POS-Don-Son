@@ -6,10 +6,10 @@ import { useAuthStore } from '../lib/auth-store'
 import { useSettingsStore } from '../lib/settings-store'
 import { loadAllActiveProducts } from '../lib/catalog-sync'
 import type { ProductRow } from '../lib/types'
-import { createTransfer, fetchOutletsPage, submitTransfer } from '../lib/api'
+import { createTransfer, fetchOutletsPage, recordId } from '../lib/api'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { toast } from '../lib/toast-store'
-import { formatSubmitError } from '../lib/api-errors'
+import { formatSubmitError, isAlreadyRecordedError } from '../lib/api-errors'
 import { SearchKeyboard } from '../components/SearchKeyboard'
 
 type Props = { onBack: () => void }
@@ -35,7 +35,7 @@ export function NewTransferPage({ onBack }: Props) {
   const [qty, setQty]                 = useState('1')
   const [rows, setRows]               = useState<TRow[]>([])
   const [submitting, setSubmitting]   = useState(false)
-  const [pendingSubmitId, setPendingSubmitId] = useState<string | null>(null)
+  const submittingRef = useRef(false)
   const [kbField, setKbField] = useState<'comment' | 'search' | null>(null)
   const [pendingProduct, setPendingProduct] = useState<ProductRow | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -123,50 +123,43 @@ export function NewTransferPage({ onBack }: Props) {
   function removeRow(id: string) { setRows((prev) => prev.filter((r) => r.productId !== id)) }
 
   async function submit() {
+    if (submittingRef.current) return
     if (!canCreate) { toast('You do not have permission to create transfers.', 'error'); return }
     if (!online) { toast('Creating transfers requires an online connection.', 'error'); return }
     if (!fromOutletId) { toast('Choose your showroom on the main POS first.', 'error'); return }
     if (!toOutletId) { toast('Choose a destination showroom.', 'error'); return }
     if (rows.length === 0) { toast('Add at least one product line.', 'error'); return }
+    submittingRef.current = true
     setSubmitting(true)
-    setPendingSubmitId(null)
     try {
-      const created = (await createTransfer({
+      const created = await createTransfer({
         transferDate: new Date().toISOString(),
         fromOutletId,
         toOutletId,
         notes: notes.trim() || undefined,
         items: rows.map((r) => ({ productId: r.productId, quantity: r.qty })),
-      })) as { id?: string }
-      if (!created?.id) throw new Error('No transfer ID returned.')
-      try {
-        await submitTransfer(created.id)
-        setRows([]); setNotes('')
-        setPendingSubmitId(null)
-        toast('Transfer submitted for approval.', 'success')
-      } catch (submitErr) {
-        setPendingSubmitId(String(created.id))
-        toast(formatSubmitError(submitErr), 'error')
+      })
+      const id = recordId(created)
+      const status = created && typeof created === 'object'
+        ? String((created as Record<string, unknown>).status ?? (created as Record<string, unknown>).Status ?? '')
+        : ''
+      setRows([])
+      setNotes('')
+      const approved = status.toLowerCase() === 'approved'
+      toast(approved ? 'Transfer approved.' : 'Transfer submitted for approval.', 'success')
+      if (!id) {
+        /* Document was accepted even if the payload shape was unexpected. */
       }
     } catch (e) {
-      setPendingSubmitId(null)
-      toast(formatSubmitError(e), 'error')
+      if (isAlreadyRecordedError(e)) {
+        setRows([])
+        setNotes('')
+        toast('Transfer submitted for approval.', 'success')
+      } else {
+        toast(formatSubmitError(e), 'error')
+      }
     } finally {
-      setSubmitting(false)
-    }
-  }
-
-  async function retrySubmitTransfer() {
-    if (!pendingSubmitId || !online) return
-    setSubmitting(true)
-    try {
-      await submitTransfer(pendingSubmitId)
-      setRows([]); setNotes('')
-      setPendingSubmitId(null)
-      toast('Transfer submitted for approval.', 'success')
-    } catch (e) {
-      toast(formatSubmitError(e), 'error')
-    } finally {
+      submittingRef.current = false
       setSubmitting(false)
     }
   }
@@ -196,19 +189,6 @@ export function NewTransferPage({ onBack }: Props) {
     >
       <div className="rounded-2xl border border-[var(--border)] bg-white p-6 shadow-lg sm:p-8">
         <CatalogStaleBanner online={online} />
-        {pendingSubmitId ? (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
-            <p className="font-medium">Transfer was saved as draft but could not be submitted for approval.</p>
-            <button
-              type="button"
-              disabled={submitting || !online}
-              onClick={() => void retrySubmitTransfer()}
-              className="pos-tap rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-xs font-bold text-white disabled:opacity-40"
-            >
-              {submitting ? 'Retrying…' : 'Retry submit'}
-            </button>
-          </div>
-        ) : null}
         {/* Info strip */}
         <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-5 py-4 text-sm sm:grid-cols-4">
           <div>

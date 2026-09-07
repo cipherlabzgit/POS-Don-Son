@@ -3,6 +3,7 @@ using DMS_Backend.Models.DTOs.OperationApprovals;
 using DMS_Backend.Models.Entities;
 using DMS_Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace DMS_Backend.Services.Implementations;
 
@@ -232,8 +233,13 @@ public class OperationApprovalService : IOperationApprovalService
         var posCancelRows = adminApprovals
             .Where(a => string.Equals(a.ApprovalType, PosSaleService.CancellationApprovalType, StringComparison.Ordinal))
             .ToList();
+        var cashierRows = adminApprovals
+            .Where(a => CashierBalanceService.IsCashierBalanceApprovalType(a.ApprovalType))
+            .ToList();
         var otherAdmin = adminApprovals
-            .Where(a => !string.Equals(a.ApprovalType, PosSaleService.CancellationApprovalType, StringComparison.Ordinal))
+            .Where(a =>
+                !string.Equals(a.ApprovalType, PosSaleService.CancellationApprovalType, StringComparison.Ordinal)
+                && !CashierBalanceService.IsCashierBalanceApprovalType(a.ApprovalType))
             .ToList();
 
         var cancelSaleIds = posCancelRows.Select(a => a.EntityId).Distinct().ToList();
@@ -259,6 +265,41 @@ public class OperationApprovalService : IOperationApprovalService
                 RequestedByName = a.RequestedByName,
                 Description = a.Notes,
                 TotalValue = sale?.TotalAmount,
+            };
+        }).ToList();
+
+        summary.CashierBalances = cashierRows.Select(a =>
+        {
+            var outletName = "Showroom";
+            decimal? total = null;
+            if (!string.IsNullOrWhiteSpace(a.RequestData))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(a.RequestData);
+                    var root = doc.RootElement;
+                    if (root.TryGetProperty("outletName", out var nameEl))
+                        outletName = nameEl.GetString() ?? outletName;
+                    if (root.TryGetProperty("total", out var totalEl) && totalEl.ValueKind == JsonValueKind.Number)
+                        total = totalEl.GetDecimal();
+                }
+                catch (JsonException)
+                {
+                    /* keep defaults */
+                }
+            }
+
+            return new OperationApprovalItemDto
+            {
+                Id = a.Id,
+                ApprovalType = CashierBalanceService.LineApprovalType,
+                ReferenceNo = a.EntityReference ?? a.EntityId.ToString(),
+                RequestDate = a.RequestedAt,
+                OutletName = outletName,
+                Status = a.Status,
+                RequestedByName = a.RequestedByName,
+                Description = a.Notes,
+                TotalValue = total,
             };
         }).ToList();
 

@@ -97,17 +97,6 @@ function DeliveryReturnPageContent() {
     });
   }, [returns, searchTerm, isAdmin, user, showPreviousRecords]);
 
-  const handleSubmit = async (id: string) => {
-    try {
-      await deliveryReturnsApi.submit(id);
-      toast.success('Delivery return submitted for approval');
-      fetchReturns();
-    } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Failed to submit delivery return');
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Approved':
@@ -236,21 +225,6 @@ function DeliveryReturnPageContent() {
                 title="Edit"
               >
                 <Edit className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSubmit(item.id)}
-                className="rounded p-1.5 transition-colors"
-                style={{ color: '#3B82F6' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#EFF6FF';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-                title="Submit for approval"
-              >
-                <Clock className="h-4 w-4" />
               </button>
             </>
           )}

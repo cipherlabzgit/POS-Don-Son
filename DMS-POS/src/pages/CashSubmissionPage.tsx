@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { PosSubPageLayout } from '../components/PosSubPageLayout'
 import { fetchCashierBalanceContext, submitCashierBalance } from '../lib/api'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { useAuthStore } from '../lib/auth-store'
 import { useSettingsStore } from '../lib/settings-store'
 import { toast } from '../lib/toast-store'
-import { formatSubmitError } from '../lib/api-errors'
+import { formatSubmitError, isAlreadyRecordedError } from '../lib/api-errors'
 
 type Props = { onBack: () => void }
 
@@ -34,11 +34,14 @@ export function CashSubmissionPage({ onBack }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [ctxSubmitted, setCtxSubmitted] = useState(false)
   const [ctxApproved, setCtxApproved] = useState(false)
+  const [lineLocked, setLineLocked] = useState(false)
+  const [lineStatus, setLineStatus] = useState('')
   const [cash, setCash] = useState('')
   const [card, setCard] = useState('')
   const [uber, setUber] = useState('')
   const [pickme, setPickme] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
 
   const cashier = user ? `${user.firstName} ${user.lastName}`.trim() : '—'
 
@@ -72,6 +75,8 @@ export function CashSubmissionPage({ onBack }: Props) {
       setCard(mine.balanceCard != null || mine.BalanceCard != null ? String(mine.balanceCard ?? mine.BalanceCard ?? '') : '')
       setUber(mine.balanceUber != null || mine.BalanceUber != null ? String(mine.balanceUber ?? mine.BalanceUber ?? '') : '')
       setPickme(mine.balancePickme != null || mine.BalancePickme != null ? String(mine.balancePickme ?? mine.BalancePickme ?? '') : '')
+      setLineLocked(Boolean(mine.isLocked ?? mine.IsLocked))
+      setLineStatus(String(mine.lineStatus ?? mine.LineStatus ?? ''))
     } catch (e) {
       setLoadError(formatSubmitError(e))
     } finally {
@@ -98,10 +103,12 @@ export function CashSubmissionPage({ onBack }: Props) {
   }
 
   async function submit() {
+    if (submittingRef.current) return
     if (!canEdit) { toast('You do not have permission to submit cashier balances.', 'error'); return }
     if (!online) { toast('Cash submission requires an online connection.', 'error'); return }
     if (!outletId) { toast('This till is not assigned to a showroom.', 'error'); return }
-    if (ctxSubmitted) { toast('This date is already submitted.', 'error'); return }
+    if (ctxSubmitted || lineLocked) { toast('This showroom is already submitted for this date.', 'error'); return }
+    submittingRef.current = true
     setSubmitting(true)
     try {
       await submitCashierBalance({
@@ -116,17 +123,30 @@ export function CashSubmissionPage({ onBack }: Props) {
           balancePickme: parseDecSubmit(pickme),
         }],
       })
+      setLineLocked(true)
+      setLineStatus('Pending')
       toast('Cashier balance submitted for approval.', 'success')
       await loadContext()
     } catch (e) {
-      toast(formatSubmitError(e), 'error')
+      if (isAlreadyRecordedError(e)) {
+        setLineLocked(true)
+        toast('Cashier balance submitted for approval.', 'success')
+        await loadContext()
+      } else {
+        toast(formatSubmitError(e), 'error')
+      }
     } finally {
+      submittingRef.current = false
       setSubmitting(false)
     }
   }
 
-  const statusText = loading ? 'Loading…' : ctxSubmitted ? (ctxApproved ? 'Approved' : 'Submitted') : 'Ready'
-  const locked = ctxSubmitted || !canEdit
+  const locked = ctxSubmitted || lineLocked || !canEdit
+  const statusText = loading
+    ? 'Loading…'
+    : locked && canEdit
+      ? (ctxApproved || lineStatus.toLowerCase() === 'approved' ? 'Approved' : 'Submitted')
+      : 'Ready'
 
   if (!canView && !canEdit) {
     return (
@@ -166,9 +186,9 @@ export function CashSubmissionPage({ onBack }: Props) {
           </div>
         ) : null}
 
-        {ctxSubmitted ? (
+        {locked && canEdit ? (
           <div className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-sm font-medium text-[var(--foreground)]">
-            This date is already submitted — values are read-only.
+            This showroom is submitted and locked. It can be edited again only if an administrator rejects it in Approvals.
           </div>
         ) : null}
 

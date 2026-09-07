@@ -63,7 +63,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await authApi.login(data);
+      const response = await authApi.login({ ...data, client: 'dms' });
       login(response.accessToken, response.refreshToken, response.user);
       router.push('/dashboard');
     } catch (err: unknown) {

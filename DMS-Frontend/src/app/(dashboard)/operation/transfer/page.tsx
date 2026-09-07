@@ -108,16 +108,6 @@ function TransferPageContent() {
 
   const paginatedTransfers = filteredTransfers;
 
-  const handleSubmit = async (id: string) => {
-    try {
-      await transfersApi.submit(id);
-      toast.success('Transfer submitted for approval');
-      fetchTransfers();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to submit transfer');
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Approved':
@@ -249,17 +239,6 @@ function TransferPageContent() {
                 title="Edit"
               >
                 <Edit className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSubmit(item.id)}
-                className="rounded p-1.5 transition-colors"
-                style={{ color: '#3B82F6' }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#EFF6FF')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                title="Submit for Approval"
-              >
-                <Clock className="h-4 w-4" />
               </button>
             </>
           )}

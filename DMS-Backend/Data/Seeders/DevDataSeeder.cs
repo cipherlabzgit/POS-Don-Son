@@ -1,3 +1,4 @@
+using DMS_Backend.Common;
 using DMS_Backend.Configuration;
 using DMS_Backend.Models.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -322,6 +323,25 @@ public sealed class DevDataSeeder
         "pos:sale:create",
     ];
 
+    private static readonly string[] CashierRolePermissionCodes =
+    [
+        "products:view",
+        "categories:view",
+        "showroom:view",
+        "pos:sale:view",
+        "pos:sale:create",
+        "cashier-balance:view",
+        "cashier-balance:edit",
+        "operation:stock-bf:view",
+        "operation:stock-bf:create",
+        "operation:transfer:view",
+        "operation:transfer:create",
+        "operation:delivery-return:view",
+        "operation:delivery-return:create",
+        "order:create",
+        "pos:sale-records:view",
+    ];
+
     /// <summary>
     /// Ensures products/categories are visible in POS and POS roles have catalog permissions.
     /// Runs on every backend startup (not only when dev seed is enabled).
@@ -346,6 +366,7 @@ public sealed class DevDataSeeder
 
         await EnsurePosRolePermissionsAsync("Manager");
         await EnsurePosRolePermissionsAsync("Operator");
+        await EnsureCashierRoleAsync();
         await EnsureDemoUserRoleAssignmentsAsync();
     }
 
@@ -386,9 +407,42 @@ public sealed class DevDataSeeder
     {
         var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
         if (role == null) return;
+        await EnsureRolePermissionsAsync(role, PosRolePermissionCodes);
+    }
 
+    public async Task EnsureCashierRoleAsync()
+    {
+        var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == AppLoginClient.CashierRoleName);
+        if (role == null)
+        {
+            role = new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = AppLoginClient.CashierRoleName,
+                Description = "POS till operator. Can sign in to POS only — no DMS access.",
+                IsSystemRole = true,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            };
+            _context.Roles.Add(role);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Cashier role created");
+        }
+        else if (!role.IsActive)
+        {
+            role.IsActive = true;
+            role.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+
+        await EnsureRolePermissionsAsync(role, CashierRolePermissionCodes);
+    }
+
+    private async Task EnsureRolePermissionsAsync(Role role, string[] codes)
+    {
         var permissions = await _context.Permissions
-            .Where(p => PosRolePermissionCodes.Contains(p.Code))
+            .Where(p => codes.Contains(p.Code))
             .ToListAsync();
 
         var existing = await _context.RolePermissions

@@ -7,10 +7,15 @@ public sealed class CashierBalanceOutletRowDto
     public string Name { get; set; } = string.Empty;
     public bool IsShowroomClosed { get; set; }
     public Guid? OutletEmployeeId { get; set; }
+    public string? CashierName { get; set; }
     /// <summary>Total amount (sum of channel breakdown when present).</summary>
     public decimal? CashierBalance { get; set; }
     public decimal? BalanceCash { get; set; }
     public decimal? BalanceCard { get; set; }
     public decimal? BalanceUber { get; set; }
     public decimal? BalancePickme { get; set; }
+    /// <summary>Pending, Approved, Rejected, or empty when not yet submitted.</summary>
+    public string? LineStatus { get; set; }
+    /// <summary>True when this showroom cannot edit until an admin rejects the approval.</summary>
+    public bool IsLocked { get; set; }
 }

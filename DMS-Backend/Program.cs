@@ -133,6 +133,7 @@ builder.Services.AddScoped<IDailySaleReportService, DailySaleReportService>();
 builder.Services.AddScoped<IDailySaleOfItemReportService, DailySaleOfItemReportService>();
 builder.Services.AddScoped<IStockBfReportService, StockBfReportService>();
 builder.Services.AddScoped<IDayEndService, DayEndService>();
+builder.Services.AddScoped<ISaleRecordsService, SaleRecordsService>();
 builder.Services.AddScoped<ICashierBalanceService, CashierBalanceService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
@@ -290,6 +291,9 @@ using (var scope = app.Services.CreateScope())
 
         // outlets.pos_verification_code — login joins Outlet and 500s if the column is missing.
         await context.EnsureOutletColumnsAsync();
+
+        // sale_records_settings + cashier_sale_notifications
+        await context.EnsureSaleRecordsTablesAsync();
 
         // Seed permissions first
         await permissionSeeder.SeedAsync();

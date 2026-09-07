@@ -4,8 +4,9 @@ import {
 import {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Check,
   Cloud, History, Inbox, LogOut, Menu,
-  Minus, Package, Plus, Printer,
-  Search, Settings2, Star, Truck, Undo2,
+  Minus, Package, Plus, Printer, Bell,
+  Search, Shield, Star, Truck, Undo2,
+  Search, Shield, Star, Truck, Undo2,
   Trash2, Wallet, X, Maximize2, Power, Stethoscope,
 } from 'lucide-react'
 import { useAuthStore } from '../lib/auth-store'
@@ -13,11 +14,13 @@ import { useCartStore } from '../lib/cart-store'
 import { useFavoriteStore } from '../lib/favorite-store'
 import { useSettingsStore } from '../lib/settings-store'
 import { syncCatalogFromServer } from '../lib/catalog-sync'
-import { fetchOutletsPage, postPosSale, resolveOutletByPosVerificationCode } from '../lib/api'
+import { fetchOutletsPage, fetchPosSaleRecordsUnreadCount, postPosSale, resolveOutletByPosVerificationCode } from '../lib/api'
 import { enqueueMutation, processPendingQueue } from '../lib/sync-queue'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { isElectronPos, printReceiptHtml, type PrintReceiptOpts } from '../lib/print-receipt'
+import { formatReceiptContact, RECEIPT_COMPANY_ADDRESS } from '../lib/receipt-company'
 import { toast } from '../lib/toast-store'
+import { formatSubmitError, isUnreachableNetworkError } from '../lib/api-errors'
 import { OnlineBadge } from '../components/OnlineBadge'
 import { PaymentModal } from '../components/PaymentModal'
 import { PostSalePopups, type PostSaleState } from '../components/PostSalePopups'
@@ -27,6 +30,7 @@ import { TransactionHistoryModal } from '../components/TransactionHistoryModal'
 import { QtyNumpad } from '../components/QtyNumpad'
 import { SearchKeyboard } from '../components/SearchKeyboard'
 import { DiagnosticPage } from './DiagnosticPage'
+import { openBackstagePanel } from '../backstage/viewmodel/use-backstage-view-model'
 import type { CategoryRow, ProductRow } from '../lib/types'
 import { offlineDb } from '../lib/offline-db'
 import type { Screen } from '../screen-types'
@@ -65,6 +69,8 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const canDeliveryReturnCreate = hasPermission('operation:delivery-return:create')
   const canCashierBalanceView = hasPermission('cashier-balance:view')
   const canCashierBalanceEdit = hasPermission('cashier-balance:edit')
+  const canSaleRecordsView =
+    hasPermission('pos:sale-records:view') || hasPermission('pos:sale:view')
 
   const outletId    = useSettingsStore((s) => s.outletId)
   const outletLabel = useSettingsStore((s) => s.outletLabel)
@@ -75,13 +81,6 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const setZoom     = useSettingsStore((s) => s.setZoomPercent)
   const productTilePercent = useSettingsStore((s) => s.productTilePercent)
   const setProductTilePercent = useSettingsStore((s) => s.setProductTilePercent)
-  const cacheUpdatedAt = useSettingsStore((s) => s.cacheUpdatedAt)
-  const autoPrint   = useSettingsStore((s) => s.autoPrint)
-  const setAutoPrint = useSettingsStore((s) => s.setAutoPrint)
-  const receiptPhone = useSettingsStore((s) => s.receiptPhone)
-  const receiptAddress = useSettingsStore((s) => s.receiptAddress)
-  const setReceiptPhone = useSettingsStore((s) => s.setReceiptPhone)
-  const setReceiptAddress = useSettingsStore((s) => s.setReceiptAddress)
 
   const lines    = useCartStore((s) => s.lines)
   const add      = useCartStore((s) => s.add)
@@ -96,7 +95,6 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const favIds    = useFavoriteStore((s) => s.ids)
 
   const [drawer, setDrawer]           = useState(false)
-  const [techOpen, setTechOpen]       = useState(false)
   const [userMenu, setUserMenu]       = useState(false)
   const [showroomBindError, setShowroomBindError] = useState('')
   const [search, setSearch]           = useState('')
@@ -123,10 +121,8 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const [postSale, setPostSale] = useState<PostSaleState | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
   const [catsExpanded, setCatsExpanded] = useState(false)
-  const [comPorts, setComPorts] = useState<string[]>([])
-  const [polePort, setPolePort] = useState('')
-  const [secondaryReady, setSecondaryReady] = useState(false)
   const [catPage, setCatPage] = useState(0)
+  const [saleRecordUnread, setSaleRecordUnread] = useState(0)
   const CATS_PER_PAGE = 7
 
   const catalogScrollRef = useRef<HTMLDivElement>(null)
@@ -213,6 +209,20 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
           }
           setShowroomBindError('')
           setOutlet(match.id, match.name || match.code)
+          setOutlets((prev) => {
+            const existing = prev.find((o) => o.id === match.id)
+            const rest = prev.filter((o) => o.id !== match.id)
+            return [
+              ...rest,
+              {
+                id: match.id,
+                code: match.code,
+                name: match.name || match.code,
+                address: match.address,
+                phone: (match.phone || existing?.phone || '').trim(),
+              },
+            ]
+          })
         } catch {
           if (cancelled) return
           setOutlet(null, 'Showroom')
@@ -228,6 +238,28 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
     })()
     return () => { cancelled = true }
   }, [accessToken, online, apiBaseUrl, assignedShowroomCode, setOutlet])
+
+  useEffect(() => {
+    if (!accessToken || !online || !canSaleRecordsView) {
+      setSaleRecordUnread(0)
+      return
+    }
+    let cancelled = false
+    const tick = async () => {
+      try {
+        const n = await fetchPosSaleRecordsUnreadCount()
+        if (!cancelled) setSaleRecordUnread(n)
+      } catch {
+        /* ignore poll errors */
+      }
+    }
+    void tick()
+    const id = window.setInterval(() => { void tick() }, 30000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [accessToken, online, canSaleRecordsView])
 
   useEffect(() => {
     if (!accessToken) {
@@ -315,12 +347,6 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
     setCatPage((p) => Math.min(p, catPageCount - 1))
   }, [catPageCount])
 
-  useEffect(() => {
-    void window.dmsPos?.getDisplayStatus?.().then((s) => setSecondaryReady(Boolean(s?.secondaryAvailable)))
-    void window.dmsPos?.listComPorts?.().then((ports) => setComPorts(ports ?? []))
-    void window.dmsPos?.getPoleConfig?.().then((cfg) => setPolePort(cfg?.port ?? ''))
-  }, [])
-
   function selectCategory(id: string) {
     setCategoryId(id)
   }
@@ -329,8 +355,8 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
 
   // ── Current outlet details ─────────────────────────────────────────────────
   const currentOutlet = useMemo(() => outlets.find((o) => o.id === outletId), [outlets, outletId])
-  const receiptCompanyAddress = currentOutlet?.address || receiptAddress || 'NO: 302/D, OLD KANDY ROAD,\nDALUGAMA, KELANIYA'
-  const receiptCompanyPhone = currentOutlet?.phone || receiptPhone || '011-2911412/076-8214432'
+  const receiptCompanyAddress = RECEIPT_COMPANY_ADDRESS
+  const receiptCompanyPhone = formatReceiptContact(currentOutlet?.phone)
 
   function beginPostSale(receipt: {
     outletLabel: string
@@ -462,14 +488,18 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       )
       beginPostSale(receiptSnapshot)
     } catch (e) {
-      try {
-        await enqueueMutation({ id: body.clientMutationId, type: 'pos-sale', payload: body, createdAt: Date.now() })
-        await saveLocal()
-        const receiptSnapshot = { outletLabel, total: totalSnap, paymentMethod: method, cash: cashPaid, change: changeAmount, dateTime: dateTimeStr, lines: snapshot }
-        toast('Server unreachable. Sale queued for sync.', 'info')
-        beginPostSale(receiptSnapshot)
-      } catch {
-        toast((e as Error).message, 'error')
+      if (online && isUnreachableNetworkError(e)) {
+        try {
+          await enqueueMutation({ id: body.clientMutationId, type: 'pos-sale', payload: body, createdAt: Date.now() })
+          await saveLocal()
+          const receiptSnapshot = { outletLabel, total: totalSnap, paymentMethod: method, cash: cashPaid, change: changeAmount, dateTime: dateTimeStr, lines: snapshot }
+          toast('Server unreachable. Sale queued for sync.', 'info')
+          beginPostSale(receiptSnapshot)
+        } catch {
+          toast(formatSubmitError(e), 'error')
+        }
+      } else {
+        toast(formatSubmitError(e), 'error')
       }
     }
   }
@@ -656,6 +686,23 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
           >
             <span className="max-w-[10rem] truncate">{outletId ? outletLabel : 'Showroom not assigned'}</span>
           </div>
+
+          {canSaleRecordsView ? (
+            <button
+              type="button"
+              onClick={() => onOpenScreen('sale-records')}
+              className="relative rounded-xl border border-white/30 p-2 text-white hover:bg-white/10"
+              aria-label="Sale records"
+              title="Sale records"
+            >
+              <Bell className="h-5 w-5" />
+              {saleRecordUnread > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                  {saleRecordUnread > 99 ? '99+' : saleRecordUnread}
+                </span>
+              ) : null}
+            </button>
+          ) : null}
 
           {/* User dropdown */}
           <div className="relative">
@@ -1074,70 +1121,18 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               {canCashierBalanceView || canCashierBalanceEdit ? (
                 <OpBtn icon={<Wallet className="h-5 w-5" />} label="Cash Submission" hint="Day-end cashier totals" onClick={() => { onOpenScreen('cash'); setDrawer(false) }} />
               ) : null}
-            </nav>
-
-            {/* Tech settings */}
-            <div className="mx-3 mb-3 rounded-xl border border-[var(--border)]">
-              <button type="button" onClick={() => setTechOpen((v) => !v)}
-                className="flex w-full items-center justify-between px-3 py-3 text-sm font-semibold text-[var(--foreground)]">
-                <span className="flex items-center gap-2"><Settings2 className="h-4 w-4 text-[var(--muted-foreground)]" /> Technical</span>
-                <ChevronRight className={`h-4 w-4 text-[var(--muted-foreground)] transition-transform ${techOpen ? 'rotate-90' : ''}`} />
-              </button>
-              {techOpen ? (
-                <div className="space-y-3 border-t border-[var(--border)] px-3 py-3 text-xs">
-                  <div>
-                    <p className="mb-1 font-semibold text-[var(--muted-foreground)]">Product button size</p>
-                    <div className="flex items-center gap-1">
-                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 py-1 text-[var(--foreground)]" onClick={() => setProductTilePercent(productTilePercent - 10)}>-</button>
-                      <span className="flex-1 text-center text-sm font-semibold tabular-nums">{productTilePercent}%</span>
-                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 py-1 text-[var(--foreground)]" onClick={() => setProductTilePercent(productTilePercent + 10)}>+</button>
-                    </div>
-                    <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">Catalogue cards only — does not change screen zoom.</p>
-                  </div>
-                  <div>
-                    <p className="mb-1 font-semibold text-[var(--muted-foreground)]">Customer display</p>
-                    <p className="text-[11px] text-[var(--foreground)]">
-                      Secondary / extended screen: {secondaryReady ? 'Detected' : 'Not found'}
-                    </p>
-                  </div>
-                  <label className="block">
-                    <span className="font-semibold text-[var(--muted-foreground)]">2-line pole display (COM)</span>
-                    <select
-                      value={polePort}
-                      onChange={(e) => {
-                        const next = e.target.value
-                        setPolePort(next)
-                        void window.dmsPos?.setPolePort?.(next)
-                      }}
-                      className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-2 py-1.5 text-[var(--foreground)]"
-                    >
-                      <option value="">{comPorts.length ? 'Select COM port' : 'No COM ports found'}</option>
-                      {comPorts.map((p) => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
-                    <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
-                      Set only when a 2-line pole display is connected. 9600 8N1.
-                    </p>
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <input type="checkbox" checked={autoPrint} onChange={(e) => setAutoPrint(e.target.checked)} className="h-4 w-4 rounded accent-[var(--brand-primary)]" />
-                    <span className="font-semibold text-[var(--foreground)]">Auto-print receipt after payment</span>
-                  </label>
-                  <label className="block">
-                    <span className="font-semibold text-[var(--muted-foreground)]">Receipt phone (printed footer)</span>
-                    <input value={receiptPhone} onChange={(e) => setReceiptPhone(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-2 py-1.5 text-[var(--foreground)]" />
-                  </label>
-                  <label className="block">
-                    <span className="font-semibold text-[var(--muted-foreground)]">Receipt address line</span>
-                    <input value={receiptAddress} onChange={(e) => setReceiptAddress(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--neutral-50)] px-2 py-1.5 text-[var(--foreground)]" />
-                  </label>
-                  <p className="text-[var(--muted-foreground)]">Cache: <span className="font-medium text-[var(--foreground)]">{cacheUpdatedAt ? new Date(cacheUpdatedAt).toLocaleString() : '—'}</span></p>
-                </div>
+              {canSaleRecordsView ? (
+                <OpBtn icon={<Bell className="h-5 w-5" />} label="Sale Records" hint="Showroom vs system difference" onClick={() => { onOpenScreen('sale-records'); setDrawer(false) }} />
               ) : null}
-            </div>
+
+              <p className="mt-3 px-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Till</p>
+              <OpBtn
+                icon={<Shield className="h-5 w-5" />}
+                label="Change showroom"
+                hint="Ctrl+Shift+A — POS admin key required"
+                onClick={() => { setDrawer(false); openBackstagePanel() }}
+              />
+            </nav>
 
             <div className="border-t border-[var(--border)] px-4 py-3 text-[11px] text-[var(--muted-foreground)]">
               Connect online at least once to cache the product catalogue for offline use.

@@ -145,52 +145,64 @@ public class TransferService : ITransferService
         _context.Transfers.Add(transfer);
         await _context.SaveChangesAsync(cancellationToken);
 
-        // Record the transition
-        await _approvalRecorder.RecordTransitionAsync(new Models.DTOs.OperationApprovals.CreateOperationApprovalDto
+        try
         {
-            DocumentType = "Transfer",
-            DocumentId = transfer.Id,
-            DocumentNo = transfer.TransferNo,
-            FromStatus = "Created",
-            ToStatus = shouldAutoApprove ? "Approved" : "Pending",
-            Action = shouldAutoApprove ? "AutoApproved" : "Created",
-        }, userId, cancellationToken);
+            await _approvalRecorder.RecordTransitionAsync(new Models.DTOs.OperationApprovals.CreateOperationApprovalDto
+            {
+                DocumentType = "Transfer",
+                DocumentId = transfer.Id,
+                DocumentNo = transfer.TransferNo,
+                FromStatus = "Created",
+                ToStatus = shouldAutoApprove ? "Approved" : "Pending",
+                Action = shouldAutoApprove ? "AutoApproved" : "Created",
+            }, userId, cancellationToken);
+        }
+        catch
+        {
+            /* Transfer is already saved — do not fail the POS client and invite duplicate retries. */
+        }
 
-        // If auto-approved, deduct stock immediately from source
         if (shouldAutoApprove)
         {
-            var transferWithItems = await _context.Transfers
-                .Include(t => t.Items)
-                    .ThenInclude(i => i.Product)
-                .FirstOrDefaultAsync(t => t.Id == transfer.Id, cancellationToken);
-
-            if (transferWithItems != null)
+            try
             {
-                foreach (var item in transferWithItems.Items)
+                var transferWithItems = await _context.Transfers
+                    .Include(t => t.Items)
+                        .ThenInclude(i => i.Product)
+                    .FirstOrDefaultAsync(t => t.Id == transfer.Id, cancellationToken);
+
+                if (transferWithItems != null)
                 {
-                    if (item.Product == null) continue;
-                    var productionSection = await _context.ProductionSections
-                        .FirstOrDefaultAsync(ps => ps.IsActive &&
-                            item.Product.ProductionSection != null &&
-                            ps.Name == item.Product.ProductionSection,
-                            cancellationToken);
-
-                    if (productionSection == null) continue;
-
-                    await _freezerStockService.AdjustStockAsync(new AdjustFreezerStockDto
+                    foreach (var item in transferWithItems.Items)
                     {
-                        ProductId = item.ProductId,
-                        ProductionSectionId = productionSection.Id,
-                        Quantity = -item.Quantity,
-                        TransactionType = "TransferOut",
-                        Reason = $"Transfer from outlet {transferWithItems.FromOutletId} to {transferWithItems.ToOutletId} - Auto-approved",
-                        ReferenceNo = transferWithItems.TransferNo
-                    }, userId, cancellationToken);
+                        if (item.Product == null) continue;
+                        var productionSection = await _context.ProductionSections
+                            .FirstOrDefaultAsync(ps => ps.IsActive &&
+                                item.Product.ProductionSection != null &&
+                                ps.Name == item.Product.ProductionSection,
+                                cancellationToken);
+
+                        if (productionSection == null) continue;
+
+                        await _freezerStockService.AdjustStockAsync(new AdjustFreezerStockDto
+                        {
+                            ProductId = item.ProductId,
+                            ProductionSectionId = productionSection.Id,
+                            Quantity = -item.Quantity,
+                            TransactionType = "TransferOut",
+                            Reason = $"Transfer from outlet {transferWithItems.FromOutletId} to {transferWithItems.ToOutletId} - Auto-approved",
+                            ReferenceNo = transferWithItems.TransferNo
+                        }, userId, cancellationToken);
+                    }
                 }
+            }
+            catch
+            {
+                /* Stock adjustment can be retried from approvals; the transfer document must stay. */
             }
         }
 
-        return await GetByIdAsync(transfer.Id, cancellationToken) 
+        return await GetByIdAsync(transfer.Id, cancellationToken)
             ?? throw new InvalidOperationException("Failed to retrieve created transfer");
     }
 

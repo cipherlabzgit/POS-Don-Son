@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using BCrypt.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using DMS_Backend.Common;
 using DMS_Backend.Configuration;
 using DMS_Backend.Data;
 using DMS_Backend.Models.DTOs.Auth;
@@ -64,6 +65,26 @@ public sealed class AuthService : IAuthService
             {
                 await _authLogService.LogLoginFailureAsync(request.Email, "InvalidPassword", ipAddress, userAgent);
                 throw new UnauthorizedAccessException("Invalid email or password");
+            }
+
+            var roleNames = await _context.UserRoles
+                .AsNoTracking()
+                .Where(ur => ur.UserId == user.Id)
+                .Select(ur => ur.Role.Name)
+                .ToListAsync(cancellationToken);
+
+            if (AppLoginClient.IsPos(request.Client))
+            {
+                if (!AppLoginClient.HasCashierRole(roleNames))
+                {
+                    await _authLogService.LogLoginFailureAsync(request.Email, "PosRoleDenied", ipAddress, userAgent);
+                    throw new UnauthorizedAccessException("Access denied. Only Cashier users can sign in to POS.");
+                }
+            }
+            else if (AppLoginClient.IsCashierOnly(user.IsSuperAdmin, roleNames))
+            {
+                await _authLogService.LogLoginFailureAsync(request.Email, "DmsRoleDenied", ipAddress, userAgent);
+                throw new UnauthorizedAccessException("Access denied. Cashier accounts can only sign in to POS.");
             }
 
             // Get user permissions

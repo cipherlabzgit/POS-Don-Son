@@ -15,11 +15,14 @@ export interface CashierBalanceOutletRow {
   name: string;
   isShowroomClosed: boolean;
   outletEmployeeId: string | null;
+  cashierName?: string | null;
   cashierBalance: number | null;
   balanceCash?: number | null;
   balanceCard?: number | null;
   balanceUber?: number | null;
   balancePickme?: number | null;
+  lineStatus?: string | null;
+  isLocked?: boolean;
 }
 
 export interface CashierBalanceContext {
@@ -72,11 +75,14 @@ function parseContextPayload(raw: Record<string, unknown>): CashierBalanceContex
       name: String(pick<string>(o, 'name', 'Name') ?? ''),
       isShowroomClosed: Boolean(pick(o, 'isShowroomClosed', 'IsShowroomClosed')),
       outletEmployeeId: emp != null && String(emp) !== '' ? String(emp) : null,
+      cashierName: pick<string | null>(o, 'cashierName', 'CashierName') ?? null,
       cashierBalance: bal != null && bal !== undefined ? Number(bal) : null,
       balanceCash: bc != null && bc !== undefined ? Number(bc) : null,
       balanceCard: bd != null && bd !== undefined ? Number(bd) : null,
       balanceUber: bu != null && bu !== undefined ? Number(bu) : null,
       balancePickme: bp != null && bp !== undefined ? Number(bp) : null,
+      lineStatus: pick<string | null>(o, 'lineStatus', 'LineStatus') ?? null,
+      isLocked: Boolean(pick(o, 'isLocked', 'IsLocked')),
     };
   });
 

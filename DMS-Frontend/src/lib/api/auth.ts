@@ -3,6 +3,7 @@ import apiClient from './api-client';
 export interface LoginRequest {
   email: string;
   password: string;
+  client?: 'pos' | 'dms';
 }
 
 export interface User {

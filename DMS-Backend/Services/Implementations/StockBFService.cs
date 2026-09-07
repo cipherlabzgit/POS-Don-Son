@@ -26,6 +26,12 @@ public class StockBFService : IStockBFService
         };
     }
 
+    private static DateTime InclusiveEndUtc(DateTime dt)
+    {
+        var utc = EnsureUtc(dt);
+        return utc.TimeOfDay == TimeSpan.Zero ? utc.AddDays(1).AddTicks(-1) : utc;
+    }
+
     private static void ValidateBfDateRules(DateTime bfDateUtc, bool relaxedBfDateRules)
     {
         if (relaxedBfDateRules)
@@ -152,7 +158,7 @@ public class StockBFService : IStockBFService
             query = query.Where(s => s.BFDate >= EnsureUtc(fromDate.Value));
 
         if (toDate.HasValue)
-            query = query.Where(s => s.BFDate <= EnsureUtc(toDate.Value));
+            query = query.Where(s => s.BFDate <= InclusiveEndUtc(toDate.Value));
 
         if (outletId.HasValue)
             query = query.Where(s => s.OutletId == outletId.Value);
@@ -207,7 +213,7 @@ public class StockBFService : IStockBFService
             query = query.Where(s => s.BFDate >= EnsureUtc(fromDate.Value));
 
         if (toDate.HasValue)
-            query = query.Where(s => s.BFDate <= EnsureUtc(toDate.Value));
+            query = query.Where(s => s.BFDate <= InclusiveEndUtc(toDate.Value));
 
         if (outletId.HasValue)
             query = query.Where(s => s.OutletId == outletId.Value);
@@ -397,26 +403,8 @@ public class StockBFService : IStockBFService
             return _mapper.Map<StockBFDetailDto>(replay[0]);
         }
 
-        // If auto-approved, set stock immediately
         if (shouldAutoApprove)
-        {
-            var product = await _context.Products
-                .Include(p => p.ProductionSectionRef)
-                .FirstOrDefaultAsync(p => p.Id == stockBF.ProductId, cancellationToken);
-
-            if (product?.ProductionSectionRef != null)
-            {
-                await _freezerStockService.SetStockAsync(new AdjustFreezerStockDto
-                {
-                    ProductId = stockBF.ProductId,
-                    ProductionSectionId = product.ProductionSectionRef.Id,
-                    Quantity = stockBF.Quantity,
-                    TransactionType = "OpeningBalance",
-                    Reason = $"Stock BF auto-approved for outlet {stockBF.OutletId}",
-                    ReferenceNo = stockBF.BFNo
-                }, userId, cancellationToken);
-            }
-        }
+            await ApplyOpeningStockAsync(stockBF, userId, cancellationToken);
 
         return await GetByIdAsync(stockBF.Id, userId, viewAllRecords: false, cancellationToken)
             ?? throw new InvalidOperationException("Failed to retrieve created stock BF");
@@ -425,6 +413,7 @@ public class StockBFService : IStockBFService
     public async Task<List<StockBFDetailDto>> CreateBulkAsync(
         CreateBulkStockBFDto dto,
         Guid userId,
+        List<string> permissionCodes,
         bool relaxedBfDateRules,
         CancellationToken cancellationToken = default)
     {
@@ -433,6 +422,10 @@ public class StockBFService : IStockBFService
 
         var bfDateUtc = EnsureUtc(dto.BFDate);
         ValidateBfDateRules(bfDateUtc, relaxedBfDateRules);
+
+        var autoApprovalEnabled = await _autoApprovalConfigService.IsAutoApprovalEnabledAsync("operation:stock-bf", cancellationToken);
+        var canAutoApprove = permissionCodes.Contains("*") || permissionCodes.Contains("operation:stock-bf:auto-approve");
+        var shouldAutoApprove = autoApprovalEnabled && canAutoApprove;
 
         // Idempotency: Check if this mutation has already been processed
         if (!string.IsNullOrWhiteSpace(dto.ClientMutationId))
@@ -511,12 +504,18 @@ public class StockBFService : IStockBFService
                 OutletId = dto.OutletId,
                 ProductId = item.ProductId,
                 Quantity = item.Quantity,
-                Status = StockBFStatus.Pending,
+                Status = shouldAutoApprove ? StockBFStatus.Approved : StockBFStatus.Pending,
                 ClientMutationId = string.IsNullOrWhiteSpace(dto.ClientMutationId) ? null : dto.ClientMutationId.Trim(),
                 CreatedById = userId,
                 CreatedAt = now,
                 UpdatedAt = now
             };
+
+            if (shouldAutoApprove)
+            {
+                stockBF.ApprovedById = userId;
+                stockBF.ApprovedDate = now;
+            }
 
             _context.StockBFs.Add(stockBF);
             createdIds.Add(stockBF.Id);
@@ -547,7 +546,42 @@ public class StockBFService : IStockBFService
             .Where(s => createdIds.Contains(s.Id))
             .ToListAsync(cancellationToken);
 
+        if (shouldAutoApprove)
+        {
+            foreach (var record in createdRecords)
+            {
+                try
+                {
+                    await ApplyOpeningStockAsync(record, userId, cancellationToken);
+                }
+                catch
+                {
+                    /* Opening stock apply can be retried; BF rows must remain in approvals. */
+                }
+            }
+        }
+
         return _mapper.Map<List<StockBFDetailDto>>(createdRecords);
+    }
+
+    private async Task ApplyOpeningStockAsync(StockBF stockBF, Guid userId, CancellationToken cancellationToken)
+    {
+        var product = await _context.Products
+            .Include(p => p.ProductionSectionRef)
+            .FirstOrDefaultAsync(p => p.Id == stockBF.ProductId, cancellationToken);
+
+        if (product?.ProductionSectionRef == null)
+            return;
+
+        await _freezerStockService.SetStockAsync(new AdjustFreezerStockDto
+        {
+            ProductId = stockBF.ProductId,
+            ProductionSectionId = product.ProductionSectionRef.Id,
+            Quantity = stockBF.Quantity,
+            TransactionType = "OpeningBalance",
+            Reason = $"Stock BF auto-approved for outlet {stockBF.OutletId}",
+            ReferenceNo = stockBF.BFNo
+        }, userId, cancellationToken);
     }
 
     private async Task<string> GenerateNextStockBFNoAsync(CancellationToken cancellationToken)

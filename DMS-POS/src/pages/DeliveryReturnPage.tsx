@@ -6,7 +6,7 @@ import { useAuthStore } from '../lib/auth-store'
 import { useSettingsStore } from '../lib/settings-store'
 import { loadAllActiveProducts } from '../lib/catalog-sync'
 import type { ProductRow } from '../lib/types'
-import { createDeliveryReturn, submitDeliveryReturn } from '../lib/api'
+import { createDeliveryReturn } from '../lib/api'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError } from '../lib/api-errors'
@@ -25,9 +25,7 @@ export function DeliveryReturnPage({ onBack }: Props) {
 
   const canCreate = hasPermission('operation:delivery-return:create')
 
-  const [deliveryNo, setDeliveryNo]     = useState('')
-  const [deliveredDate, setDeliveredDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [returnDate, setReturnDate]     = useState(() => new Date().toISOString().slice(0, 10))
+  const [nowClock, setNowClock]         = useState(() => new Date())
   const [comment, setComment]           = useState('')
   const [products, setProducts]         = useState<ProductRow[]>([])
   const [search, setSearch]             = useState('')
@@ -59,6 +57,11 @@ export function DeliveryReturnPage({ onBack }: Props) {
       }
     })()
   }, [online])
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowClock(new Date()), 1000)
+    return () => window.clearInterval(id)
+  }, [])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -106,22 +109,22 @@ export function DeliveryReturnPage({ onBack }: Props) {
     if (!canCreate) { toast('You do not have permission to submit delivery returns.', 'error'); return }
     if (!online) { toast('Delivery returns require an online connection.', 'error'); return }
     if (!outletId) { toast('Choose your showroom on the main POS first.', 'error'); return }
-    if (!deliveryNo.trim()) { toast('Enter the delivery note number.', 'error'); return }
     if (rows.length === 0) { toast('Add at least one product line.', 'error'); return }
     setSubmitting(true)
     try {
+      const now = new Date()
       const created = (await createDeliveryReturn({
-        deliveryNo: deliveryNo.trim(),
-        deliveredDate: new Date(`${deliveredDate}T12:00:00.000Z`).toISOString(),
-        returnDate: new Date(`${returnDate}T12:00:00.000Z`).toISOString(),
+        deliveryNo: `POS-${now.getTime()}`,
+        deliveredDate: now.toISOString(),
+        returnDate: now.toISOString(),
         outletId,
         reason: comment.trim() || 'Return from showroom',
         items: rows.map((r) => ({ productId: r.productId, quantity: r.qty })),
-      })) as { id?: string }
+      })) as { id?: string; status?: string }
       if (!created?.id) throw new Error('No return ID returned.')
-      await submitDeliveryReturn(created.id)
-      setRows([]); setDeliveryNo(''); setComment('')
-      toast('Return submitted for approval.', 'success')
+      setRows([]); setComment('')
+      const approved = String(created.status ?? '').toLowerCase() === 'approved'
+      toast(approved ? 'Return approved.' : 'Return submitted for approval.', 'success')
     } catch (e) {
       toast(formatSubmitError(e), 'error')
     } finally {
@@ -157,7 +160,7 @@ export function DeliveryReturnPage({ onBack }: Props) {
         {/* Info strip */}
         <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-5 py-4 text-sm sm:grid-cols-4">
           <div><p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Showroom</p><p className="mt-0.5 font-semibold text-[var(--foreground)]">{outletLabel || '—'}</p></div>
-          <div><p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Date</p><p className="mt-0.5 font-semibold text-[var(--foreground)]">{new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</p></div>
+          <div><p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Date</p><p className="mt-0.5 font-semibold tabular-nums text-[var(--foreground)]">{nowClock.toLocaleString()}</p></div>
           <div><p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Cashier</p><p className="mt-0.5 font-semibold text-[var(--foreground)]">{cashier}</p></div>
           <div><p className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">Status</p><p className="mt-0.5 font-semibold text-[var(--foreground)]">Ready</p></div>
         </div>
@@ -174,23 +177,14 @@ export function DeliveryReturnPage({ onBack }: Props) {
           </button>
         </div>
 
-        {/* Header fields */}
-        <div className="mb-5 grid gap-4 sm:grid-cols-3">
-          <div className="sm:col-span-1">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Delivery Note No.</label>
-            <input value={deliveryNo} onChange={(e) => setDeliveryNo(e.target.value)} placeholder="e.g. DN-2026-000123"
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-[var(--foreground)] placeholder:text-[var(--neutral-400)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Delivered On</label>
-            <input type="date" value={deliveredDate} onChange={(e) => setDeliveredDate(e.target.value)}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-[var(--foreground)] focus:border-[var(--brand-primary)] focus:outline-none" />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Return Date</label>
-            <input type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-[var(--foreground)] focus:border-[var(--brand-primary)] focus:outline-none" />
-          </div>
+        <div className="mb-5">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Return Date</label>
+          <input
+            value={nowClock.toLocaleString()}
+            readOnly
+            disabled
+            className="w-full cursor-not-allowed rounded-xl border border-[var(--border)] bg-[var(--neutral-100)] px-4 py-3 text-[var(--foreground)] opacity-80"
+          />
         </div>
 
         {/* Search row */}

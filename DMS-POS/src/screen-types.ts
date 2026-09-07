@@ -8,3 +8,4 @@ export type Screen =
   | 'cash'
   | 'order-request'
   | 'diagnostics'
+  | 'sale-records'

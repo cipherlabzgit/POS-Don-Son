@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain, shell, dialog, screen } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, shell, dialog, screen, globalShortcut } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -221,6 +221,10 @@ ipcMain.handle('app:open-cash-drawer', async () => {
   }
 })
 
+function pxToMicrons(px) {
+  return Math.round((Number(px) * 25400) / 96)
+}
+
 ipcMain.handle('app:print-silent', async (_event, html) => {
   if (!mainWin || mainWin.isDestroyed()) {
     return { success: false, error: 'No main window' }
@@ -232,6 +236,8 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
   const tempPath = path.join(app.getPath('temp'), `dms-pos-receipt-${Date.now()}.html`)
   /** @type {BrowserWindow | null} */
   let printWin = null
+  const receiptWidthMm = 80
+  const receiptWidthPx = Math.round((receiptWidthMm / 25.4) * 96)
 
   const cleanup = () => {
     try {
@@ -249,15 +255,16 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
   try {
     fs.writeFileSync(tempPath, html, 'utf8')
 
-    // Visible (not hidden) window — on Windows, print dialogs from show:false
-    // windows often never appear, so Print looks broken.
     printWin = new BrowserWindow({
       parent: mainWin,
       show: false,
-      width: 420,
-      height: 720,
+      width: receiptWidthPx,
+      height: 1200,
+      useContentSize: true,
+      enableLargerThanScreen: true,
       autoHideMenuBar: true,
       title: 'Print Receipt',
+      backgroundColor: '#ffffff',
       webPreferences: {
         contextIsolation: true,
         nodeIntegration: false,
@@ -266,7 +273,33 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
     })
 
     await printWin.loadFile(tempPath)
-    await new Promise((r) => setTimeout(r, 200))
+
+    let contentHeightPx = 900
+    try {
+      contentHeightPx = await printWin.webContents.executeJavaScript(`
+      new Promise((resolve) => {
+        const measure = () => {
+          const body = document.body
+          const doc = document.documentElement
+          const h = Math.max(
+            body ? body.scrollHeight : 0,
+            body ? body.offsetHeight : 0,
+            doc ? doc.scrollHeight : 0,
+            doc ? doc.offsetHeight : 0
+          )
+          resolve(Math.ceil(h))
+        }
+        const ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve()
+        ready.then(() => requestAnimationFrame(() => requestAnimationFrame(measure))).catch(measure)
+      })
+    `)
+    } catch (measureError) {
+      console.warn('[ELECTRON-PRINT] Could not measure receipt height:', measureError)
+    }
+
+    const printHeightPx = Math.min(Math.max(Number(contentHeightPx) || 0, 200) + 32, 20000)
+    printWin.setContentSize(receiptWidthPx, printHeightPx)
+    await new Promise((r) => setTimeout(r, 250))
 
     const result = await new Promise((resolve) => {
       const timeout = setTimeout(() => {
@@ -280,7 +313,14 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
             silent: true,
             printBackground: true,
             color: false,
-            margins: { marginType: 'printableArea' },
+            copies: 1,
+            landscape: false,
+            scaleFactor: 100,
+            margins: { marginType: 'none' },
+            pageSize: {
+              width: receiptWidthMm * 1000,
+              height: Math.max(pxToMicrons(printHeightPx), 50_000),
+            },
           },
           (success, failureReason) => {
             clearTimeout(timeout)
@@ -310,6 +350,11 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
       }
     })
 
+    // Windows thermal drivers often still be spooling when the print callback
+    // fires. Closing the hidden window immediately truncates the bill.
+    if (result.success) {
+      await new Promise((r) => setTimeout(r, 2500))
+    }
     cleanup()
     return result
   } catch (error) {
@@ -336,6 +381,11 @@ app.whenReady().then(() => {
   registerSqliteIpc()
   createMainWindow()
 
+  globalShortcut.register('CommandOrControl+Shift+A', () => {
+    const win = BrowserWindow.getFocusedWindow() || mainWin
+    if (win && !win.isDestroyed()) win.webContents.send('app:backstage-hotkey')
+  })
+
   const customerOpts = () => ({
     isDev,
     icon: resolveWindowIcon(),
@@ -356,6 +406,10 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   closeSqliteDb()
+})
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
 })
 
 // Prevent multiple instances

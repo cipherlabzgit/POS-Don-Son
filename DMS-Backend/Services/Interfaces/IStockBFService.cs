@@ -88,6 +88,8 @@ public interface IStockBFService
 
         Guid userId,
 
+        List<string> permissionCodes,
+
         bool relaxedBfDateRules,
 
         CancellationToken cancellationToken = default);

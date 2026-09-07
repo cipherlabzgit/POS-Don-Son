@@ -30,6 +30,8 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<CashierBalanceDay> CashierBalanceDays => Set<CashierBalanceDay>();
     public DbSet<CashierBalanceOutletLine> CashierBalanceOutletLines => Set<CashierBalanceOutletLine>();
     public DbSet<DayEndOutletLine> DayEndOutletLines => Set<DayEndOutletLine>();
+    public DbSet<SaleRecordsSettings> SaleRecordsSettings => Set<SaleRecordsSettings>();
+    public DbSet<CashierSaleNotification> CashierSaleNotifications => Set<CashierSaleNotification>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     // Inventory entities
@@ -1077,6 +1079,29 @@ public sealed class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(e => new { e.ProcessDate, e.OutletId }).IsUnique();
+        });
+
+        modelBuilder.Entity<SaleRecordsSettings>(entity =>
+        {
+            entity.ToTable("sale_records_settings");
+            entity.HasKey(e => e.Id);
+        });
+
+        modelBuilder.Entity<CashierSaleNotification>(entity =>
+        {
+            entity.ToTable("cashier_sale_notifications");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OutletName).HasMaxLength(200).IsRequired();
+            entity.HasOne(e => e.Outlet)
+                .WithMany()
+                .HasForeignKey(e => e.OutletId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.OutletEmployee)
+                .WithMany()
+                .HasForeignKey(e => e.OutletEmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => new { e.ProcessDate, e.OutletId }).IsUnique();
+            entity.HasIndex(e => new { e.CashierUserId, e.IsRead });
         });
 
         // PasswordResetToken entity configuration

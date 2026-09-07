@@ -1,4 +1,4 @@
-import { Eye, EyeOff, KeyRound, Lock, Shield, X } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Lock, Monitor, Shield, X } from 'lucide-react'
 import { useBackstageViewModel } from '../viewmodel/use-backstage-view-model'
 
 export function BackstageAdminPanel() {
@@ -84,7 +84,7 @@ export function BackstageAdminPanel() {
           </form>
         ) : (
           <form
-            className="space-y-4 px-5 py-5"
+            className="max-h-[min(80vh,40rem)] space-y-4 overflow-y-auto px-5 py-5"
             onSubmit={(e) => {
               e.preventDefault()
               void vm.saveCommand()
@@ -132,6 +132,33 @@ export function BackstageAdminPanel() {
                 maxLength={40}
               />
             </label>
+            <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/60 px-3 py-3">
+              <div className="flex items-center gap-2 text-white">
+                <Monitor className="h-4 w-4 text-amber-400" />
+                <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-300">Customer display</p>
+              </div>
+              <p className="text-xs text-neutral-300">
+                Secondary / extended screen: {vm.secondaryReady ? 'Detected' : 'Not found'}
+              </p>
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-semibold text-neutral-400">2-line pole display (COM)</span>
+                <select
+                  value={vm.polePort}
+                  onChange={(e) => {
+                    void vm.setPolePortCommand(e.target.value)
+                  }}
+                  className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 font-mono text-sm text-white outline-none focus:border-amber-400"
+                >
+                  <option value="">{vm.comPorts.length ? 'Select COM port' : 'No COM ports found'}</option>
+                  {vm.comPorts.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-neutral-500">
+                  Set only when a 2-line pole display is connected. 9600 8N1. Saved immediately.
+                </p>
+              </label>
+            </div>
             {vm.configPath ? (
               <p className="truncate text-[11px] text-neutral-500">
                 File: {vm.configPath} {vm.encrypted ? '(encrypted)' : ''}

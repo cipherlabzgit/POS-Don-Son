@@ -250,7 +250,9 @@ public sealed class ComprehensivePermissionSeeder
         permissions.AddRange(CreatePermissionsFromCodes("Administrator", "DayEndProcess", new[]
         {
             ("day-end:view", "View", "View day-end process"),
-            ("day-end:execute", "Execute", "Execute day-end process")
+            ("day-end:execute", "Execute", "Execute day-end process"),
+            ("day-end:notify", "Notify", "Notify cashiers of sale records after day lock"),
+            ("day-end:edit", "Update", "Update day-end / POS sale-records settings")
         }));
 
         // ============================================================
@@ -417,7 +419,8 @@ public sealed class ComprehensivePermissionSeeder
             ("pos:sale:create",  "Create",  "Record POS / showroom sales"),
             ("pos:sale:approve", "Approve", "Approve POS / showroom sales"),
             ("pos:sale:reject",  "Reject",  "Reject POS / showroom sales"),
-            ("pos:sale:void",    "Void",    "Void an approved POS / showroom sale (supervisor)")
+            ("pos:sale:void",    "Void",    "Void an approved POS / showroom sale (supervisor)"),
+            ("pos:sale-records:view", "View", "View POS sale records (cashier differences)")
         }));
 
         // ============================================================
@@ -1005,6 +1008,7 @@ public sealed class ComprehensivePermissionSeeder
 
         // Administrator
         ("day-end", "Administrator", "DayEndProcess"),
+        ("pos:sale-records", "Operation", "PosSaleRecords"),
         ("cashier-balance", "Administrator", "CashierBalance"),
         ("setting", "Administrator", "SystemSettings"),
         ("label-settings", "Administrator", "LabelSettings"),

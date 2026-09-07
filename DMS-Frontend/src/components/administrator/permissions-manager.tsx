@@ -492,7 +492,11 @@ function SectionRow({
         present.add(key);
       }
     }
-    return CORE_ACTION_ORDER.filter((a) => present.has(a));
+    const ordered = CORE_ACTION_ORDER.filter((a) => present.has(a));
+    const extras = [...present].filter(
+      (a) => !CORE_ACTION_ORDER.includes(a) && !DATE_ACTIONS.includes(a)
+    );
+    return [...ordered, ...extras];
   }, [section]);
 
   const usedDateActions: ActionKey[] = useMemo(() => {

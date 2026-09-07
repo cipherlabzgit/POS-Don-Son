@@ -61,6 +61,12 @@ export function unwrap<T>(env: ApiEnvelope<T> | Record<string, unknown>): T {
   return data as T
 }
 
+export function recordId(row: unknown): string {
+  if (!row || typeof row !== 'object') return ''
+  const r = row as Record<string, unknown>
+  return String(r.id ?? r.Id ?? '').trim()
+}
+
 /** Parse { success, data: { products/Products, totalCount/TotalCount } } like DMS Web does. */
 export function readPagedPayload(
   body: unknown,
@@ -90,6 +96,7 @@ export async function loginRequest(email: string, password: string): Promise<Log
   const { data } = await axios.post<LoginResponse>(`${getApiBaseUrl()}/api/auth/login`, {
     email,
     password,
+    client: 'pos',
   })
   return data
 }
@@ -274,11 +281,6 @@ export async function createTransfer(body: {
   return unwrap(data)
 }
 
-export async function submitTransfer(id: string) {
-  const { data } = await api.post<ApiEnvelope<unknown>>(`/api/transfers/${id}/submit`)
-  return unwrap(data)
-}
-
 export async function createDeliveryReturn(body: {
   returnDate: string
   deliveryNo: string
@@ -288,11 +290,6 @@ export async function createDeliveryReturn(body: {
   items: { productId: string; quantity: number }[]
 }) {
   const { data } = await api.post<ApiEnvelope<unknown>>('/api/delivery-returns', body)
-  return unwrap(data)
-}
-
-export async function submitDeliveryReturn(id: string) {
-  const { data } = await api.post<ApiEnvelope<unknown>>(`/api/delivery-returns/${id}/submit`)
   return unwrap(data)
 }
 
@@ -375,4 +372,75 @@ export async function createImmediateOrder(body: {
 }) {
   const { data } = await api.post<ApiEnvelope<unknown>>('/api/immediate-orders', body)
   return unwrap(data)
+}
+
+export type PosSaleRecordDay = {
+  date: string
+  difference: number | null
+  showroomName: string | null
+  available: boolean
+}
+
+export type PosSaleRecordWeek = {
+  weekStart: string
+  weekEnd: string
+  total: number
+  days: PosSaleRecordDay[]
+}
+
+export type PosSaleRecords = {
+  cashierName: string
+  weekStartDay: number
+  weeksToShow: number
+  periodStart: string
+  periodEnd: string
+  unreadCount: number
+  weeks: PosSaleRecordWeek[]
+}
+
+function pickRec<T>(row: Record<string, unknown>, camel: string, pascal: string): T | undefined {
+  return (row[camel] ?? row[pascal]) as T | undefined
+}
+
+export async function fetchPosSaleRecords(): Promise<PosSaleRecords> {
+  const { data } = await api.get<ApiEnvelope<Record<string, unknown>>>('/api/pos/sale-records')
+  const raw = (unwrap(data) ?? {}) as Record<string, unknown>
+  const weeksRaw = (pickRec<unknown[]>(raw, 'weeks', 'Weeks') ?? []) as Record<string, unknown>[]
+  return {
+    cashierName: String(pickRec(raw, 'cashierName', 'CashierName') ?? ''),
+    weekStartDay: Number(pickRec(raw, 'weekStartDay', 'WeekStartDay') ?? 3),
+    weeksToShow: Number(pickRec(raw, 'weeksToShow', 'WeeksToShow') ?? 2),
+    periodStart: String(pickRec(raw, 'periodStart', 'PeriodStart') ?? ''),
+    periodEnd: String(pickRec(raw, 'periodEnd', 'PeriodEnd') ?? ''),
+    unreadCount: Number(pickRec(raw, 'unreadCount', 'UnreadCount') ?? 0),
+    weeks: weeksRaw.map((w) => {
+      const daysRaw = (pickRec<unknown[]>(w, 'days', 'Days') ?? []) as Record<string, unknown>[]
+      return {
+        weekStart: String(pickRec(w, 'weekStart', 'WeekStart') ?? ''),
+        weekEnd: String(pickRec(w, 'weekEnd', 'WeekEnd') ?? ''),
+        total: Number(pickRec(w, 'total', 'Total') ?? 0),
+        days: daysRaw.map((d) => {
+          const diff = pickRec<number | null>(d, 'difference', 'Difference')
+          const name = pickRec<string | null>(d, 'showroomName', 'ShowroomName')
+          return {
+            date: String(pickRec(d, 'date', 'Date') ?? ''),
+            difference: diff == null ? null : Number(diff),
+            showroomName: name == null || name === '' ? null : String(name),
+            available: Boolean(pickRec(d, 'available', 'Available')),
+          }
+        }),
+      }
+    }),
+  }
+}
+
+export async function fetchPosSaleRecordsUnreadCount(): Promise<number> {
+  const { data } = await api.get<ApiEnvelope<Record<string, unknown>>>('/api/pos/sale-records/unread-count')
+  const raw = unwrap(data) as Record<string, unknown>
+  return Number(pickRec(raw, 'unreadCount', 'UnreadCount') ?? 0)
+}
+
+export async function markPosSaleRecordsRead(): Promise<void> {
+  const { data } = await api.post<ApiEnvelope<unknown>>('/api/pos/sale-records/mark-read')
+  unwrap(data)
 }

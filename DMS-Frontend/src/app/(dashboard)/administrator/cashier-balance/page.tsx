@@ -40,6 +40,24 @@ interface RowState {
   balancePickme: string;
 }
 
+function isGenericCashierLabel(name: string | null | undefined): boolean {
+  const n = (name ?? '').trim().toLowerCase();
+  return !n || n === 'pos user' || n === 'pos' || n === 'cashier' || n === 'cashier pos' || n === 'user';
+}
+
+function namesMatch(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+function resolveSubmittedCashierId(row: RowState, cashiers: DayEndCashierOption[]): string {
+  const submitted = row.cashierName.trim();
+  if (submitted && !isGenericCashierLabel(submitted)) {
+    const byName = cashiers.find((c) => namesMatch(c.displayName || '', submitted));
+    if (byName?.outletEmployeeId) return byName.outletEmployeeId;
+  }
+  return row.outletEmployeeId;
+}
+
 function mapContextOutletsToRows(outlets: CashierBalanceOutletRow[]): RowState[] {
   return outlets.map((o) => {
     const hasChannel =
@@ -115,7 +133,6 @@ function CashierBalanceContent() {
       setIsApproved(ctx.isApproved);
       setSubmittedAt(ctx.submittedAt);
       setSubmittedByName(ctx.submittedByName);
-      setRows(mapContextOutletsToRows(ctx.outlets));
 
       const ids = ctx.outlets.map((o) => o.outletId).filter(Boolean);
       const results = await Promise.all(
@@ -130,9 +147,21 @@ function CashierBalanceContent() {
       );
       const map: Record<string, DayEndCashierOption[]> = {};
       for (const { id, list } of results) {
-        map[id] = list;
+        const seen = new Set<string>();
+        map[id] = list.filter((c) => {
+          const label = (c.displayName || '').trim().toLowerCase();
+          if (!label || seen.has(label)) return false;
+          seen.add(label);
+          return true;
+        });
       }
       setCashiersByOutlet(map);
+      setRows(
+        mapContextOutletsToRows(ctx.outlets).map((r) => ({
+          ...r,
+          outletEmployeeId: resolveSubmittedCashierId(r, map[r.outletId] ?? []),
+        })),
+      );
     } catch (e) {
       toast.error(getCashierBalanceApiErrorMessage(e));
       setRows([]);
@@ -396,8 +425,19 @@ function CashierBalanceContent() {
                         a.trim().toLowerCase() === b.trim().toLowerCase();
                       const cashierOptions = cashiers.map((c) => ({
                         value: c.outletEmployeeId,
-                        label: (c.displayName || '').trim() || r.cashierName || 'Cashier',
+                        label: isGenericCashierLabel(c.displayName)
+                          ? r.cashierName || c.displayName || 'Cashier'
+                          : (c.displayName || '').trim() || r.cashierName || 'Cashier',
                       }));
+                      if (r.cashierName && !isGenericCashierLabel(r.cashierName)) {
+                        const hasName = cashierOptions.some((o) => namesMatch(o.label, r.cashierName));
+                        if (!hasName) {
+                          cashierOptions.unshift({
+                            value: r.outletEmployeeId || r.cashierName,
+                            label: r.cashierName,
+                          });
+                        }
+                      }
                       if (
                         r.outletEmployeeId &&
                         !cashierOptions.some((o) => sameId(o.value, r.outletEmployeeId))
@@ -408,9 +448,10 @@ function CashierBalanceContent() {
                         });
                       }
                       const lockedCashierLabel =
-                        r.cashierName ||
+                        (!isGenericCashierLabel(r.cashierName) ? r.cashierName : '') ||
                         cashierOptions.find((o) => sameId(o.value, r.outletEmployeeId))?.label ||
                         '';
+                      const selectValue = resolveSubmittedCashierId(r, cashiers) || r.outletEmployeeId;
 
                       return (
                         <tr
@@ -464,7 +505,7 @@ function CashierBalanceContent() {
                               </div>
                             ) : (
                               <Select
-                                value={r.outletEmployeeId}
+                                value={selectValue}
                                 disabled={cashierNameDisabled}
                                 onChange={(e) => updateRow(idx, { outletEmployeeId: e.target.value })}
                                 options={cashierOptions}

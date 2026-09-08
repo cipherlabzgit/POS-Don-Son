@@ -125,7 +125,7 @@ public sealed class CashierBalanceService : ICashierBalanceService
                 Name = outlet.Name,
                 IsShowroomClosed = line?.IsShowroomClosed ?? false,
                 OutletEmployeeId = line?.OutletEmployeeId,
-                CashierName = FirstNonEmpty(
+                CashierName = PreferPersonName(
                     line?.CashierName,
                     CashierDisplayName(line?.OutletEmployee),
                     UserDisplayName(latest?.RequestedBy)),
@@ -159,11 +159,21 @@ public sealed class CashierBalanceService : ICashierBalanceService
             .ToListAsync(cancellationToken);
 
         return employees
+            .GroupBy(e => e.UserId ?? e.Id)
+            .Select(g => g
+                .OrderBy(e => IsGenericCashierLabel(CashierDisplayName(e)) ? 1 : 0)
+                .ThenByDescending(e => e.UpdatedAt)
+                .First())
             .Select(e => new DayEndCashierOptionDto
             {
                 OutletEmployeeId = e.Id,
-                DisplayName = CashierDisplayName(e) ?? e.Email ?? e.EmployeeCode,
+                DisplayName = PreferPersonName(
+                    CashierDisplayName(e),
+                    e.Email,
+                    e.EmployeeCode) ?? "Cashier",
             })
+            .GroupBy(e => e.DisplayName.Trim().ToLowerInvariant())
+            .Select(g => g.First())
             .OrderBy(e => e.DisplayName)
             .ToList();
     }
@@ -278,10 +288,10 @@ public sealed class CashierBalanceService : ICashierBalanceService
                     throw new InvalidOperationException("One or more selected cashiers are invalid for their showroom.");
                 }
 
-                line.CashierName = FirstNonEmpty(
+                line.CashierName = PreferPersonName(
                     line.CashierName,
-                    CashierDisplayName(employee),
-                    UserDisplayName(submitter));
+                    UserDisplayName(submitter),
+                    CashierDisplayName(employee));
             }
         }
 
@@ -374,7 +384,7 @@ public sealed class CashierBalanceService : ICashierBalanceService
                     OutletId = line.OutletId,
                     IsShowroomClosed = false,
                     OutletEmployeeId = line.OutletEmployeeId,
-                    CashierName = FirstNonEmpty(line.CashierName, UserDisplayName(submitter)),
+                    CashierName = PreferPersonName(line.CashierName, UserDisplayName(submitter)),
                     CreatedAt = now,
                     UpdatedAt = now,
                 };
@@ -388,7 +398,7 @@ public sealed class CashierBalanceService : ICashierBalanceService
                 var total = GetDeclaredLineTotal(line);
                 existingLine.IsShowroomClosed = false;
                 existingLine.OutletEmployeeId = line.OutletEmployeeId;
-                existingLine.CashierName = FirstNonEmpty(line.CashierName, UserDisplayName(submitter));
+                existingLine.CashierName = PreferPersonName(line.CashierName, UserDisplayName(submitter));
                 existingLine.UpdatedAt = now;
                 ApplyChannelAmounts(existingLine, line, total);
             }
@@ -519,6 +529,29 @@ public sealed class CashierBalanceService : ICashierBalanceService
         return null;
     }
 
+    private static bool IsGenericCashierLabel(string? name)
+    {
+        var n = (name ?? string.Empty).Trim();
+        if (n.Length == 0) return true;
+        n = n.ToLowerInvariant();
+        return n is "pos user" or "pos" or "cashier" or "cashier pos" or "user";
+    }
+
+    /// <summary>Skip placeholder labels like "POS User" so the signed-in cashier name is shown.</summary>
+    private static string? PreferPersonName(params string?[] values)
+    {
+        string? fallback = null;
+        foreach (var v in values)
+        {
+            if (string.IsNullOrWhiteSpace(v)) continue;
+            var t = v.Trim();
+            if (!IsGenericCashierLabel(t)) return t;
+            fallback ??= t;
+        }
+
+        return fallback;
+    }
+
     private static string? UserDisplayName(User? user)
     {
         if (user == null) return null;
@@ -531,10 +564,10 @@ public sealed class CashierBalanceService : ICashierBalanceService
     private static string? CashierDisplayName(OutletEmployee? employee)
     {
         if (employee == null) return null;
-        return FirstNonEmpty(
+        return PreferPersonName(
+            UserDisplayName(employee.User),
             employee.FullName,
             $"{employee.FirstName} {employee.LastName}".Trim(),
-            UserDisplayName(employee.User),
             employee.Email);
     }
 
@@ -573,15 +606,16 @@ public sealed class CashierBalanceService : ICashierBalanceService
                 var employeeId = await EnsureOutletEmployeeForUserAsync(line.OutletId, approval.RequestedById, cancellationToken);
                 if (employeeId is null) continue;
                 line.OutletEmployeeId = employeeId;
-                line.CashierName = FirstNonEmpty(line.CashierName, UserDisplayName(approval.RequestedBy));
+                line.CashierName = PreferPersonName(line.CashierName, UserDisplayName(approval.RequestedBy));
                 line.UpdatedAt = DateTime.UtcNow;
                 changed = true;
             }
 
-            if (string.IsNullOrWhiteSpace(line.CashierName))
+            if (string.IsNullOrWhiteSpace(line.CashierName) || IsGenericCashierLabel(line.CashierName))
             {
                 latest.TryGetValue(line.Id, out var approval);
-                var name = FirstNonEmpty(
+                var name = PreferPersonName(
+                    line.CashierName,
                     CashierDisplayName(line.OutletEmployee),
                     UserDisplayName(approval?.RequestedBy));
                 if (!string.IsNullOrWhiteSpace(name))

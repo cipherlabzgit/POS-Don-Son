@@ -11,6 +11,7 @@ import { useOnlineStatus } from '../lib/use-online-status'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError } from '../lib/api-errors'
 import { SearchKeyboard } from '../components/SearchKeyboard'
+import { printReturnNotes } from '../lib/print-return-note'
 
 type Props = { onBack: () => void }
 type DRow = { productId: string; name: string; code: string; qty: number }
@@ -110,6 +111,14 @@ export function DeliveryReturnPage({ onBack }: Props) {
     if (!online) { toast('Delivery returns require an online connection.', 'error'); return }
     if (!outletId) { toast('Choose your showroom on the main POS first.', 'error'); return }
     if (rows.length === 0) { toast('Add at least one product line.', 'error'); return }
+    const snapshot = rows.map((r) => ({ ...r }))
+    const commentSnap = comment.trim()
+    const cashierName = user ? `${user.firstName} ${user.lastName}`.trim() : '—'
+    const submittedAt = new Intl.DateTimeFormat('en-LK', {
+      timeZone: 'Asia/Colombo',
+      dateStyle: 'short',
+      timeStyle: 'medium',
+    }).format(new Date())
     setSubmitting(true)
     try {
       const now = new Date()
@@ -118,13 +127,28 @@ export function DeliveryReturnPage({ onBack }: Props) {
         deliveredDate: now.toISOString(),
         returnDate: now.toISOString(),
         outletId,
-        reason: comment.trim() || 'Return from showroom',
-        items: rows.map((r) => ({ productId: r.productId, quantity: r.qty })),
-      })) as { id?: string; status?: string }
-      if (!created?.id) throw new Error('No return ID returned.')
+        reason: commentSnap || 'Return from showroom',
+        items: snapshot.map((r) => ({ productId: r.productId, quantity: r.qty })),
+      })) as Record<string, unknown>
+      if (!created?.id && !created?.Id) throw new Error('No return ID returned.')
+      const returnNo = String(created.returnNo ?? created.ReturnNo ?? '').trim()
+      const status = String(created.status ?? created.Status ?? '')
       setRows([]); setComment('')
-      const approved = String(created.status ?? '').toLowerCase() === 'approved'
+      const approved = status.toLowerCase() === 'approved'
       toast(approved ? 'Return approved.' : 'Return submitted for approval.', 'success')
+      try {
+        await printReturnNotes({
+          returnNo: returnNo || '—',
+          submittedAt,
+          showroom: outletLabel || '—',
+          submittedBy: cashierName || '—',
+          reason: commentSnap || undefined,
+          lines: snapshot.map((r) => ({ code: r.code, name: r.name, qty: r.qty })),
+        })
+      } catch (printErr) {
+        console.warn('[DeliveryReturn] print failed', printErr)
+        toast('Return saved. Printing the notes failed — reprint from the printer if needed.', 'info')
+      }
     } catch (e) {
       toast(formatSubmitError(e), 'error')
     } finally {

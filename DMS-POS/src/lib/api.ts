@@ -272,11 +272,27 @@ export async function fetchStockBfRecords(params: {
   return unwrap(data)
 }
 
-export async function fetchTransfers(params: Record<string, string | number | undefined>) {
+export async function fetchTransfers(params: Record<string, string | number | boolean | undefined>) {
   const { data } = await api.get<
     ApiEnvelope<{ transfers: unknown[]; totalCount: number }>
   >('/api/transfers', { params })
   return unwrap(data)
+}
+
+export async function fetchPendingTransferCount(outletId: string, fromDate: string, toDate: string): Promise<number> {
+  try {
+    const res = await fetchTransfers({
+      page: 1,
+      pageSize: 1,
+      toOutletId: outletId,
+      fromDate,
+      toDate,
+      unreceivedOnly: true,
+    }) as Record<string, unknown>
+    return Number(res.totalCount ?? res.TotalCount ?? 0)
+  } catch {
+    return 0
+  }
 }
 
 export async function fetchTransferDetail(id: string) {
@@ -333,6 +349,7 @@ export async function submitCashierBalance(body: {
     outletId: string
     isShowroomClosed: boolean
     outletEmployeeId?: string | null
+    cashierName?: string | null
     cashierBalance?: number | null
     balanceCash?: number | null
     balanceCard?: number | null

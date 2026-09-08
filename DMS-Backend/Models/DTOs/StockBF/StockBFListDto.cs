@@ -11,6 +11,7 @@ public sealed class StockBFListDto
     public string OutletName { get; set; } = string.Empty;
     public Guid ProductId { get; set; }
     public string ProductName { get; set; } = string.Empty;
+    public string ProductCode { get; set; } = string.Empty;
     public decimal Quantity { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? CreatedByName { get; set; }

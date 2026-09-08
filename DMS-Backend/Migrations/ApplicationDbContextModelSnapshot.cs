@@ -535,6 +535,11 @@ namespace DMS_Backend.Migrations
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("cashier_balance");
 
+                    b.Property<string>("CashierName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("cashier_name");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")

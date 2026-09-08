@@ -1045,6 +1045,7 @@ public sealed class ApplicationDbContext : DbContext
             entity.Property(e => e.BalanceUber).HasColumnType("numeric(18,4)");
             entity.Property(e => e.BalancePickme).HasColumnType("numeric(18,4)");
             entity.Property(e => e.CashierBalance).HasColumnType("numeric(18,4)");
+            entity.Property(e => e.CashierName).HasMaxLength(200);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("NOW()");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("NOW()");
 

@@ -22,11 +22,15 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       className = '',
       variant = 'default',
       compact = false,
+      disabled,
       ...props
     },
     ref
   ) => {
     const getBackgroundColor = () => {
+      if (disabled) {
+        return '#F3F4F6';
+      }
       if (variant === 'yellow') {
         return '#FEF3C4';
       }
@@ -58,10 +62,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           style={{
             border: `1px solid ${getBorderColor()}`,
             backgroundColor: getBackgroundColor(),
-            color: 'var(--foreground)',
+            color: disabled ? '#6B7280' : 'var(--foreground)',
+            cursor: disabled ? 'not-allowed' : undefined,
             boxShadow: 'inset 0 1px 2px rgba(15, 23, 42, 0.04)',
           }}
           onFocus={(e) => {
+            if (disabled) return;
             e.currentTarget.style.borderColor = 'var(--form-focus-ring)';
             e.currentTarget.style.outline = '2px solid var(--form-focus-ring)';
             e.currentTarget.style.outlineOffset = '2px';
@@ -71,6 +77,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             e.currentTarget.style.outline = 'none';
           }}
           {...props}
+          disabled={disabled}
         />
         {error && (
           <p className={`text-sm ${compact ? 'mt-1' : 'mt-1.5'}`} style={{ color: '#DC2626' }}>

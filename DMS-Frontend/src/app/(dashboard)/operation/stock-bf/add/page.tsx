@@ -82,7 +82,21 @@ function AddStockBFPageContent() {
         });
         if (!cancelled) {
           setEntryLocked(locked);
-          if (locked) setStockBfItems([]);
+          if (locked) {
+            const lockedItems: ItemManagementItem[] = rows
+              .filter((r: { status?: string }) => {
+                const s = String(r.status ?? '').toLowerCase();
+                return s !== 'rejected' && s !== 'cancelled';
+              })
+              .map((r: { productId?: string; quantity?: number }) => ({
+                productId: String(r.productId ?? ''),
+                quantity: Number(r.quantity ?? 0),
+              }))
+              .filter((item) => item.productId);
+            setStockBfItems(lockedItems);
+          } else {
+            setStockBfItems([]);
+          }
         }
       } catch {
         if (!cancelled) setEntryLocked(false);
@@ -229,7 +243,7 @@ function AddStockBFPageContent() {
             ) : null}
           </div>
 
-          <fieldset disabled={entryLocked || lockChecking} className={entryLocked ? 'pointer-events-none opacity-60' : undefined}>
+          <fieldset disabled={entryLocked || lockChecking} className={entryLocked ? 'pointer-events-none' : undefined}>
           <div className="border-t pt-6">
             <DeliveryLineItemsEntry
               products={products}

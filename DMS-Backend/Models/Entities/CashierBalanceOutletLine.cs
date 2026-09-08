@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DMS_Backend.Models.Entities;
@@ -22,6 +23,11 @@ public sealed class CashierBalanceOutletLine
 
     [Column("outlet_employee_id")]
     public Guid? OutletEmployeeId { get; set; }
+
+    /// <summary>Snapshot of the cashier display name at submit (POS or DMS).</summary>
+    [Column("cashier_name")]
+    [MaxLength(200)]
+    public string? CashierName { get; set; }
 
     [Column("cashier_balance")]
     public decimal? CashierBalance { get; set; }

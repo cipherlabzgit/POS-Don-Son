@@ -93,6 +93,7 @@ public sealed class CashierBalanceService : ICashierBalanceService
         var lines = await _context.CashierBalanceOutletLines
             .AsNoTracking()
             .Include(l => l.OutletEmployee)
+                .ThenInclude(e => e!.User)
             .Where(l => l.ProcessDate == pd)
             .ToDictionaryAsync(l => l.OutletId, cancellationToken);
 
@@ -112,7 +113,10 @@ public sealed class CashierBalanceService : ICashierBalanceService
                 Name = outlet.Name,
                 IsShowroomClosed = line?.IsShowroomClosed ?? false,
                 OutletEmployeeId = line?.OutletEmployeeId,
-                CashierName = CashierDisplayName(line?.OutletEmployee),
+                CashierName = FirstNonEmpty(
+                    line?.CashierName,
+                    CashierDisplayName(line?.OutletEmployee),
+                    UserDisplayName(latest?.RequestedBy)),
                 CashierBalance = line?.CashierBalance,
                 BalanceCash = line?.BalanceCash,
                 BalanceCard = line?.BalanceCard,
@@ -136,16 +140,20 @@ public sealed class CashierBalanceService : ICashierBalanceService
 
     public async Task<IReadOnlyList<DayEndCashierOptionDto>> GetCashiersForOutletAsync(Guid outletId, CancellationToken cancellationToken = default)
     {
-        return await _context.OutletEmployees
+        var employees = await _context.OutletEmployees
             .AsNoTracking()
+            .Include(e => e.User)
             .Where(e => e.OutletId == outletId && e.IsActive)
-            .OrderBy(e => e.FullName ?? e.FirstName)
+            .ToListAsync(cancellationToken);
+
+        return employees
             .Select(e => new DayEndCashierOptionDto
             {
                 OutletEmployeeId = e.Id,
-                DisplayName = e.FullName ?? ($"{e.FirstName} {e.LastName}".Trim()),
+                DisplayName = CashierDisplayName(e) ?? e.Email ?? e.EmployeeCode,
             })
-            .ToListAsync(cancellationToken);
+            .OrderBy(e => e.DisplayName)
+            .ToList();
     }
 
     public async Task SubmitAsync(SubmitCashierBalanceDto dto, Guid submittedByUserId, CancellationToken cancellationToken = default)
@@ -187,6 +195,10 @@ public sealed class CashierBalanceService : ICashierBalanceService
         var latestByLine = await GetLatestApprovalsByLineIdsAsync(
             existingLines.Select(l => l.Id).ToList(),
             cancellationToken);
+
+        var submitter = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == submittedByUserId, cancellationToken);
 
         var writable = new List<SubmitCashierBalanceLineDto>();
         foreach (var line in dto.Lines)
@@ -230,6 +242,11 @@ public sealed class CashierBalanceService : ICashierBalanceService
                 throw new InvalidOperationException("Cashier is required for open showrooms.");
             }
 
+            if (string.IsNullOrWhiteSpace(line.CashierName))
+            {
+                line.CashierName = UserDisplayName(submitter);
+            }
+
             var declared = GetDeclaredLineTotal(line);
             if (declared <= 0)
             {
@@ -238,15 +255,21 @@ public sealed class CashierBalanceService : ICashierBalanceService
 
             if (line.OutletEmployeeId is { } empId && empId != Guid.Empty)
             {
-                var employeeOk =
-                    _context.OutletEmployees.Local.Any(e => e.Id == empId && e.OutletId == line.OutletId)
-                    || await _context.OutletEmployees.AnyAsync(
-                        e => e.Id == empId && e.OutletId == line.OutletId && e.IsActive,
-                        cancellationToken);
-                if (!employeeOk)
+                var employee = _context.OutletEmployees.Local.FirstOrDefault(e => e.Id == empId && e.OutletId == line.OutletId)
+                    ?? await _context.OutletEmployees
+                        .Include(e => e.User)
+                        .FirstOrDefaultAsync(
+                            e => e.Id == empId && e.OutletId == line.OutletId && e.IsActive,
+                            cancellationToken);
+                if (employee == null)
                 {
                     throw new InvalidOperationException("One or more selected cashiers are invalid for their showroom.");
                 }
+
+                line.CashierName = FirstNonEmpty(
+                    line.CashierName,
+                    CashierDisplayName(employee),
+                    UserDisplayName(submitter));
             }
         }
 
@@ -302,6 +325,7 @@ public sealed class CashierBalanceService : ICashierBalanceService
                         OutletId = line.OutletId,
                         IsShowroomClosed = true,
                         OutletEmployeeId = null,
+                        CashierName = null,
                         CashierBalance = null,
                         BalanceCash = null,
                         BalanceCard = null,
@@ -318,6 +342,7 @@ public sealed class CashierBalanceService : ICashierBalanceService
                     lineId = existingLine.Id;
                     existingLine.IsShowroomClosed = true;
                     existingLine.OutletEmployeeId = null;
+                    existingLine.CashierName = null;
                     existingLine.CashierBalance = null;
                     existingLine.BalanceCash = null;
                     existingLine.BalanceCard = null;
@@ -337,6 +362,7 @@ public sealed class CashierBalanceService : ICashierBalanceService
                     OutletId = line.OutletId,
                     IsShowroomClosed = false,
                     OutletEmployeeId = line.OutletEmployeeId,
+                    CashierName = FirstNonEmpty(line.CashierName, UserDisplayName(submitter)),
                     CreatedAt = now,
                     UpdatedAt = now,
                 };
@@ -350,17 +376,12 @@ public sealed class CashierBalanceService : ICashierBalanceService
                 var total = GetDeclaredLineTotal(line);
                 existingLine.IsShowroomClosed = false;
                 existingLine.OutletEmployeeId = line.OutletEmployeeId;
+                existingLine.CashierName = FirstNonEmpty(line.CashierName, UserDisplayName(submitter));
                 existingLine.UpdatedAt = now;
                 ApplyChannelAmounts(existingLine, line, total);
             }
 
-            EnqueueLineApproval(
-                lineId,
-                submittedByUserId,
-                pd,
-                outlet,
-                line.IsShowroomClosed,
-                line.IsShowroomClosed ? null : GetDeclaredLineTotal(line));
+            EnqueueLineApproval(lineId, submittedByUserId, pd, outlet, line);
         }
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -377,7 +398,8 @@ public sealed class CashierBalanceService : ICashierBalanceService
 
         var rows = await _context.ApprovalQueues
             .AsNoTracking()
-            .Where(a => a.IsActive && lineIds.Contains(a.EntityId)
+            .Include(a => a.RequestedBy)
+            .Where(a => lineIds.Contains(a.EntityId)
                         && (a.ApprovalType == LineApprovalType || a.ApprovalType == ShowroomClosedApprovalType))
             .ToListAsync(cancellationToken);
 
@@ -399,22 +421,24 @@ public sealed class CashierBalanceService : ICashierBalanceService
 
         if (latest != null)
         {
-            var pendingOrApproved =
-                string.Equals(latest.Status, "Pending", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(latest.Status, "Approved", StringComparison.OrdinalIgnoreCase);
-            return (latest.Status, pendingOrApproved);
+            var rejected = string.Equals(latest.Status, "Rejected", StringComparison.OrdinalIgnoreCase);
+            return (latest.Status, !rejected);
         }
 
         return (null, false);
     }
+
+    private static readonly JsonSerializerOptions ApprovalPayloadJson = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
 
     private void EnqueueLineApproval(
         Guid lineId,
         Guid requestedByUserId,
         DateTime processDate,
         Outlet outlet,
-        bool isClosed,
-        decimal? total)
+        SubmitCashierBalanceLineDto line)
     {
         var alreadyPending = _context.ApprovalQueues.Local
                 .Any(a => a.EntityId == lineId && a.Status == "Pending" && IsCashierBalanceApprovalType(a.ApprovalType))
@@ -428,6 +452,13 @@ public sealed class CashierBalanceService : ICashierBalanceService
             return;
         }
 
+        var isClosed = line.IsShowroomClosed;
+        var cash = isClosed ? (decimal?)null : (line.BalanceCash ?? 0m);
+        var card = isClosed ? (decimal?)null : (line.BalanceCard ?? 0m);
+        var uber = isClosed ? (decimal?)null : (line.BalanceUber ?? 0m);
+        var pickme = isClosed ? (decimal?)null : (line.BalancePickme ?? 0m);
+        var total = isClosed ? (decimal?)null : GetDeclaredLineTotal(line);
+
         var payload = JsonSerializer.Serialize(new
         {
             processDate = processDate.ToString("yyyy-MM-dd"),
@@ -435,8 +466,13 @@ public sealed class CashierBalanceService : ICashierBalanceService
             outletCode = outlet.Code,
             outletName = outlet.Name,
             isShowroomClosed = isClosed,
+            cashierName = line.CashierName,
+            balanceCash = cash,
+            balanceCard = card,
+            balanceUber = uber,
+            balancePickme = pickme,
             total,
-        });
+        }, ApprovalPayloadJson);
 
         _context.ApprovalQueues.Add(new ApprovalQueue
         {
@@ -451,7 +487,7 @@ public sealed class CashierBalanceService : ICashierBalanceService
             Priority = 0,
             Notes = isClosed
                 ? "Showroom closed for cashier balance date."
-                : $"Cash submission total {total:0.00}.",
+                : $"Cash {cash:0.00} | Card {card:0.00} | Uber {uber:0.00} | PickMe {pickme:0.00} | Total {total:0.00}.",
             IsActive = true,
             CreatedById = requestedByUserId,
             UpdatedById = requestedByUserId,
@@ -460,34 +496,89 @@ public sealed class CashierBalanceService : ICashierBalanceService
         });
     }
 
+    private static string? FirstNonEmpty(params string?[] values)
+    {
+        foreach (var v in values)
+        {
+            if (!string.IsNullOrWhiteSpace(v))
+                return v.Trim();
+        }
+
+        return null;
+    }
+
+    private static string? UserDisplayName(User? user)
+    {
+        if (user == null) return null;
+        var name = $"{user.FirstName} {user.LastName}".Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            name = user.Email;
+        return string.IsNullOrWhiteSpace(name) ? null : name;
+    }
+
     private static string? CashierDisplayName(OutletEmployee? employee)
     {
         if (employee == null) return null;
-        var name = employee.FullName;
-        if (string.IsNullOrWhiteSpace(name))
-            name = $"{employee.FirstName} {employee.LastName}".Trim();
-        return string.IsNullOrWhiteSpace(name) ? null : name;
+        return FirstNonEmpty(
+            employee.FullName,
+            $"{employee.FirstName} {employee.LastName}".Trim(),
+            UserDisplayName(employee.User),
+            employee.Email);
+    }
+
+    private static void ApplyUserIdentity(OutletEmployee employee, User user)
+    {
+        var first = string.IsNullOrWhiteSpace(user.FirstName) ? "Cashier" : user.FirstName.Trim();
+        var last = string.IsNullOrWhiteSpace(user.LastName) ? "POS" : user.LastName.Trim();
+        employee.FirstName = first;
+        employee.LastName = last;
+        employee.FullName = FirstNonEmpty(user.FullName, $"{first} {last}", user.Email);
+        employee.IsActive = true;
+        employee.UpdatedAt = DateTime.UtcNow;
+        employee.UpdatedById = user.Id;
+        if (string.IsNullOrWhiteSpace(employee.Email) && !string.IsNullOrWhiteSpace(user.Email))
+            employee.Email = user.Email.Trim();
     }
 
     private async Task BackfillMissingCashiersAsync(DateTime processDate, CancellationToken cancellationToken)
     {
-        var missing = await _context.CashierBalanceOutletLines
-            .Where(l => l.ProcessDate == processDate && l.OutletEmployeeId == null && !l.IsShowroomClosed)
+        var lines = await _context.CashierBalanceOutletLines
+            .Include(l => l.OutletEmployee)
+                .ThenInclude(e => e!.User)
+            .Where(l => l.ProcessDate == processDate && !l.IsShowroomClosed)
             .ToListAsync(cancellationToken);
-        if (missing.Count == 0) return;
+        if (lines.Count == 0) return;
 
-        var latest = await GetLatestApprovalsByLineIdsAsync(missing.Select(l => l.Id).ToList(), cancellationToken);
+        var latest = await GetLatestApprovalsByLineIdsAsync(lines.Select(l => l.Id).ToList(), cancellationToken);
         var changed = false;
-        foreach (var line in missing)
+        foreach (var line in lines)
         {
-            if (!latest.TryGetValue(line.Id, out var approval) || approval.RequestedById == Guid.Empty)
-                continue;
+            if (line.OutletEmployeeId is null || line.OutletEmployeeId == Guid.Empty)
+            {
+                if (!latest.TryGetValue(line.Id, out var approval) || approval.RequestedById == Guid.Empty)
+                    continue;
 
-            var employeeId = await EnsureOutletEmployeeForUserAsync(line.OutletId, approval.RequestedById, cancellationToken);
-            if (employeeId is null) continue;
-            line.OutletEmployeeId = employeeId;
-            line.UpdatedAt = DateTime.UtcNow;
-            changed = true;
+                var employeeId = await EnsureOutletEmployeeForUserAsync(line.OutletId, approval.RequestedById, cancellationToken);
+                if (employeeId is null) continue;
+                line.OutletEmployeeId = employeeId;
+                line.CashierName = FirstNonEmpty(line.CashierName, UserDisplayName(approval.RequestedBy));
+                line.UpdatedAt = DateTime.UtcNow;
+                changed = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(line.CashierName))
+            {
+                latest.TryGetValue(line.Id, out var approval);
+                var name = FirstNonEmpty(
+                    CashierDisplayName(line.OutletEmployee),
+                    UserDisplayName(approval?.RequestedBy));
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    line.CashierName = name;
+                    line.UpdatedAt = DateTime.UtcNow;
+                    changed = true;
+                }
+            }
         }
 
         if (changed)
@@ -499,20 +590,16 @@ public sealed class CashierBalanceService : ICashierBalanceService
         Guid userId,
         CancellationToken cancellationToken)
     {
+        var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user == null) return null;
+
         var linked = await _context.OutletEmployees
             .FirstOrDefaultAsync(e => e.OutletId == outletId && e.UserId == userId, cancellationToken);
         if (linked != null)
         {
-            if (!linked.IsActive)
-            {
-                linked.IsActive = true;
-                linked.UpdatedAt = DateTime.UtcNow;
-            }
+            ApplyUserIdentity(linked, user);
             return linked.Id;
         }
-
-        var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
-        if (user == null) return null;
 
         var email = (user.Email ?? string.Empty).Trim();
         if (!string.IsNullOrEmpty(email))
@@ -524,33 +611,29 @@ public sealed class CashierBalanceService : ICashierBalanceService
             if (byEmail != null)
             {
                 byEmail.UserId = userId;
-                byEmail.IsActive = true;
-                if (string.IsNullOrWhiteSpace(byEmail.FullName))
-                    byEmail.FullName = user.FullName;
-                byEmail.UpdatedAt = DateTime.UtcNow;
+                ApplyUserIdentity(byEmail, user);
                 return byEmail.Id;
             }
         }
 
         var now = DateTime.UtcNow;
+        var code = $"POS-{outletId:N}-{userId:N}";
+        if (code.Length > 100)
+            code = code[..100];
+
         var employee = new OutletEmployee
         {
             Id = Guid.NewGuid(),
             OutletId = outletId,
             UserId = userId,
-            EmployeeCode = $"POS-{userId:N}"[..Math.Min(100, $"POS-{userId:N}".Length)],
-            FirstName = string.IsNullOrWhiteSpace(user.FirstName) ? "Cashier" : user.FirstName.Trim(),
-            LastName = user.LastName?.Trim() ?? string.Empty,
-            FullName = string.IsNullOrWhiteSpace(user.FullName) ? user.Email : user.FullName,
+            EmployeeCode = code,
             Email = string.IsNullOrEmpty(email) ? $"{userId:N}@pos.local" : email,
             Phone = user.Phone,
             Position = "Cashier",
-            IsActive = true,
             CreatedAt = now,
-            UpdatedAt = now,
             CreatedById = userId,
-            UpdatedById = userId,
         };
+        ApplyUserIdentity(employee, user);
         _context.OutletEmployees.Add(employee);
         return employee.Id;
     }

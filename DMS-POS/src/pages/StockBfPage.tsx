@@ -10,7 +10,7 @@ import type { ProductRow } from '../lib/types'
 import { fetchStockBfRecords, postStockBfBulk } from '../lib/api'
 import { enqueueMutation } from '../lib/sync-queue'
 import { useOnlineStatus } from '../lib/use-online-status'
-import { printReceiptHtml } from '../lib/print-receipt'
+import { printStockBfHtml } from '../lib/print-stock-bf'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError, isConflictStatus, isUnreachableNetworkError, isAlreadyRecordedError } from '../lib/api-errors'
 import { todayCalendarISO } from '../lib/calendar-date'
@@ -19,17 +19,33 @@ import { SearchKeyboard } from '../components/SearchKeyboard'
 type Props = { onBack: () => void }
 type BfRow = { productId: string; code: string; name: string; qty: number }
 
-type HistRow = {
-  id: string
-  bfNo: string
-  productName: string
-  quantity: number
-  status: string
-}
-
 function isBlockingStockBfStatus(status: string) {
   const s = status.toLowerCase()
   return s !== 'rejected' && s !== 'cancelled'
+}
+
+function mapServerRows(
+  raw: Record<string, unknown>[],
+  products: ProductRow[],
+): BfRow[] {
+  const byProduct = new Map<string, BfRow>()
+  for (const r of raw) {
+    const status = String(r.status ?? r.Status ?? '')
+    if (!isBlockingStockBfStatus(status)) continue
+    const productId = String(r.productId ?? r.ProductId ?? '')
+    if (!productId) continue
+    const catalog = products.find((p) => p.id === productId)
+    const code = String(r.productCode ?? r.ProductCode ?? catalog?.code ?? '')
+    const name = String(r.productName ?? r.ProductName ?? catalog?.name ?? '—')
+    const qty = Number(r.quantity ?? r.Quantity ?? 0)
+    const existing = byProduct.get(productId)
+    if (existing) {
+      existing.qty += qty
+    } else {
+      byProduct.set(productId, { productId, code, name, qty })
+    }
+  }
+  return [...byProduct.values()]
 }
 
 export function StockBfPage({ onBack }: Props) {
@@ -43,7 +59,6 @@ export function StockBfPage({ onBack }: Props) {
   const canCreate = hasPermission('operation:stock-bf:create')
   const canView   = hasPermission('operation:stock-bf:view')
 
-  const [tab, setTab] = useState<'enter' | 'history'>(() => (canCreate ? 'enter' : 'history'))
   const [products, setProducts] = useState<ProductRow[]>([])
   const [search, setSearch]     = useState('')
   const [showDrop, setShowDrop] = useState(false)
@@ -52,13 +67,14 @@ export function StockBfPage({ onBack }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const submittingRef = useRef(false)
   const [formLocked, setFormLocked] = useState(false)
-  const [histRows, setHistRows] = useState<HistRow[]>([])
-  const [histLoading, setHistLoading] = useState(false)
-  const [histNonce, setHistNonce] = useState(0)
+  const [lockStatus, setLockStatus] = useState('')
+  const [reloadNonce, setReloadNonce] = useState(0)
   const searchRef = useRef<HTMLInputElement>(null)
   const qtyRef = useRef<HTMLInputElement>(null)
   const [kbField, setKbField] = useState<'search' | null>(null)
   const [pendingProduct, setPendingProduct] = useState<ProductRow | null>(null)
+  const formLockedRef = useRef(false)
+  formLockedRef.current = formLocked
 
   useEffect(() => {
     if (!formLocked) return
@@ -89,44 +105,61 @@ export function StockBfPage({ onBack }: Props) {
   useEffect(() => {
     if (!outletId || (!canView && !canCreate)) return
     const today = todayCalendarISO()
-    if (tab === 'history') setHistLoading(true)
     void (async () => {
       try {
-        if (!online || !canView) return
-        const res = (await fetchStockBfRecords({
-          outletId,
-          fromDate: today,
-          toDate: today,
-          page: 1,
-          pageSize: 200,
-        })) as Record<string, unknown>
-        const raw = (res.stockBFs ?? res.StockBFs ?? []) as Record<string, unknown>[]
-        const mapped = raw.map((r) => ({
-          id: String(r.id ?? r.Id ?? crypto.randomUUID()),
-          bfNo: String(r.bfNo ?? r.BFNo ?? '—'),
-          productName: String(r.productName ?? r.ProductName ?? '—'),
-          quantity: Number(r.quantity ?? r.Quantity ?? 0),
-          status: String(r.status ?? r.Status ?? '—'),
-        }))
-        setHistRows(mapped)
-        const blocking = mapped.some((r) => isBlockingStockBfStatus(r.status))
-        if (mapped.length === 0) {
-          if (!submittingRef.current) setFormLocked(false)
-        } else {
-          setFormLocked(blocking)
-          if (blocking) {
-            setRows([])
+        if (online && canView) {
+          const res = (await fetchStockBfRecords({
+            outletId,
+            fromDate: today,
+            toDate: today,
+            page: 1,
+            pageSize: 200,
+          })) as Record<string, unknown>
+          const raw = (res.stockBFs ?? res.StockBFs ?? []) as Record<string, unknown>[]
+          const submitted = mapServerRows(raw, products)
+          if (submitted.length > 0) {
+            const blockingRaw = raw.filter((r) =>
+              isBlockingStockBfStatus(String(r.status ?? r.Status ?? '')),
+            )
+            setFormLocked(true)
+            setRows(submitted)
             setPendingProduct(null)
             setSearch('')
+            setLockStatus(String(blockingRaw[0]?.status ?? blockingRaw[0]?.Status ?? 'Pending'))
+          } else if (!submittingRef.current) {
+            if (raw.length > 0) {
+              setFormLocked(false)
+              setLockStatus('')
+              setRows([])
+            } else if (!formLockedRef.current) {
+              setFormLocked(false)
+              setLockStatus('')
+            }
           }
+          return
+        }
+
+        const local = (await offlineDb.stockBf.toArray()).filter(
+          (r) => r.outletId === outletId && r.processDate === today,
+        )
+        if (local.length > 0) {
+          const latest = local.sort((a, b) => b.createdAt - a.createdAt)[0]
+          setFormLocked(true)
+          setLockStatus(latest.synced ? 'Submitted' : 'Queued')
+          setRows(latest.lines.map((l) => ({ productId: l.productId, code: l.code, name: l.name, qty: l.qty })))
+          setPendingProduct(null)
+          setSearch('')
+        } else if (!submittingRef.current) {
+          setFormLocked(false)
+          setLockStatus('')
         }
       } catch (e) {
-        if (tab === 'history') toast((e as Error).message, 'error')
-      } finally {
-        setHistLoading(false)
+        if (!submittingRef.current) {
+          toast((e as Error).message, 'error')
+        }
       }
     })()
-  }, [tab, online, outletId, canView, canCreate, histNonce])
+  }, [online, outletId, canView, canCreate, reloadNonce, products])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -208,12 +241,12 @@ export function StockBfPage({ onBack }: Props) {
 
     const processDateStr = todayCalendarISO()
     const mutationId = crypto.randomUUID()
+    const snapshot = rows.map((r) => ({ ...r }))
     const payload = {
-      // Date-only (Sri Lanka calendar), matching DMS web — not local midnight converted to UTC.
       bfDate: processDateStr,
       outletId,
       clientMutationId: mutationId,
-      items: rows.map((r) => ({ productId: r.productId, quantity: r.qty })),
+      items: snapshot.map((r) => ({ productId: r.productId, quantity: r.qty })),
     }
 
     submittingRef.current = true
@@ -229,7 +262,7 @@ export function StockBfPage({ onBack }: Props) {
           id: mutationId,
           outletId,
           processDate: processDateStr,
-          lines: rows.map((r) => ({ productId: r.productId, code: r.code, name: r.name, qty: r.qty })),
+          lines: snapshot.map((r) => ({ productId: r.productId, code: r.code, name: r.name, qty: r.qty })),
           createdAt: Date.now(),
           synced: true,
         })
@@ -239,26 +272,28 @@ export function StockBfPage({ onBack }: Props) {
           id: mutationId,
           outletId,
           processDate: processDateStr,
-          lines: rows.map((r) => ({ productId: r.productId, code: r.code, name: r.name, qty: r.qty })),
+          lines: snapshot.map((r) => ({ productId: r.productId, code: r.code, name: r.name, qty: r.qty })),
           createdAt: Date.now(),
           synced: false,
         })
       }
 
       if (andPrint) {
-        await printReceiptHtml({
-          title: 'Stock BF',
-          outletLabel: outletLabel || 'Showroom',
-          lines: rows.map((r) => ({ name: `${r.code} — ${r.name}`, unitPrice: 0, qty: r.qty, amount: 0 })),
-          total: 0,
-          cash: 0,
-          change: 0,
+        await printStockBfHtml({
+          showroom: outletLabel || 'Showroom',
+          cashier: cashier === '—' ? '' : cashier,
+          submittedAt: new Date().toLocaleString(),
+          lines: snapshot.map((r) => ({ code: r.code, name: r.name, qty: r.qty })),
         })
       }
 
-      setRows([])
-      setHistNonce((n) => n + 1)
+      setRows(snapshot)
       setFormLocked(true)
+      setLockStatus(online ? 'Pending' : 'Queued')
+      setPendingProduct(null)
+      setSearch('')
+      setQty('1')
+      setReloadNonce((n) => n + 1)
       toast(online ? 'Opening stock saved.' : 'Queued — will sync when online.', 'success')
       if (andPrint) onBack()
     } catch (e) {
@@ -269,11 +304,13 @@ export function StockBfPage({ onBack }: Props) {
             id: mutationId,
             outletId,
             processDate: processDateStr,
-            lines: rows.map((r) => ({ productId: r.productId, code: r.code, name: r.name, qty: r.qty })),
+            lines: snapshot.map((r) => ({ productId: r.productId, code: r.code, name: r.name, qty: r.qty })),
             createdAt: Date.now(),
             synced: false,
           })
-          setRows([])
+          setRows(snapshot)
+          setFormLocked(true)
+          setLockStatus('Queued')
           toast('Server unreachable. Opening stock queued for sync.', 'info')
           if (andPrint) onBack()
         } catch {
@@ -290,6 +327,9 @@ export function StockBfPage({ onBack }: Props) {
 
   const cashier = user ? `${user.firstName} ${user.lastName}`.trim() : '—'
   const today   = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  const statusLabel = formLocked
+    ? (lockStatus.toLowerCase() === 'approved' ? 'Approved' : lockStatus.toLowerCase() === 'queued' ? 'Queued' : 'Submitted')
+    : 'Ready'
 
   if (!canCreate && !canView) {
     return (
@@ -312,79 +352,22 @@ export function StockBfPage({ onBack }: Props) {
         </span>
       }
     >
-      <div className="mb-4 flex gap-2 border-b border-[var(--border)] pb-3">
-        {canCreate ? (
-          <button
-            type="button"
-            onClick={() => setTab('enter')}
-            className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === 'enter' ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--neutral-100)] text-[var(--foreground)]'}`}
-          >
-            Opening stock
-          </button>
-        ) : null}
-        {canView ? (
-          <button
-            type="button"
-            onClick={() => setTab('history')}
-            className={`rounded-xl px-4 py-2 text-sm font-bold ${tab === 'history' ? 'bg-[var(--brand-primary)] text-white' : 'bg-[var(--neutral-100)] text-[var(--foreground)]'}`}
-          >
-            Today’s history
-          </button>
-        ) : null}
-      </div>
-
-      {tab === 'history' ? (
-        <div className="rounded-2xl border border-[var(--border)] bg-white p-6 shadow-lg sm:p-8">
-          <CatalogStaleBanner online={online} />
-          {!outletId ? (
-            <p className="text-sm text-amber-800">Select a showroom on the main POS first.</p>
-          ) : histLoading ? (
-            <p className="text-sm text-[var(--muted-foreground)]">Loading…</p>
-          ) : histRows.length === 0 ? (
-            <p className="text-sm text-[var(--muted-foreground)]">No stock BF lines recorded for today at this showroom.</p>
-          ) : (
-            <div className="overflow-hidden rounded-xl border border-[var(--border)]">
-              <table className="w-full text-sm">
-                <thead className="bg-[var(--neutral-50)] text-xs font-semibold uppercase text-[var(--muted-foreground)]">
-                  <tr>
-                    <th className="px-4 py-3 text-left">BF No</th>
-                    <th className="px-4 py-3 text-left">Item</th>
-                    <th className="px-4 py-3 text-right">Qty</th>
-                    <th className="px-4 py-3 text-left">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border)]">
-                  {histRows.map((r) => (
-                    <tr key={r.id}>
-                      <td className="px-4 py-3 font-mono text-xs">{r.bfNo}</td>
-                      <td className="px-4 py-3 font-medium">{r.productName}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{r.quantity}</td>
-                      <td className="px-4 py-3 text-xs">{r.status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-[var(--border)] bg-white p-6 shadow-lg sm:p-8">
-          <CatalogStaleBanner online={online} />
-          {formLocked ? (
-            <div className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-sm font-medium text-[var(--foreground)]">
-              Today’s opening stock is submitted and locked. It can be entered again only if DMS rejects it.
-            </div>
-          ) : null}
-          <fieldset disabled={formLocked} className={formLocked ? 'pointer-events-none opacity-60' : undefined}>
-          {/* Info strip */}
-          <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-5 py-4 text-sm sm:grid-cols-4">
-            <InfoField label="Showroom" value={outletLabel || '—'} />
-            <InfoField label="Date" value={today} />
-            <InfoField label="Cashier" value={cashier} />
-            <InfoField label="Status" value={formLocked ? 'Submitted' : 'Ready'} />
+      <div className="rounded-2xl border border-[var(--border)] bg-white p-6 shadow-lg sm:p-8">
+        <CatalogStaleBanner online={online} />
+        {formLocked ? (
+          <div className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-sm font-medium text-[var(--foreground)]">
+            Today’s opening stock is submitted and locked. It can be entered again only if DMS rejects it.
           </div>
+        ) : null}
 
-          {/* Search row */}
+        <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-5 py-4 text-sm sm:grid-cols-4">
+          <InfoField label="Showroom" value={outletLabel || '—'} />
+          <InfoField label="Date" value={today} />
+          <InfoField label="Cashier" value={cashier} />
+          <InfoField label="Status" value={statusLabel} />
+        </div>
+
+        {!formLocked ? (
           <div className="relative mb-4 flex flex-wrap items-end gap-3">
             <div className="relative min-w-[220px] flex-1">
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Item</label>
@@ -439,31 +422,34 @@ export function StockBfPage({ onBack }: Props) {
               <Plus className="h-4 w-4" /> Add
             </button>
           </div>
+        ) : null}
 
-          {/* Items table */}
-          <div className="overflow-hidden rounded-xl border border-[var(--border)]">
-            <table className="w-full text-sm">
-              <thead className="bg-[var(--neutral-50)] text-xs font-semibold uppercase text-[var(--muted-foreground)]">
+        <div className={`overflow-hidden rounded-xl border border-[var(--border)] ${formLocked ? 'bg-[var(--neutral-50)]' : ''}`}>
+          <table className="w-full text-sm">
+            <thead className="bg-[var(--neutral-50)] text-xs font-semibold uppercase text-[var(--muted-foreground)]">
+              <tr>
+                <th className="px-4 py-3 text-left">Item Code</th>
+                <th className="px-4 py-3 text-left">Item</th>
+                <th className="px-4 py-3 text-right">Qty</th>
+                {!formLocked ? <th className="w-10 px-4 py-3" /> : null}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {rows.length === 0 ? (
                 <tr>
-                  <th className="px-4 py-3 text-left">Item Code</th>
-                  <th className="px-4 py-3 text-left">Item</th>
-                  <th className="px-4 py-3 text-right">Qty</th>
-                  <th className="w-10 px-4 py-3" />
+                  <td colSpan={formLocked ? 3 : 4} className="px-4 py-10 text-center text-sm text-[var(--neutral-400)]">
+                    No items added.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-10 text-center text-sm text-[var(--neutral-400)]">
-                      No items added.
-                    </td>
-                  </tr>
-                ) : (
-                  rows.map((r) => (
-                    <tr key={r.productId} className="hover:bg-[var(--neutral-50)]">
-                      <td className="px-4 py-3 font-mono text-xs text-[var(--muted-foreground)]">{r.code}</td>
-                      <td className="px-4 py-3 font-medium text-[var(--foreground)]">{r.name}</td>
-                      <td className="px-4 py-3 text-right">
+              ) : (
+                rows.map((r) => (
+                  <tr key={r.productId} className={formLocked ? '' : 'hover:bg-[var(--neutral-50)]'}>
+                    <td className="px-4 py-3 font-mono text-xs text-[var(--muted-foreground)]">{r.code}</td>
+                    <td className="px-4 py-3 font-medium text-[var(--foreground)]">{r.name}</td>
+                    <td className="px-4 py-3 text-right">
+                      {formLocked ? (
+                        <span className="tabular-nums font-semibold text-[var(--foreground)]">{r.qty}</span>
+                      ) : (
                         <input
                           type="text"
                           inputMode="decimal"
@@ -471,51 +457,53 @@ export function StockBfPage({ onBack }: Props) {
                           onChange={(e) => updateRowQty(r.productId, e.target.value)}
                           className="w-20 rounded-lg border border-[var(--border)] bg-white px-2 py-1 text-right text-sm font-semibold tabular-nums focus:border-[var(--brand-primary)] focus:outline-none"
                         />
-                      </td>
+                      )}
+                    </td>
+                    {!formLocked ? (
                       <td className="px-4 py-3">
                         <button type="button" className="pos-tap rounded-lg p-1 text-red-500 hover:bg-red-50" onClick={() => removeRow(r.productId)}>
                           <X className="h-4 w-4" />
                         </button>
                       </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                    ) : null}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-          {kbField ? (
-            <SearchKeyboard
-              value={search}
-              onChange={(next) => {
-                setSearch(next)
-                setShowDrop(true)
-              }}
-              onClose={() => setKbField(null)}
-              onEnter={() => {
-                if (filtered[0]) selectProduct(filtered[0])
-              }}
-              label="Item search"
-              placeholder="Search item code or name"
-            />
-          ) : null}
+        {kbField && !formLocked ? (
+          <SearchKeyboard
+            value={search}
+            onChange={(next) => {
+              setSearch(next)
+              setShowDrop(true)
+            }}
+            onClose={() => setKbField(null)}
+            onEnter={() => {
+              if (filtered[0]) selectProduct(filtered[0])
+            }}
+            label="Item search"
+            placeholder="Search item code or name"
+          />
+        ) : null}
 
-          {/* Actions */}
+        {!formLocked ? (
           <div className="mt-6 flex flex-wrap gap-3">
-            <button type="button" disabled={rows.length === 0 || submitting || formLocked}
+            <button type="button" disabled={rows.length === 0 || submitting || !canCreate}
               onClick={() => void submit(false)}
               className="pos-tap rounded-xl bg-[var(--brand-primary)] px-8 py-3 font-bold text-white shadow hover:bg-[var(--brand-primary-dark)] disabled:opacity-40">
               {submitting ? 'Submitting…' : 'Submit'}
             </button>
-            <button type="button" disabled={rows.length === 0 || submitting || formLocked}
+            <button type="button" disabled={rows.length === 0 || submitting || !canCreate}
               onClick={() => void submit(true)}
               className="pos-tap flex items-center gap-2 rounded-xl bg-[var(--brand-accent)] px-8 py-3 font-bold text-neutral-900 shadow hover:brightness-95 disabled:opacity-40">
               <Printer className="h-4 w-4" /> Submit &amp; Print
             </button>
           </div>
-          </fieldset>
-        </div>
-      )}
+        ) : null}
+      </div>
     </PosSubPageLayout>
   )
 }

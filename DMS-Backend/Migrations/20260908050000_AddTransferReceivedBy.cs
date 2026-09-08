@@ -23,7 +23,7 @@ public partial class AddTransferReceivedBy : Migration
                 ) THEN
                     ALTER TABLE transfers
                         ADD CONSTRAINT fk_transfers_users_received_by_id
-                        FOREIGN KEY (received_by_id) REFERENCES users ("Id")
+                        FOREIGN KEY (received_by_id) REFERENCES users (""Id"")
                         ON DELETE SET NULL;
                 END IF;
             END

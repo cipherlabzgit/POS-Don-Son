@@ -268,10 +268,27 @@ public class OperationApprovalService : IOperationApprovalService
             };
         }).ToList();
 
+        var cashierLineIds = cashierRows.Select(a => a.EntityId).Distinct().ToList();
+        var cashierLines = cashierLineIds.Count == 0
+            ? new Dictionary<Guid, CashierBalanceOutletLine>()
+            : await _context.CashierBalanceOutletLines
+                .AsNoTracking()
+                .Include(l => l.Outlet)
+                .Where(l => cashierLineIds.Contains(l.Id))
+                .ToDictionaryAsync(l => l.Id, cancellationToken);
+
         summary.CashierBalances = cashierRows.Select(a =>
         {
-            var outletName = "Showroom";
-            decimal? total = null;
+            cashierLines.TryGetValue(a.EntityId, out var line);
+            var outletName = line?.Outlet?.Name ?? "Showroom";
+            decimal? cash = line?.BalanceCash;
+            decimal? card = line?.BalanceCard;
+            decimal? uber = line?.BalanceUber;
+            decimal? pickme = line?.BalancePickme;
+            decimal? total = line?.CashierBalance;
+            var closed = line?.IsShowroomClosed ?? false;
+            string? cashierName = line?.CashierName;
+
             if (!string.IsNullOrWhiteSpace(a.RequestData))
             {
                 try
@@ -280,14 +297,38 @@ public class OperationApprovalService : IOperationApprovalService
                     var root = doc.RootElement;
                     if (root.TryGetProperty("outletName", out var nameEl))
                         outletName = nameEl.GetString() ?? outletName;
+                    if (root.TryGetProperty("cashierName", out var cashierEl))
+                        cashierName = cashierEl.GetString() ?? cashierName;
+                    if (root.TryGetProperty("isShowroomClosed", out var closedEl) && closedEl.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                        closed = closedEl.GetBoolean();
+                    if (root.TryGetProperty("balanceCash", out var cashEl) && cashEl.ValueKind == JsonValueKind.Number)
+                        cash = cashEl.GetDecimal();
+                    if (root.TryGetProperty("balanceCard", out var cardEl) && cardEl.ValueKind == JsonValueKind.Number)
+                        card = cardEl.GetDecimal();
+                    if (root.TryGetProperty("balanceUber", out var uberEl) && uberEl.ValueKind == JsonValueKind.Number)
+                        uber = uberEl.GetDecimal();
+                    if (root.TryGetProperty("balancePickme", out var pickEl) && pickEl.ValueKind == JsonValueKind.Number)
+                        pickme = pickEl.GetDecimal();
                     if (root.TryGetProperty("total", out var totalEl) && totalEl.ValueKind == JsonValueKind.Number)
-                        total = totalEl.GetDecimal();
+                        total ??= totalEl.GetDecimal();
                 }
                 catch (JsonException)
                 {
                     /* keep defaults */
                 }
             }
+
+            var description = closed
+                ? "Showroom closed"
+                : string.Join(" · ", new[]
+                {
+                    $"Cash {cash ?? 0m:N2}",
+                    $"Card {card ?? 0m:N2}",
+                    $"Uber {uber ?? 0m:N2}",
+                    $"PickMe {pickme ?? 0m:N2}",
+                });
+            if (!string.IsNullOrWhiteSpace(cashierName) && !closed)
+                description = $"{cashierName} — {description}";
 
             return new OperationApprovalItemDto
             {
@@ -298,7 +339,7 @@ public class OperationApprovalService : IOperationApprovalService
                 OutletName = outletName,
                 Status = a.Status,
                 RequestedByName = a.RequestedByName,
-                Description = a.Notes,
+                Description = description,
                 TotalValue = total,
             };
         }).ToList();

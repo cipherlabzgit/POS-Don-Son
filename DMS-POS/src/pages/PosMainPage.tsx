@@ -13,13 +13,14 @@ import { useCartStore } from '../lib/cart-store'
 import { useFavoriteStore } from '../lib/favorite-store'
 import { useSettingsStore } from '../lib/settings-store'
 import { syncCatalogFromServer } from '../lib/catalog-sync'
-import { fetchOutletsPage, fetchPosSaleRecordsUnreadCount, postPosSale, resolveOutletByPosVerificationCode } from '../lib/api'
+import { fetchOutletsPage, fetchPendingTransferCount, fetchPosSaleRecordsUnreadCount, postPosSale, resolveOutletByPosVerificationCode } from '../lib/api'
 import { enqueueMutation, processPendingQueue } from '../lib/sync-queue'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { isElectronPos, printReceiptHtml, type PrintReceiptOpts } from '../lib/print-receipt'
 import { formatReceiptContact, RECEIPT_COMPANY_ADDRESS } from '../lib/receipt-company'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError, isUnreachableNetworkError } from '../lib/api-errors'
+import { todayCalendarISO } from '../lib/calendar-date'
 import { OnlineBadge } from '../components/OnlineBadge'
 import { PaymentModal } from '../components/PaymentModal'
 import { PostSalePopups, type PostSaleState } from '../components/PostSalePopups'
@@ -126,6 +127,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const [catsExpanded, setCatsExpanded] = useState(false)
   const [catPage, setCatPage] = useState(0)
   const [saleRecordUnread, setSaleRecordUnread] = useState(0)
+  const [pendingTransferCount, setPendingTransferCount] = useState(0)
   const CATS_PER_PAGE = 7
 
   const catalogScrollRef = useRef<HTMLDivElement>(null)
@@ -263,6 +265,29 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       window.clearInterval(id)
     }
   }, [accessToken, online, canSaleRecordsView])
+
+  useEffect(() => {
+    if (!accessToken || !online || !canTransferView || !outletId) {
+      setPendingTransferCount(0)
+      return
+    }
+    let cancelled = false
+    const tick = async () => {
+      try {
+        const today = todayCalendarISO()
+        const n = await fetchPendingTransferCount(outletId, today, today)
+        if (!cancelled) setPendingTransferCount(n)
+      } catch {
+        /* ignore poll errors */
+      }
+    }
+    void tick()
+    const id = window.setInterval(() => { void tick() }, 15000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [accessToken, online, canTransferView, outletId])
 
   useEffect(() => {
     if (!accessToken) {
@@ -690,7 +715,22 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
             <span className="max-w-[10rem] truncate">{outletId ? outletLabel : 'Showroom not assigned'}</span>
           </div>
 
-          {canSaleRecordsView ? (
+          {canTransferView && pendingTransferCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => onOpenScreen('transfers')}
+              className="relative rounded-xl border border-white/30 p-2 text-white hover:bg-white/10"
+              aria-label="Pending transfers"
+              title="Pending transfers"
+            >
+              <Inbox className="h-5 w-5" />
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                {pendingTransferCount > 99 ? '99+' : pendingTransferCount}
+              </span>
+            </button>
+          ) : null}
+
+          {canSaleRecordsView && saleRecordUnread > 0 ? (
             <button
               type="button"
               onClick={() => onOpenScreen('sale-records')}
@@ -699,11 +739,9 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               title="Sale records"
             >
               <Bell className="h-5 w-5" />
-              {saleRecordUnread > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
-                  {saleRecordUnread > 99 ? '99+' : saleRecordUnread}
-                </span>
-              ) : null}
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                {saleRecordUnread > 99 ? '99+' : saleRecordUnread}
+              </span>
             </button>
           ) : null}
 

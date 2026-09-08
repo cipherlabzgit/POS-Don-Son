@@ -51,6 +51,7 @@ export interface SubmitCashierBalanceLine {
   outletId: string;
   isShowroomClosed: boolean;
   outletEmployeeId?: string | null;
+  cashierName?: string | null;
   cashierBalance?: number | null;
   balanceCash?: number | null;
   balanceCard?: number | null;
@@ -75,14 +76,16 @@ function parseContextPayload(raw: Record<string, unknown>): CashierBalanceContex
       name: String(pick<string>(o, 'name', 'Name') ?? ''),
       isShowroomClosed: Boolean(pick(o, 'isShowroomClosed', 'IsShowroomClosed')),
       outletEmployeeId: emp != null && String(emp) !== '' ? String(emp) : null,
-      cashierName: pick<string | null>(o, 'cashierName', 'CashierName') ?? null,
+      cashierName: String(pick<string | null>(o, 'cashierName', 'CashierName') ?? '').trim() || null,
       cashierBalance: bal != null && bal !== undefined ? Number(bal) : null,
       balanceCash: bc != null && bc !== undefined ? Number(bc) : null,
       balanceCard: bd != null && bd !== undefined ? Number(bd) : null,
       balanceUber: bu != null && bu !== undefined ? Number(bu) : null,
       balancePickme: bp != null && bp !== undefined ? Number(bp) : null,
       lineStatus: pick<string | null>(o, 'lineStatus', 'LineStatus') ?? null,
-      isLocked: Boolean(pick(o, 'isLocked', 'IsLocked')),
+      isLocked:
+        Boolean(pick(o, 'isLocked', 'IsLocked')) ||
+        ['Pending', 'Approved'].includes(String(pick<string | null>(o, 'lineStatus', 'LineStatus') ?? '')),
     };
   });
 
@@ -196,6 +199,7 @@ export const cashierBalanceApi = {
           outletId: l.outletId,
           isShowroomClosed: false,
           outletEmployeeId: l.outletEmployeeId ?? null,
+          cashierName: l.cashierName ?? null,
           balanceCash: l.balanceCash ?? null,
           balanceCard: l.balanceCard ?? null,
           balanceUber: l.balanceUber ?? null,

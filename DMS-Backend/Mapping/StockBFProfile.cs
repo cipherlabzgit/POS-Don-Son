@@ -12,6 +12,7 @@ public sealed class StockBFProfile : Profile
             .ForMember(dest => dest.OutletName, opt => opt.MapFrom(src => src.Outlet!.Name))
             .ForMember(dest => dest.OutletCode, opt => opt.MapFrom(src => src.Outlet!.Code))
             .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product!.Name))
+            .ForMember(dest => dest.ProductCode, opt => opt.MapFrom(src => src.Product != null ? src.Product.Code : string.Empty))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
             .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedBy != null ? $"{src.CreatedBy.FirstName} {src.CreatedBy.LastName}".Trim() : null))
             .ForMember(dest => dest.UpdatedByName, opt => opt.MapFrom(src => src.UpdatedBy != null ? $"{src.UpdatedBy.FirstName} {src.UpdatedBy.LastName}".Trim() : null))

@@ -35,7 +35,7 @@ function buildReceiptDocumentHtml(opts: PrintReceiptOpts): string {
   const extraFooter = (opts.footerLines ?? [])
     .map((l) => l.trim())
     .filter(Boolean)
-    .map((l) => `<div style="text-align:center;font-size:10px;line-height:1.3;margin:2px 0">${escapeHtml(l)}</div>`)
+    .map((l) => `<div class="policy">${escapeHtml(l)}</div>`)
     .join('')
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Receipt</title>
@@ -44,27 +44,37 @@ html,body{width:80mm;max-width:80mm;height:auto!important;overflow:visible!impor
 @media print {
   @page { margin: 0; size: 80mm auto; }
   html,body{width:80mm;max-width:80mm;height:auto!important;overflow:visible!important;margin:0}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
-body{font-family:'Courier New',monospace;padding:4mm 3mm 12mm;margin:0;color:#000;font-size:11px;line-height:1.4;box-sizing:border-box}
-.header{text-align:center;margin-bottom:8px}
-.company-name{font-size:14px;font-weight:bold;margin:2px 0}
-.company-info{font-size:9px;margin:2px 0}
-.divider{border-top:1px dashed #000;margin:6px 0}
-.info-line{font-size:10px;margin:2px 0}
-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px;margin:6px 0}
-th{padding:3px 0;font-weight:bold;border-bottom:1px dashed #000;vertical-align:bottom}
-td{padding:5px 0;vertical-align:top}
-.item{width:46%;text-align:left;white-space:normal;word-wrap:break-word;overflow-wrap:anywhere;padding-right:8px}
-.each{width:20%;text-align:right;padding-left:10px;white-space:nowrap}
-.qty{width:12%;text-align:center;padding-left:8px;padding-right:8px;white-space:nowrap}
-.tot{width:22%;text-align:right;padding-left:10px;white-space:nowrap}
-.totals{margin-top:6px;border-top:1px dashed #000;padding-top:6px}
-.total-row{display:flex;justify-content:space-between;margin:3px 0;font-size:11px}
-.total-row.main{font-weight:bold;font-size:12px}
-.item-count{font-size:10px;margin:6px 0;text-align:left}
-.footer{text-align:center;margin-top:12px;font-size:10px;line-height:1.3}
-.thank-you{font-weight:bold;font-size:12px;margin:8px 0}
-.powered-by{font-size:9px;font-style:italic;margin-top:8px}
+*{box-sizing:border-box;color:#000!important;-webkit-font-smoothing:none;font-smooth:never;text-rendering:geometricPrecision}
+body{
+  width:80mm;
+  font-family:Arial,Helvetica,'Segoe UI',sans-serif;
+  font-weight:600;
+  padding:2mm 3.5mm 12mm;
+  margin:0;
+  color:#000;
+  font-size:14px;
+  line-height:1.5;
+}
+.header{text-align:center;margin-bottom:6px}
+.company-name{font-size:18px;font-weight:800;margin:2px 0;letter-spacing:0.03em}
+.company-info{font-size:13px;font-weight:600;margin:2px 0;line-height:1.4}
+.divider{border-top:2px dashed #000;margin:6px 0}
+.info-line{font-size:14px;font-weight:600;margin:3px 0}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px;margin:6px 0}
+th{padding:5px 1px;font-weight:800;border-bottom:2px dashed #000;vertical-align:bottom;white-space:nowrap;font-size:14px}
+td{padding:7px 1px;vertical-align:top;font-weight:600;font-size:14px}
+.item{width:38%;text-align:left;white-space:normal;word-wrap:break-word;overflow-wrap:anywhere;padding-right:3px}
+.each{width:22%;text-align:right;white-space:nowrap}
+.qty{width:12%;text-align:center;white-space:nowrap}
+.tot{width:28%;text-align:right;white-space:nowrap}
+.totals{margin-top:6px;padding-top:4px}
+.total-row{display:flex;justify-content:space-between;margin:5px 0;font-size:15px;font-weight:800}
+.total-row.main{font-size:17px}
+.item-count{font-size:14px;font-weight:600;margin:7px 0;text-align:left}
+.policy{text-align:center;font-size:13px;font-weight:600;line-height:1.4;margin:4px 0}
+.thank-you{display:block;width:100%;text-align:center;font-weight:800;font-size:16px;margin:12px 0 0;letter-spacing:0.08em}
 </style></head><body>
 <div class="header">
   <div class="company-name">${escapeHtml(opts.title)}</div>

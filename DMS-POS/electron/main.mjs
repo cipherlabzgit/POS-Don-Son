@@ -316,6 +316,7 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
             copies: 1,
             landscape: false,
             scaleFactor: 100,
+            dpi: { horizontal: 203, vertical: 203 },
             margins: { marginType: 'none' },
             pageSize: {
               width: receiptWidthMm * 1000,

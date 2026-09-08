@@ -5,6 +5,7 @@ using DMS_Backend.Data;
 using DMS_Backend.Models.DTOs.ApprovalQueue;
 using DMS_Backend.Models.Entities;
 using DMS_Backend.Services.Interfaces;
+using System.Text.Json;
 
 namespace DMS_Backend.Services.Implementations;
 
@@ -122,7 +123,14 @@ public sealed class ApprovalQueueService : IApprovalQueueService
             .Include(aq => aq.ApprovedBy)
             .FirstOrDefaultAsync(aq => aq.Id == id, cancellationToken);
 
-        return approval == null ? null : _mapper.Map<ApprovalQueueDetailDto>(approval);
+        if (approval == null)
+        {
+            return null;
+        }
+
+        var dto = _mapper.Map<ApprovalQueueDetailDto>(approval);
+        await EnrichCashierBalanceDetailAsync(dto, cancellationToken);
+        return dto;
     }
 
     public async Task<ApprovalQueueDetailDto> CreateAsync(CreateApprovalQueueDto dto, Guid userId, CancellationToken cancellationToken = default)
@@ -228,5 +236,65 @@ public sealed class ApprovalQueueService : IApprovalQueueService
             approval.Id, rejectedByUserId, rejectionReason);
 
         return (await GetByIdAsync(id, cancellationToken))!;
+    }
+
+    private async Task EnrichCashierBalanceDetailAsync(ApprovalQueueDetailDto dto, CancellationToken cancellationToken)
+    {
+        if (!CashierBalanceService.IsCashierBalanceApprovalType(dto.ApprovalType))
+        {
+            return;
+        }
+
+        var line = await _context.CashierBalanceOutletLines
+            .AsNoTracking()
+            .Include(l => l.Outlet)
+            .Include(l => l.OutletEmployee)
+            .FirstOrDefaultAsync(l => l.Id == dto.EntityId, cancellationToken);
+
+        Dictionary<string, object?> payload = new(StringComparer.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(dto.RequestData))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(dto.RequestData);
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    payload[prop.Name] = prop.Value.ValueKind switch
+                    {
+                        JsonValueKind.Number when prop.Value.TryGetDecimal(out var d) => d,
+                        JsonValueKind.True => true,
+                        JsonValueKind.False => false,
+                        JsonValueKind.Null => null,
+                        JsonValueKind.String => prop.Value.GetString(),
+                        _ => prop.Value.GetRawText(),
+                    };
+                }
+            }
+            catch (JsonException)
+            {
+                /* keep empty and overlay live line */
+            }
+        }
+
+        if (line != null)
+        {
+            payload["processDate"] = line.ProcessDate.ToString("yyyy-MM-dd");
+            payload["outletId"] = line.OutletId;
+            payload["outletCode"] = line.Outlet?.Code;
+            payload["outletName"] = line.Outlet?.Name;
+            payload["isShowroomClosed"] = line.IsShowroomClosed;
+            payload["cashierName"] = line.CashierName
+                ?? ($"{line.OutletEmployee?.FirstName} {line.OutletEmployee?.LastName}".Trim());
+            payload["balanceCash"] = line.BalanceCash;
+            payload["balanceCard"] = line.BalanceCard;
+            payload["balanceUber"] = line.BalanceUber;
+            payload["balancePickme"] = line.BalancePickme;
+            payload["total"] = line.CashierBalance;
+        }
+
+        dto.RequestData = JsonSerializer.Serialize(payload, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        });
     }
 }

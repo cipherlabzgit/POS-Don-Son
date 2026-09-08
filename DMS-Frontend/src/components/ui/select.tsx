@@ -26,6 +26,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       placeholder,
       fullWidth = false,
       className = '',
+      disabled,
       ...props
     },
     ref
@@ -44,14 +45,17 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           className={`block rounded-lg px-4 py-2.5 text-sm transition-[border-color,outline,box-shadow] focus:outline-none ${
             fullWidth ? 'w-full' : ''
           } ${className}`}
+          {...props}
+          disabled={disabled}
           style={{
             border: `1px solid ${baseBorder}`,
-            backgroundColor: 'var(--background)',
-            color: 'var(--foreground)',
+            backgroundColor: disabled ? '#F3F4F6' : 'var(--background)',
+            color: disabled ? '#6B7280' : 'var(--foreground)',
+            cursor: disabled ? 'not-allowed' : undefined,
             boxShadow: 'inset 0 1px 2px rgba(15, 23, 42, 0.04)',
           }}
           onFocus={(e) => {
-            if (error) return;
+            if (error || disabled) return;
             e.currentTarget.style.borderColor = 'var(--form-focus-ring)';
             e.currentTarget.style.outline = '2px solid var(--form-focus-ring)';
             e.currentTarget.style.outlineOffset = '2px';
@@ -60,7 +64,6 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             e.currentTarget.style.borderColor = error ? '#DC2626' : 'var(--form-field-border)';
             e.currentTarget.style.outline = 'none';
           }}
-          {...props}
         >
           {placeholder && (
             <option value="" disabled>

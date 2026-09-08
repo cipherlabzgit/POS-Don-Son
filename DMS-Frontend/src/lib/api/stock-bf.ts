@@ -25,6 +25,7 @@ export interface StockBF {
   outletCode?: string;
 
   productName?: string;
+  productCode?: string;
 
   outlet?: {
 

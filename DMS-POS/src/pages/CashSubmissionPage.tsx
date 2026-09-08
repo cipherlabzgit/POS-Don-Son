@@ -43,7 +43,9 @@ export function CashSubmissionPage({ onBack }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const submittingRef = useRef(false)
 
-  const cashier = user ? `${user.firstName} ${user.lastName}`.trim() : '—'
+  const cashier = [user?.firstName, user?.lastName].filter((p) => Boolean(p && p.trim())).join(' ').trim()
+    || user?.email?.trim()
+    || '—'
 
   useEffect(() => {
     const id = window.setInterval(() => setNowClock(new Date()), 1000)
@@ -117,6 +119,7 @@ export function CashSubmissionPage({ onBack }: Props) {
           outletId,
           isShowroomClosed: false,
           outletEmployeeId: null,
+          cashierName: cashier === '—' ? null : cashier,
           balanceCash: parseDecSubmit(cash),
           balanceCard: parseDecSubmit(card),
           balanceUber: parseDecSubmit(uber),

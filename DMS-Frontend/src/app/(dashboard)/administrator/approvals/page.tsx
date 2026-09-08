@@ -1694,8 +1694,46 @@ function ProductionDetailsView({ production }: { production: DailyProduction }) 
   );
 }
 
+function parseApprovalJson(raw: unknown): Record<string, unknown> {
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  if (typeof raw !== 'string' || !raw.trim()) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function jsonPick(obj: Record<string, unknown>, ...keys: string[]): unknown {
+  for (const key of keys) {
+    if (obj[key] !== undefined && obj[key] !== null) return obj[key];
+  }
+  return undefined;
+}
+
+function jsonMoney(obj: Record<string, unknown>, ...keys: string[]): number | null {
+  const v = jsonPick(obj, ...keys);
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatApprovalRs(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '—';
+  return `Rs. ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function AdminApprovalDetailsView({ approval }: { approval: any }) {
   if (!approval) return null;
+  const type = String(approval.approvalType ?? approval.ApprovalType ?? '');
+  if (type === 'Cashier Balance') {
+    return <CashierBalanceApprovalDetailsView approval={approval} />;
+  }
   return (
     <DetailPanel>
       <div className="space-y-6">
@@ -1716,6 +1754,58 @@ function AdminApprovalDetailsView({ approval }: { approval: any }) {
               {approval.notes}
             </p>
           </div>
+        )}
+      </div>
+    </DetailPanel>
+  );
+}
+
+function CashierBalanceApprovalDetailsView({ approval }: { approval: any }) {
+  const data = parseApprovalJson(approval.requestData ?? approval.RequestData);
+  const closed = Boolean(jsonPick(data, 'isShowroomClosed', 'IsShowroomClosed'));
+  const cash = jsonMoney(data, 'balanceCash', 'BalanceCash');
+  const card = jsonMoney(data, 'balanceCard', 'BalanceCard');
+  const uber = jsonMoney(data, 'balanceUber', 'BalanceUber');
+  const pickme = jsonMoney(data, 'balancePickme', 'BalancePickme');
+  const total =
+    jsonMoney(data, 'total', 'Total') ??
+    (cash ?? 0) + (card ?? 0) + (uber ?? 0) + (pickme ?? 0);
+  const cashierName = String(jsonPick(data, 'cashierName', 'CashierName') ?? '').trim();
+  const outletName = String(jsonPick(data, 'outletName', 'OutletName') ?? approval.entityReference ?? '').trim();
+  const outletCode = String(jsonPick(data, 'outletCode', 'OutletCode') ?? '').trim();
+  const processDate = String(jsonPick(data, 'processDate', 'ProcessDate') ?? '').slice(0, 10);
+
+  return (
+    <DetailPanel>
+      <div className="space-y-6">
+        <DetailSectionTint title="Cash submission">
+          <InfoGrid plain>
+            <InfoField
+              label="Showroom"
+              value={outletCode ? `${outletCode} — ${outletName || 'Showroom'}` : outletName || '—'}
+              highlight
+            />
+            <InfoField label="Date" value={processDate ? formatSlDate(processDate) : formatSlDateTime(approval.requestedAt)} />
+            <InfoField label="Requested By" value={approval.requestedByName || approval.RequestedByName || '—'} />
+          </InfoGrid>
+        </DetailSectionTint>
+        <InfoField label="Cashier" value={cashierName || '—'} />
+        {closed ? (
+          <p className="text-sm font-semibold" style={{ color: '#92400E' }}>
+            Showroom marked closed for this date.
+          </p>
+        ) : (
+          <DetailSectionTint title="Amounts">
+            <InfoGrid plain>
+              <InfoField label="Cash" value={formatApprovalRs(cash)} />
+              <InfoField label="Card" value={formatApprovalRs(card)} />
+              <InfoField label="Uber" value={formatApprovalRs(uber)} />
+              <InfoField label="PickMe" value={formatApprovalRs(pickme)} />
+            </InfoGrid>
+            <div className="mt-4">
+              <InfoField label="Total" value={formatApprovalRs(total)} highlight />
+            </div>
+          </DetailSectionTint>
         )}
       </div>
     </DetailPanel>

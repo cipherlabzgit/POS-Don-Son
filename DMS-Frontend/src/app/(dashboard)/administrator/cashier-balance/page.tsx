@@ -386,24 +386,31 @@ function CashierBalanceContent() {
                   )}
                   {!loading &&
                     rows.map((r, idx) => {
-                      const rowLocked = isDayApproved || r.isLocked;
+                      const statusLock = ['pending', 'approved'].includes((r.lineStatus || '').toLowerCase());
+                      const rowLocked = isDayApproved || r.isLocked || statusLock;
                       const cashierNameDisabled = rowLocked || r.isClosed;
                       const channelDisabled = rowLocked || r.isClosed;
                       const closedDisabled = rowLocked;
                       const cashiers = cashiersByOutlet[r.outletId] ?? [];
+                      const sameId = (a: string, b: string) =>
+                        a.trim().toLowerCase() === b.trim().toLowerCase();
                       const cashierOptions = cashiers.map((c) => ({
                         value: c.outletEmployeeId,
-                        label: c.displayName,
+                        label: (c.displayName || '').trim() || r.cashierName || 'Cashier',
                       }));
                       if (
                         r.outletEmployeeId &&
-                        !cashierOptions.some((o) => o.value === r.outletEmployeeId)
+                        !cashierOptions.some((o) => sameId(o.value, r.outletEmployeeId))
                       ) {
                         cashierOptions.unshift({
                           value: r.outletEmployeeId,
                           label: r.cashierName || 'Submitted cashier',
                         });
                       }
+                      const lockedCashierLabel =
+                        r.cashierName ||
+                        cashierOptions.find((o) => sameId(o.value, r.outletEmployeeId))?.label ||
+                        '';
 
                       return (
                         <tr
@@ -429,7 +436,7 @@ function CashierBalanceContent() {
                             <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                               {r.showroomName}
                             </div>
-                            {r.isLocked ? (
+                            {r.isLocked || statusLock ? (
                               <div className="text-[11px] mt-1 font-semibold" style={{ color: '#B45309' }}>
                                 {r.lineStatus === 'Approved' ? 'Approved — locked' : 'Submitted — locked until rejected'}
                               </div>
@@ -451,14 +458,20 @@ function CashierBalanceContent() {
                             )}
                           </td>
                           <td className="p-3 align-top">
-                            <Select
-                              value={r.outletEmployeeId}
-                              disabled={cashierNameDisabled}
-                              onChange={(e) => updateRow(idx, { outletEmployeeId: e.target.value })}
-                              options={cashierOptions}
-                              placeholder={r.isClosed ? 'Closed' : 'Select cashier'}
-                              fullWidth
-                            />
+                            {rowLocked && !r.isClosed ? (
+                              <div className="text-sm font-medium py-2.5" style={{ color: 'var(--foreground)' }}>
+                                {lockedCashierLabel || '—'}
+                              </div>
+                            ) : (
+                              <Select
+                                value={r.outletEmployeeId}
+                                disabled={cashierNameDisabled}
+                                onChange={(e) => updateRow(idx, { outletEmployeeId: e.target.value })}
+                                options={cashierOptions}
+                                placeholder={r.isClosed ? 'Closed' : 'Select cashier'}
+                                fullWidth
+                              />
+                            )}
                           </td>
                           <td className="p-3 align-top">
                             <Input
@@ -466,6 +479,7 @@ function CashierBalanceContent() {
                               inputMode="decimal"
                               value={r.balanceCash}
                               disabled={channelDisabled}
+                              readOnly={channelDisabled}
                               onChange={(e) => updateRow(idx, { balanceCash: e.target.value })}
                               placeholder={r.isClosed ? 'Closed' : '0.00'}
                               fullWidth
@@ -477,6 +491,7 @@ function CashierBalanceContent() {
                               inputMode="decimal"
                               value={r.balanceCard}
                               disabled={channelDisabled}
+                              readOnly={channelDisabled}
                               onChange={(e) => updateRow(idx, { balanceCard: e.target.value })}
                               placeholder={r.isClosed ? 'Closed' : '0.00'}
                               fullWidth
@@ -488,6 +503,7 @@ function CashierBalanceContent() {
                               inputMode="decimal"
                               value={r.balanceUber}
                               disabled={channelDisabled}
+                              readOnly={channelDisabled}
                               onChange={(e) => updateRow(idx, { balanceUber: e.target.value })}
                               placeholder={r.isClosed ? 'Closed' : '0.00'}
                               fullWidth
@@ -499,6 +515,7 @@ function CashierBalanceContent() {
                               inputMode="decimal"
                               value={r.balancePickme}
                               disabled={channelDisabled}
+                              readOnly={channelDisabled}
                               onChange={(e) => updateRow(idx, { balancePickme: e.target.value })}
                               placeholder={r.isClosed ? 'Closed' : '0.00'}
                               fullWidth

@@ -5,6 +5,8 @@ public sealed class SubmitCashierBalanceLineDto
     public Guid OutletId { get; set; }
     public bool IsShowroomClosed { get; set; }
     public Guid? OutletEmployeeId { get; set; }
+    /// <summary>POS cashier display name when an outlet employee id is not sent.</summary>
+    public string? CashierName { get; set; }
     /// <summary>Legacy single total when channel fields are not used.</summary>
     public decimal? CashierBalance { get; set; }
     public decimal? BalanceCash { get; set; }

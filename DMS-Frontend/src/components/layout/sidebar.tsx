@@ -33,20 +33,28 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
     setExpandedItems((prev) => (prev.includes(itemName) ? [] : [itemName]));
   };
 
+  // Collapse when clicking anywhere except the open section (main content, other nav, etc.)
   useEffect(() => {
     if (expandedItems.length === 0) return;
-    const onPointerDown = (event: PointerEvent) => {
-      const root = sidebarRef.current;
-      if (!root) return;
-      if (root.contains(event.target as Node)) return;
+
+    const onOutside = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      const openSection = sidebarRef.current?.querySelector('[data-expanded-section="true"]');
+      if (openSection?.contains(target)) return;
       setExpandedItems([]);
     };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
+
+    document.addEventListener('pointerdown', onOutside, true);
+    document.addEventListener('touchstart', onOutside, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener('pointerdown', onOutside, true);
+      document.removeEventListener('touchstart', onOutside, true);
+    };
   }, [expandedItems.length]);
 
   const handleNavClick = () => {
-    // Close mobile menu when clicking a nav item
+    setExpandedItems([]);
     if (window.innerWidth < 1024) {
       setMobileOpen(false);
     }
@@ -76,7 +84,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
 
     if (hasChildren) {
       return (
-        <div key={item.name}>
+        <div key={item.name} data-expanded-section={isExpanded ? 'true' : undefined}>
           <button
             onClick={() => toggleExpanded(item.name)}
             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all ${

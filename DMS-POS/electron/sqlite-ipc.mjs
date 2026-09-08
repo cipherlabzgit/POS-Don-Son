@@ -149,6 +149,7 @@ const ALLOWED = new Set([
   'salesListPendingStatusRefresh',
   'stockBfPut',
   'stockBfUpdate',
+  'stockBfGetAll',
   'droppedMutationsPut',
   'seedFromMigration',
 ])
@@ -344,6 +345,11 @@ function dispatch(d, op, payload) {
             )
             .all(limit)
       return rows.map(mapSaleRow)
+    }
+
+    case 'stockBfGetAll': {
+      const rows = d.prepare('SELECT * FROM stock_bf ORDER BY created_at DESC').all()
+      return rows.map(mapStockBfRow)
     }
 
     case 'stockBfPut': {

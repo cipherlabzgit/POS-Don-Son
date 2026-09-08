@@ -96,8 +96,9 @@ export const deliveryReturnsApi = {
       pageSize: pageSize.toString(),
     });
     
-    if (filters?.startDate) params.append('startDate', filters.startDate);
-    if (filters?.endDate) params.append('endDate', filters.endDate);
+    // Backend DeliveryReturnsController uses fromDate / toDate (not startDate / endDate).
+    if (filters?.startDate) params.append('fromDate', filters.startDate);
+    if (filters?.endDate) params.append('toDate', filters.endDate);
     if (filters?.outletId) params.append('outletId', filters.outletId);
     if (filters?.status) params.append('status', filters.status);
     

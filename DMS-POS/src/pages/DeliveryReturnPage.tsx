@@ -6,7 +6,7 @@ import { useAuthStore } from '../lib/auth-store'
 import { useSettingsStore } from '../lib/settings-store'
 import { loadAllActiveProducts } from '../lib/catalog-sync'
 import type { ProductRow } from '../lib/types'
-import { createDeliveryReturn } from '../lib/api'
+import { createDeliveryReturn, recordId } from '../lib/api'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError } from '../lib/api-errors'
@@ -126,12 +126,13 @@ export function DeliveryReturnPage({ onBack }: Props) {
         reason: commentSnap || 'Return from showroom',
         items: snapshot.map((r) => ({ productId: r.productId, quantity: r.qty })),
       })) as Record<string, unknown>
-      if (!created?.id && !created?.Id) throw new Error('No return ID returned.')
-      const returnNo = String(created.returnNo ?? created.ReturnNo ?? '').trim()
-      const status = String(created.status ?? created.Status ?? '')
+      const rec = (created && typeof created === 'object') ? (created as Record<string, unknown>) : {}
+      const returnNo = String(rec.returnNo ?? rec.ReturnNo ?? '').trim()
+      if (!recordId(created) && !returnNo) throw new Error('No return ID returned.')
+      const status = String(rec.status ?? rec.Status ?? '')
       setRows([]); setComment('')
       const approved = status.toLowerCase() === 'approved'
-      toast(approved ? 'Return approved.' : 'Return submitted for approval.', 'success')
+      toast(approved ? 'Return approved. Printing original and copy…' : 'Return submitted. Printing original and copy…', 'success')
       try {
         await printReturnNotes({
           returnNo: returnNo || '—',

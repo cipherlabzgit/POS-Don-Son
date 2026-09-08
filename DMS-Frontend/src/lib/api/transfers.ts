@@ -105,8 +105,9 @@ export const transfersApi = {
       pageSize: pageSize.toString(),
     });
     
-    if (filters?.startDate) params.append('startDate', filters.startDate);
-    if (filters?.endDate) params.append('endDate', filters.endDate);
+    // Backend TransfersController uses fromDate / toDate (not startDate / endDate).
+    if (filters?.startDate) params.append('fromDate', filters.startDate);
+    if (filters?.endDate) params.append('toDate', filters.endDate);
     if (filters?.fromOutletId) params.append('fromOutletId', filters.fromOutletId);
     if (filters?.toOutletId) params.append('toOutletId', filters.toOutletId);
     if (filters?.status) params.append('status', filters.status);

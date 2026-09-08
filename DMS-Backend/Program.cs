@@ -298,6 +298,9 @@ using (var scope = app.Services.CreateScope())
         // cashier_balance_outlet_lines.cashier_name — POS Cash Submission 500s if missing
         await context.EnsureCashierBalanceColumnsAsync();
 
+        // transfers.received_by_id / received_at — POS New Transfer 500s if missing
+        await context.EnsureTransferColumnsAsync();
+
         // Seed permissions first
         await permissionSeeder.SeedAsync();
 

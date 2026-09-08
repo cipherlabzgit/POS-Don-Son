@@ -57,17 +57,18 @@ export function PendingTransfersPage({ onBack }: Props) {
     if (!selected) { setDetail(null); return }
     void (async () => {
       try {
-        const d = await fetchTransferDetail(String(selected.id ?? selected.Id)) as Transfer
+        const d = await fetchTransferDetail(String(selected.id ?? selected.Id ?? '')) as Transfer
         setDetail(d)
       } catch { setDetail(null) }
     })()
   }, [selected])
 
   async function markReceived() {
-    if (!detail?.id || !online) return
+    const transferId = String(detail?.id ?? detail?.Id ?? '').trim()
+    if (!transferId || !online) return
     setActing(true)
     try {
-      await completeTransferReceipt(String(detail.id ?? detail.Id))
+      await completeTransferReceipt(transferId)
       setSelected(null)
       setDetail(null)
       await loadList()

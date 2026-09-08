@@ -69,8 +69,10 @@ export function NewTransferPage({ onBack }: Props) {
       try {
         const data = await fetchOutletsPage(1, 200)
         setOutlets((data.outlets as Record<string, unknown>[]).map((o) => ({
-          id: String(o.id), code: String(o.code ?? ''), name: String(o.name ?? ''),
-        })))
+          id: recordId(o),
+          code: String(o.code ?? o.Code ?? ''),
+          name: String(o.name ?? o.Name ?? ''),
+        })).filter((o) => o.id))
       } catch { /* offline */ }
     })()
   }, [token])
@@ -152,7 +154,7 @@ export function NewTransferPage({ onBack }: Props) {
       setRows([])
       setNotes('')
       const approved = status.toLowerCase() === 'approved'
-      toast(approved ? 'Transfer approved.' : 'Transfer submitted for approval.', 'success')
+      toast(approved ? 'Transfer approved. Printing original and copy…' : 'Transfer submitted. Printing original and copy…', 'success')
       try {
         await printTransferNotes({
           transferNo: transferNo || '—',
@@ -174,7 +176,20 @@ export function NewTransferPage({ onBack }: Props) {
       if (isAlreadyRecordedError(e)) {
         setRows([])
         setNotes('')
-        toast('Transfer submitted for approval.', 'success')
+        toast('Transfer submitted. Printing original and copy…', 'success')
+        try {
+          await printTransferNotes({
+            transferNo: '—',
+            submittedAt,
+            fromShowroom: outletLabel || '—',
+            toShowroom: dest ? `${dest.name} (${dest.code})` : '—',
+            submittedBy: cashierName || '—',
+            comment: commentSnapshot,
+            lines: snapshot.map((r) => ({ code: r.code, name: r.name, qty: r.qty })),
+          })
+        } catch (printErr) {
+          console.warn('[Transfer] print failed', printErr)
+        }
       } else {
         toast(formatSubmitError(e), 'error')
       }

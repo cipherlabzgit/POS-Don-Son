@@ -26,12 +26,14 @@ public class DeliveryReturnsController : ControllerBase
         [FromQuery] int pageSize = 50,
         [FromQuery] DateTime? fromDate = null,
         [FromQuery] DateTime? toDate = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
         [FromQuery] Guid? outletId = null,
         [FromQuery] string? status = null,
         CancellationToken cancellationToken = default)
     {
         var (deliveryReturns, totalCount) = await _deliveryReturnService.GetAllAsync(
-            page, pageSize, fromDate, toDate, outletId, status, cancellationToken);
+            page, pageSize, fromDate ?? startDate, toDate ?? endDate, outletId, status, cancellationToken);
 
         return Ok(ApiResponse<object>.SuccessResponse(new
         {

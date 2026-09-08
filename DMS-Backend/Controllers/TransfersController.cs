@@ -3,6 +3,8 @@ using DMS_Backend.Models.DTOs.Transfers;
 using DMS_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Data.Common;
 using System.Security.Claims;
 
 namespace DMS_Backend.Controllers;
@@ -26,6 +28,8 @@ public class TransfersController : ControllerBase
         [FromQuery] int pageSize = 50,
         [FromQuery] DateTime? fromDate = null,
         [FromQuery] DateTime? toDate = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
         [FromQuery] Guid? fromOutletId = null,
         [FromQuery] Guid? toOutletId = null,
         [FromQuery] string? status = null,
@@ -33,7 +37,7 @@ public class TransfersController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var (transfers, totalCount) = await _transferService.GetAllAsync(
-            page, pageSize, fromDate, toDate, fromOutletId, toOutletId, status, unreceivedOnly, cancellationToken);
+            page, pageSize, fromDate ?? startDate, toDate ?? endDate, fromOutletId, toOutletId, status, unreceivedOnly, cancellationToken);
 
         return Ok(ApiResponse<object>.SuccessResponse(new
         {
@@ -84,6 +88,11 @@ public class TransfersController : ControllerBase
         {
             return Conflict(ApiResponse<TransferDetailDto>.FailureResponse(
                 Error.Conflict(ex.Message)));
+        }
+        catch (Exception ex) when (ex is DbUpdateException or DbException)
+        {
+            return Conflict(ApiResponse<TransferDetailDto>.FailureResponse(
+                Error.Conflict(TransferSaveFailureMessage(ex))));
         }
     }
 
@@ -251,5 +260,18 @@ public class TransfersController : ControllerBase
             return BadRequest(ApiResponse<TransferDetailDto>.FailureResponse(
                 Error.Validation(ex.Message)));
         }
+    }
+
+    private static string TransferSaveFailureMessage(Exception ex)
+    {
+        var detail = ex.InnerException?.Message ?? ex.Message;
+        if (detail.Contains("received_by", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("received_at", StringComparison.OrdinalIgnoreCase)
+            || detail.Contains("42703", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Transfer save failed because the database is missing receive columns. Restart the API so they can be added, then submit again.";
+        }
+
+        return "Transfer could not be saved. Try again, or restart the API if this keeps happening.";
     }
 }

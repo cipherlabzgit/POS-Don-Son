@@ -199,6 +199,26 @@ export function isElectronPos() {
   return typeof window !== 'undefined' && window.dmsPos?.mode === 'electron'
 }
 
+async function printHtmlJob(html: string, label: string): Promise<void> {
+  if (isElectronPos() && window.dmsPos?.printSilent) {
+    try {
+      const result = await window.dmsPos.printSilent(html)
+      if (result?.success) return
+      console.warn(`[PRINT] ${label} silent print failed:`, result?.error)
+    } catch (error) {
+      console.warn(`[PRINT] ${label} silent print exception:`, error)
+    }
+  }
+  await printViaIframe(html)
+}
+
+/** ORIGINAL slip, wait for cutter, then COPY slip. */
+export async function printOriginalThenCopy(originalHtml: string, copyHtml: string): Promise<void> {
+  await printHtmlJob(originalHtml, 'ORIGINAL')
+  await new Promise((r) => setTimeout(r, 3500))
+  await printHtmlJob(copyHtml, 'COPY')
+}
+
 export async function printReceiptHtml(
   opts: PrintReceiptOpts,
   flags?: { silentOnly?: boolean },

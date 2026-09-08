@@ -1,4 +1,4 @@
-import { isElectronPos } from './print-receipt'
+import { printOriginalThenCopy } from './print-receipt'
 
 export type TransferNoteLine = {
   code: string
@@ -144,56 +144,10 @@ ${footer}
 </body></html>`
 }
 
-function printViaIframe(html: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const iframe = document.createElement('iframe')
-    iframe.setAttribute('aria-hidden', 'true')
-    iframe.style.cssText =
-      'position:fixed;left:-10000px;top:0;width:320px;height:1200px;border:0;opacity:0;pointer-events:none'
-    document.body.appendChild(iframe)
-    const win = iframe.contentWindow
-    const doc = iframe.contentDocument
-    if (!win || !doc) {
-      iframe.remove()
-      resolve(false)
-      return
-    }
-    doc.open()
-    doc.write(html)
-    doc.close()
-    const printNow = () => {
-      try {
-        win.focus()
-        win.print()
-        iframe.remove()
-        resolve(true)
-      } catch {
-        iframe.remove()
-        resolve(false)
-      }
-    }
-    const schedulePrint = () => setTimeout(printNow, 50)
-    if (doc.readyState === 'complete') schedulePrint()
-    else win.addEventListener('load', schedulePrint, { once: true })
-  })
-}
-
-async function printOne(html: string): Promise<void> {
-  if (isElectronPos() && window.dmsPos?.printSilent) {
-    try {
-      const result = await window.dmsPos.printSilent(html)
-      if (result?.success) return
-      console.warn('[PRINT] Transfer note silent print failed:', result?.error)
-    } catch (error) {
-      console.warn('[PRINT] Transfer note silent print exception:', error)
-    }
-  }
-  await printViaIframe(html)
-}
-
 /** Prints TRANSFER ORIGINAL, waits for the cutter, then prints TRANSFER COPY. */
 export async function printTransferNotes(opts: TransferNoteOpts): Promise<void> {
-  await printOne(buildTransferNoteHtml(opts, 'original'))
-  await new Promise((r) => setTimeout(r, 3500))
-  await printOne(buildTransferNoteHtml(opts, 'copy'))
+  await printOriginalThenCopy(
+    buildTransferNoteHtml(opts, 'original'),
+    buildTransferNoteHtml(opts, 'copy'),
+  )
 }

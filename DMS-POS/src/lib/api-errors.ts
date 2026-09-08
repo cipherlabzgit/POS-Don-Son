@@ -14,8 +14,15 @@ export function formatSubmitError(err: unknown): string {
   const day = getDayLockUserMessage(err)
   if (day) return day
   if (axios.isAxiosError(err)) {
-    const data = err.response?.data as { error?: { message?: string } } | undefined
-    const m = data?.error?.message
+    const data = err.response?.data as {
+      error?: { message?: string; code?: string; Message?: string }
+      Error?: { message?: string; Message?: string }
+    } | undefined
+    const m =
+      data?.error?.message
+      ?? data?.error?.Message
+      ?? data?.Error?.message
+      ?? data?.Error?.Message
     if (m) return String(m)
     if (err.response) {
       const status = err.response.status

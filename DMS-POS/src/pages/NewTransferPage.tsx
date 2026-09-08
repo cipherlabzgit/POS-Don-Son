@@ -136,11 +136,8 @@ export function NewTransferPage({ onBack }: Props) {
     const snapshot = [...rows]
     const dest = toChoices.find((o) => o.id === toOutletId)
     const cashierName = user ? `${user.firstName} ${user.lastName}`.trim() : '—'
-    const submittedAt = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Asia/Colombo',
-      dateStyle: 'short',
-      timeStyle: 'medium',
-    }).format(new Date())
+    const submittedAt = new Date().toISOString()
+    const commentSnapshot = notes.trim()
     try {
       const created = await createTransfer({
         transferDate: `${todayCalendarISO()}T00:00:00.000Z`,
@@ -163,6 +160,7 @@ export function NewTransferPage({ onBack }: Props) {
           fromShowroom: outletLabel || '—',
           toShowroom: dest ? `${dest.name} (${dest.code})` : '—',
           submittedBy: cashierName || '—',
+          comment: commentSnapshot,
           lines: snapshot.map((r) => ({ code: r.code, name: r.name, qty: r.qty })),
         })
       } catch (printErr) {
@@ -265,7 +263,7 @@ export function NewTransferPage({ onBack }: Props) {
               autoComplete="off"
             />
             {showDrop && filtered.length > 0 ? (
-              <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-auto rounded-xl border border-[var(--border)] bg-white shadow-xl">
+              <ul className="pos-search-dropdown absolute left-0 right-0 bottom-full mb-1 max-h-40 overflow-auto rounded-xl border border-[var(--border)] bg-white shadow-xl">
                 {filtered.map((p) => (
                   <li key={p.id}>
                     <button type="button" className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--neutral-50)]"

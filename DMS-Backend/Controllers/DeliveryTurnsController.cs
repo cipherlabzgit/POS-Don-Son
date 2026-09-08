@@ -20,7 +20,7 @@ public class DeliveryTurnsController : ControllerBase
     }
 
     [HttpGet]
-    [HasPermission("delivery_turn:view")]
+    [HasPermission("delivery_turn:view|order:create|immediate_order:create|immediate_order:view")]
     public async Task<ActionResult<ApiResponse<object>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,

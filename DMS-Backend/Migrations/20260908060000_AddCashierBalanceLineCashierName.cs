@@ -1,9 +1,12 @@
+using DMS_Backend.Data;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace DMS_Backend.Migrations;
 
+[DbContext(typeof(ApplicationDbContext))]
 [Migration("20260908060000_AddCashierBalanceLineCashierName")]
 public partial class AddCashierBalanceLineCashierName : Migration
 {

@@ -99,6 +99,14 @@ body {
 
 #root { min-height: 100vh; }
 
+/* Compact on-screen keyboard: keep page content and item dropdowns above it */
+html.pos-osk-open #root {
+  padding-bottom: var(--pos-osk-height, 9.5rem);
+}
+.pos-search-dropdown {
+  z-index: 90;
+}
+
 /* ─── Branded scrollbar ─── */
 .pos-scroll::-webkit-scrollbar       { width: 6px; height: 6px; }
 .pos-scroll::-webkit-scrollbar-track { background: var(--neutral-100); }

@@ -295,6 +295,9 @@ using (var scope = app.Services.CreateScope())
         // sale_records_settings + cashier_sale_notifications
         await context.EnsureSaleRecordsTablesAsync();
 
+        // cashier_balance_outlet_lines.cashier_name — POS Cash Submission 500s if missing
+        await context.EnsureCashierBalanceColumnsAsync();
+
         // Seed permissions first
         await permissionSeeder.SeedAsync();
 

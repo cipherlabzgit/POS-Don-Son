@@ -114,11 +114,7 @@ export function DeliveryReturnPage({ onBack }: Props) {
     const snapshot = rows.map((r) => ({ ...r }))
     const commentSnap = comment.trim()
     const cashierName = user ? `${user.firstName} ${user.lastName}`.trim() : '—'
-    const submittedAt = new Intl.DateTimeFormat('en-LK', {
-      timeZone: 'Asia/Colombo',
-      dateStyle: 'short',
-      timeStyle: 'medium',
-    }).format(new Date())
+    const submittedAt = new Date().toISOString()
     setSubmitting(true)
     try {
       const now = new Date()
@@ -142,7 +138,7 @@ export function DeliveryReturnPage({ onBack }: Props) {
           submittedAt,
           showroom: outletLabel || '—',
           submittedBy: cashierName || '—',
-          reason: commentSnap || undefined,
+          comment: commentSnap,
           lines: snapshot.map((r) => ({ code: r.code, name: r.name, qty: r.qty })),
         })
       } catch (printErr) {
@@ -227,7 +223,7 @@ export function DeliveryReturnPage({ onBack }: Props) {
               autoComplete="off"
             />
             {showDrop && filtered.length > 0 ? (
-              <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-auto rounded-xl border border-[var(--border)] bg-white shadow-xl">
+              <ul className="pos-search-dropdown absolute left-0 right-0 bottom-full mb-1 max-h-40 overflow-auto rounded-xl border border-[var(--border)] bg-white shadow-xl">
                 {filtered.map((p) => (
                   <li key={p.id}>
                     <button type="button" className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--neutral-50)]"

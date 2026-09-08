@@ -18,10 +18,12 @@ public sealed class CashierBalanceService : ICashierBalanceService
         || string.Equals(approvalType, ShowroomClosedApprovalType, StringComparison.OrdinalIgnoreCase);
 
     private readonly ApplicationDbContext _context;
+    private readonly ILogger<CashierBalanceService> _logger;
 
-    public CashierBalanceService(ApplicationDbContext context)
+    public CashierBalanceService(ApplicationDbContext context, ILogger<CashierBalanceService> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     private static DateTime NormalizeProcessDate(DateTime d) =>
@@ -76,7 +78,14 @@ public sealed class CashierBalanceService : ICashierBalanceService
     public async Task<CashierBalanceContextDto> GetContextAsync(DateTime processDate, CancellationToken cancellationToken = default)
     {
         var pd = NormalizeProcessDate(processDate);
-        await BackfillMissingCashiersAsync(pd, cancellationToken);
+        try
+        {
+            await BackfillMissingCashiersAsync(pd, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cashier balance backfill skipped for {ProcessDate}", pd);
+        }
 
         var dayRow = await _context.CashierBalanceDays
             .AsNoTracking()
@@ -90,12 +99,15 @@ public sealed class CashierBalanceService : ICashierBalanceService
             .ThenBy(o => o.Name)
             .ToListAsync(cancellationToken);
 
-        var lines = await _context.CashierBalanceOutletLines
+        var lineRows = await _context.CashierBalanceOutletLines
             .AsNoTracking()
             .Include(l => l.OutletEmployee)
                 .ThenInclude(e => e!.User)
             .Where(l => l.ProcessDate == pd)
-            .ToDictionaryAsync(l => l.OutletId, cancellationToken);
+            .ToListAsync(cancellationToken);
+        var lines = lineRows
+            .GroupBy(l => l.OutletId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(l => l.UpdatedAt).First());
 
         var latestByLine = await GetLatestApprovalsByLineIdsAsync(
             lines.Values.Select(l => l.Id).ToList(),
@@ -602,11 +614,16 @@ public sealed class CashierBalanceService : ICashierBalanceService
         }
 
         var email = (user.Email ?? string.Empty).Trim();
+        if (email.Length > 100)
+            email = email[..100];
         if (!string.IsNullOrEmpty(email))
         {
+            var emailLower = email.ToLower();
             var byEmail = await _context.OutletEmployees
                 .FirstOrDefaultAsync(
-                    e => e.OutletId == outletId && e.Email.ToLower() == email.ToLower(),
+                    e => e.OutletId == outletId
+                         && e.Email != null
+                         && e.Email.ToLower() == emailLower,
                     cancellationToken);
             if (byEmail != null)
             {
@@ -621,6 +638,10 @@ public sealed class CashierBalanceService : ICashierBalanceService
         if (code.Length > 100)
             code = code[..100];
 
+        var phone = user.Phone?.Trim();
+        if (phone is { Length: > 20 })
+            phone = phone[..20];
+
         var employee = new OutletEmployee
         {
             Id = Guid.NewGuid(),
@@ -628,7 +649,7 @@ public sealed class CashierBalanceService : ICashierBalanceService
             UserId = userId,
             EmployeeCode = code,
             Email = string.IsNullOrEmpty(email) ? $"{userId:N}@pos.local" : email,
-            Phone = user.Phone,
+            Phone = phone,
             Position = "Cashier",
             CreatedAt = now,
             CreatedById = userId,

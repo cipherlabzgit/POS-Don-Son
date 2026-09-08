@@ -339,6 +339,7 @@ public sealed class DevDataSeeder
         "operation:delivery-return:view",
         "operation:delivery-return:create",
         "order:create",
+        "immediate_order:create",
         "pos:sale-records:view",
     ];
 

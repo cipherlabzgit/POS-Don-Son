@@ -317,6 +317,8 @@ public class TransferService : ITransferService
         if (transfer.Status != TransferStatus.Pending)
             throw new InvalidOperationException("Only pending transfers can be approved");
 
+        // POS receive (ReceivedBy) is optional and independent of DMS approval.
+
         // Stock availability check on source before approving
         var stockShortages = new List<string>();
         foreach (var item in transfer.Items)

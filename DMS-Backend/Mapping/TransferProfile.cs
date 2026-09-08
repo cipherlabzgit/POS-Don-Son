@@ -18,7 +18,9 @@ public sealed class TransferProfile : Profile
 
         CreateMap<Transfer, TransferDetailDto>()
             .ForMember(dest => dest.FromOutletName, opt => opt.MapFrom(src => src.FromOutlet!.Name))
+            .ForMember(dest => dest.FromOutletCode, opt => opt.MapFrom(src => src.FromOutlet!.Code))
             .ForMember(dest => dest.ToOutletName, opt => opt.MapFrom(src => src.ToOutlet!.Name))
+            .ForMember(dest => dest.ToOutletCode, opt => opt.MapFrom(src => src.ToOutlet!.Code))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
             .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedBy != null ? $"{src.CreatedBy.FirstName} {src.CreatedBy.LastName}" : null))
             .ForMember(dest => dest.ApprovedByName, opt => opt.MapFrom(src => src.ApprovedBy != null ? $"{src.ApprovedBy.FirstName} {src.ApprovedBy.LastName}" : null))

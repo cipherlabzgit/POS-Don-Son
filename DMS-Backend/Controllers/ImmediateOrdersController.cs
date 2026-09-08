@@ -95,7 +95,7 @@ public class ImmediateOrdersController : ControllerBase
     }
 
     [HttpPost]
-    [HasPermission("immediate_order:create")]
+    [HasPermission("immediate_order:create|order:create")]
     [Audit]
     public async Task<ActionResult<ApiResponse<ImmediateOrderDetailDto>>> Create(
         [FromBody] CreateImmediateOrderDto dto,

@@ -19,6 +19,7 @@ export interface Transfer {
   transferDate: string;
   fromOutletId: string;
   fromOutletName?: string;
+  fromOutletCode?: string;
   fromOutlet?: {
     id: string;
     code: string;
@@ -26,6 +27,7 @@ export interface Transfer {
   };
   toOutletId: string;
   toOutletName?: string;
+  toOutletCode?: string;
   toOutlet?: {
     id: string;
     code: string;

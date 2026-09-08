@@ -5,7 +5,7 @@ import { CatalogStaleBanner } from '../components/CatalogStaleBanner'
 import { useAuthStore } from '../lib/auth-store'
 import { useSettingsStore } from '../lib/settings-store'
 import { loadProductsIntoDb } from '../lib/catalog-sync'
-import { fetchDeliveryTurnsPage, createImmediateOrder } from '../lib/api'
+import { fetchDeliveryTurnsPage, createImmediateOrder, recordId } from '../lib/api'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError } from '../lib/api-errors'
@@ -71,19 +71,22 @@ export function OrderRequestPage({ onBack }: OrderRequestPageProps) {
     void (async () => {
       try {
         const res = await fetchDeliveryTurnsPage(1, 100)
-        const turns = (res.deliveryTurns as Record<string, unknown>[]).map((t) => ({
-          id: String(t.id ?? ''),
-          name: String(t.name ?? ''),
-        }))
+        const turns = (res.deliveryTurns as Record<string, unknown>[])
+          .map((t) => ({
+            id: recordId(t),
+            name: String(t.name ?? t.Name ?? '').trim(),
+          }))
+          .filter((t) => t.id)
         setDeliveryTurns(turns)
-        if (turns.length > 0 && !selectedTurnId) {
-          setSelectedTurnId(turns[0].id)
-        }
+        setSelectedTurnId((current) => {
+          if (current && turns.some((t) => t.id === current)) return current
+          return turns[0]?.id ?? ''
+        })
       } catch (error) {
-        toast('Unable to load delivery turns.', 'error')
+        toast(formatSubmitError(error), 'error')
       }
     })()
-  }, [online, token, selectedTurnId])
+  }, [online, token])
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()

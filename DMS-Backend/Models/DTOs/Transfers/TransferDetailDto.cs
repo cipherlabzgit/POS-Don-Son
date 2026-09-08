@@ -7,8 +7,10 @@ public sealed class TransferDetailDto
     public DateTime TransferDate { get; set; }
     public Guid FromOutletId { get; set; }
     public string FromOutletName { get; set; } = string.Empty;
+    public string? FromOutletCode { get; set; }
     public Guid ToOutletId { get; set; }
     public string ToOutletName { get; set; } = string.Empty;
+    public string? ToOutletCode { get; set; }
     public string Status { get; set; } = string.Empty;
     public int TotalItems { get; set; }
     public string? Notes { get; set; }

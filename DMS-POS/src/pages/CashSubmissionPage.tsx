@@ -211,7 +211,7 @@ export function CashSubmissionPage({ onBack }: Props) {
         <div className="mt-8">
           <button
             type="button"
-            disabled={submitting || !online || loading || locked || !outletId}
+            disabled={submitting || !online || loading || locked || !outletId || Boolean(loadError)}
             onClick={() => void submit()}
             className="pos-tap rounded-xl bg-[var(--brand-primary)] px-8 py-3.5 text-base font-bold text-white shadow-md hover:bg-[var(--brand-primary-dark)] disabled:opacity-40"
           >

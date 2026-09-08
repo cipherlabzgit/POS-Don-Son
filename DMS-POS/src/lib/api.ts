@@ -198,11 +198,15 @@ export async function fetchOutletsPage(page: number, pageSize: number) {
 }
 
 export async function fetchDeliveryTurnsPage(page: number, pageSize: number) {
-  const { data } = await api.get<ApiEnvelope<{ deliveryTurns: unknown[]; totalCount: number }>>(
-    '/api/delivery-turns',
-    { params: { page, pageSize, activeOnly: true } },
+  const { data } = await api.get('/api/delivery-turns', {
+    params: { page, pageSize, activeOnly: true },
+  })
+  const { items, totalCount } = readPagedPayload(
+    data,
+    ['deliveryTurns', 'DeliveryTurns'],
+    ['totalCount', 'TotalCount'],
   )
-  return unwrap(data)
+  return { deliveryTurns: items, totalCount }
 }
 
 export async function createOrderRequest(body: {

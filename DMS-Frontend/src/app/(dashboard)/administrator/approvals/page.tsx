@@ -6,7 +6,7 @@ import Button from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
 import { Modal, ModalFooter } from '@/components/ui/modal';
 import Input from '@/components/ui/input';
-import { CheckCircle, XCircle, Search, Check, X, Loader2, Clock, ArrowRight } from 'lucide-react';
+import { CheckCircle, XCircle, Search, Check, X, Loader2, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   operationApprovalsApi,
@@ -345,7 +345,7 @@ export default function ApprovalsPage() {
       clearDetail();
       fetchAll();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || `Failed to approve ${type.toLowerCase()}`);
+      toast.error(approvalApiError(error, `Failed to approve ${type.toLowerCase()}`));
     } finally {
       setSubmittingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
     }
@@ -408,7 +408,7 @@ export default function ApprovalsPage() {
       clearDetail();
       fetchAll();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || `Failed to reject ${type.toLowerCase()}`);
+      toast.error(approvalApiError(error, `Failed to reject ${type.toLowerCase()}`));
     } finally {
       setSubmittingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
     }
@@ -973,7 +973,13 @@ export default function ApprovalsPage() {
   );
 }
 
-// ─── Detail sub-components ─────────────────────────────────────────────────────
+function approvalApiError(error: unknown, fallback: string): string {
+  const data = (error as { response?: { data?: Record<string, unknown> } })?.response?.data;
+  if (!data) return fallback;
+  const nested = (data.error ?? data.Error) as { message?: string; Message?: string } | undefined;
+  const msg = nested?.message ?? nested?.Message ?? data.message ?? data.Message;
+  return typeof msg === 'string' && msg.trim() ? msg : fallback;
+}
 
 /** Shared shell for approval detail bodies (matches transfer-style panel). */
 function DetailPanel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -1164,129 +1170,102 @@ function approvalStatusBadgeVariant(status: string | undefined): 'warning' | 'su
   return 'neutral';
 }
 
+function transferPick(raw: Record<string, unknown>, camel: string, pascal: string): string {
+  const v = raw[camel] ?? raw[pascal];
+  if (v == null) return '';
+  return String(v).trim();
+}
+
+function showroomLabel(code: string, name: string): string {
+  if (code && name) return `${code} - ${name}`;
+  return name || code || '—';
+}
+
+function TransferDetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div
+      className="flex flex-col gap-1 border-b border-dashed py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
+      style={{ borderColor: 'var(--border)' }}
+    >
+      <p className="shrink-0 text-sm font-medium" style={{ color: 'var(--muted-foreground)' }}>
+        {label}
+      </p>
+      <p className="text-sm font-semibold sm:text-right" style={{ color: 'var(--foreground)' }}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
 function TransferDetailsView({ transfer }: { transfer: Transfer }) {
   const raw = transfer as unknown as Record<string, unknown>;
-  const fromName = transfer.fromOutletName || transfer.fromOutlet?.name || '—';
-  const toName = transfer.toOutletName || transfer.toOutlet?.name || '—';
-  const fromCode = transfer.fromOutlet?.code ?? (raw.fromOutletCode as string | undefined);
-  const toCode = transfer.toOutlet?.code ?? (raw.toOutletCode as string | undefined);
-  const items = Array.isArray(transfer.items) ? transfer.items : [];
-  const totalQty = items.reduce((sum, row) => sum + transferItemQuantity(row as unknown as Record<string, unknown>), 0);
-  const status = transfer.status || (raw.status as string) || '';
+  const fromName = transfer.fromOutletName || transfer.fromOutlet?.name || transferPick(raw, 'fromOutletName', 'FromOutletName');
+  const toName = transfer.toOutletName || transfer.toOutlet?.name || transferPick(raw, 'toOutletName', 'ToOutletName');
+  const fromCode = transfer.fromOutletCode || transfer.fromOutlet?.code || transferPick(raw, 'fromOutletCode', 'FromOutletCode');
+  const toCode = transfer.toOutletCode || transfer.toOutlet?.code || transferPick(raw, 'toOutletCode', 'ToOutletCode');
+  const fromCashier = transfer.createdByName || transferPick(raw, 'createdByName', 'CreatedByName') || '—';
+  const receivedByCashier = transfer.receivedByName || transferPick(raw, 'receivedByName', 'ReceivedByName') || '—';
+  const receivedAt = transfer.receivedAt || transferPick(raw, 'receivedAt', 'ReceivedAt');
+  const comment = (transfer.notes || transferPick(raw, 'notes', 'Notes')).trim() || '-';
+  const items = Array.isArray(transfer.items)
+    ? transfer.items
+    : Array.isArray(raw.items)
+      ? (raw.items as Transfer['items'])
+      : Array.isArray(raw.Items)
+        ? (raw.Items as Transfer['items'])
+        : [];
+  const status = transfer.status || transferPick(raw, 'status', 'Status') || '';
+  const transferNo = transfer.transferNo || transferPick(raw, 'transferNo', 'TransferNo') || '—';
+  const createdAt = transfer.createdAt || transferPick(raw, 'createdAt', 'CreatedAt');
+  const transferDate = transfer.transferDate || transferPick(raw, 'transferDate', 'TransferDate');
 
   return (
     <DetailPanel>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
-            Stock transfer
+          <p className="text-lg font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
+            Transfer {transferNo}
           </p>
-          <p className="mt-1 text-lg font-bold tracking-tight" style={{ color: '#C8102E' }}>
-            {transfer.transferNo}
-          </p>
-          <p className="mt-0.5 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            {formatSlDate(transfer.transferDate, {
-              weekday: 'short',
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            })}
+          <p className="mt-1 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            Review the submitted information before taking action.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          <Badge variant={approvalStatusBadgeVariant(status)} size="md">
-            {status || '—'}
-          </Badge>
-          <span className="text-sm tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
-            {items.length} line{items.length === 1 ? '' : 's'} · {totalQty.toLocaleString()} units total
-          </span>
-        </div>
+        <Badge variant={approvalStatusBadgeVariant(status)} size="md">
+          {status || '—'}
+        </Badge>
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
-          Movement
-        </p>
-        <div className="flex flex-col items-stretch gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:gap-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-              From showroom
-            </p>
-            <p className="truncate text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-              {fromName}
-            </p>
-            {fromCode ? (
-              <p className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
-                Code: {fromCode}
-              </p>
-            ) : null}
-          </div>
-          <div className="flex shrink-0 items-center justify-center sm:px-2">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full border bg-[var(--card)]" style={{ borderColor: 'var(--border)' }}>
-              <ArrowRight className="h-5 w-5" style={{ color: '#C8102E' }} aria-hidden />
-            </span>
-          </div>
-          <div className="min-w-0 flex-1 sm:text-right">
-            <p className="text-xs font-medium sm:text-right" style={{ color: 'var(--muted-foreground)' }}>
-              To showroom
-            </p>
-            <p className="truncate text-sm font-semibold sm:text-right" style={{ color: 'var(--foreground)' }}>
-              {toName}
-            </p>
-            {toCode ? (
-              <p className="text-xs tabular-nums sm:text-right" style={{ color: 'var(--muted-foreground)' }}>
-                Code: {toCode}
-              </p>
-            ) : null}
-          </div>
-        </div>
+        <TransferDetailRow
+          label="Transfer Date & Time"
+          value={formatSlDateTime(createdAt || transferDate, { dateStyle: 'short', timeStyle: 'short' })}
+        />
+        <TransferDetailRow label="Showroom From" value={showroomLabel(fromCode, fromName)} />
+        <TransferDetailRow label="Showroom To" value={showroomLabel(toCode, toName)} />
+        <TransferDetailRow label="From Cashier" value={fromCashier} />
+        <TransferDetailRow
+          label="Received By Cashier"
+          value={
+            receivedByCashier !== '—'
+              ? receivedAt
+                ? `${receivedByCashier} · ${formatSlDateTime(receivedAt, { dateStyle: 'short', timeStyle: 'short' })}`
+                : receivedByCashier
+              : 'Not received yet — not required to approve'
+          }
+        />
+        <TransferDetailRow label="Comment" value={comment} />
+        <TransferDetailRow label="Requested By" value={fromCashier} />
+        <TransferDetailRow
+          label="Requested At"
+          value={createdAt ? formatSlDateTime(createdAt, { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+        />
       </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border p-3" style={{ borderColor: 'var(--border)' }}>
-          <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-            Requested by
-          </p>
-          <p className="mt-1 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-            {transfer.createdByName || '—'}
-          </p>
-          <p className="mt-0.5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
-            {formatSlDateTime(transfer.createdAt)}
-          </p>
-        </div>
-        {(transfer.approvedByName || transfer.approvedDate) && (
-          <div className="rounded-lg border p-3" style={{ borderColor: 'var(--border)' }}>
-            <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-              Last approval
-            </p>
-            <p className="mt-1 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-              {transfer.approvedByName || '—'}
-            </p>
-            {transfer.approvedDate ? (
-              <p className="mt-0.5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                {formatSlDateTime(transfer.approvedDate)}
-              </p>
-            ) : null}
-          </div>
-        )}
-      </div>
-
-      {transfer.notes ? (
-        <div className="rounded-lg border border-dashed p-3" style={{ borderColor: 'var(--border)' }}>
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
-            Notes for approver
-          </p>
-          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>
-            {transfer.notes}
-          </p>
-        </div>
-      ) : null}
 
       <div>
         <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
-              Products on this transfer
+              Items
             </p>
             <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
               Check SKU, name, and quantities before approving.

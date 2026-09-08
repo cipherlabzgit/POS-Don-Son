@@ -1,4 +1,5 @@
 import { isElectronPos } from './print-receipt'
+import { THERMAL_SLIP_CSS } from './thermal-slip'
 
 export type StockBfPrintLine = {
   code: string
@@ -35,37 +36,30 @@ function buildStockBfDocumentHtml(opts: StockBfPrintOpts): string {
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Stock BF</title>
 <style>
-html,body{width:80mm;max-width:80mm;height:auto!important;overflow:visible!important;background:#fff}
-@media print {
-  @page { margin: 0; size: 80mm auto; }
-  html,body{width:80mm;max-width:80mm;height:auto!important;overflow:visible!important;margin:0}
-  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-}
-*{box-sizing:border-box;color:#000!important;-webkit-font-smoothing:none;font-smooth:never;text-rendering:geometricPrecision}
+${THERMAL_SLIP_CSS}
 body{
-  width:80mm;
   font-family:Arial,Helvetica,'Segoe UI',sans-serif;
   font-weight:600;
-  padding:2mm 3.5mm 14mm;
-  margin:0;
   color:#000;
-  font-size:14px;
-  line-height:1.5;
+  font-size:13px;
+  line-height:1.4;
 }
 .header{text-align:center;margin-bottom:6px}
-.title{font-size:18px;font-weight:800;margin:4px 0 8px;letter-spacing:0.04em}
+.title{font-size:16px;font-weight:800;margin:4px 0 8px;letter-spacing:0.02em;text-align:center}
 .divider{border-top:2px dashed #000;margin:6px 0}
-.info-line{font-size:14px;font-weight:600;margin:3px 0}
-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px;margin:6px 0}
-th{padding:5px 2px;font-weight:800;border-bottom:2px dashed #000;vertical-align:bottom;font-size:14px}
-td{padding:7px 2px;vertical-align:top;font-weight:600;font-size:14px}
-.code{width:28%;text-align:left;white-space:nowrap}
-.item{width:52%;text-align:left;white-space:normal;word-wrap:break-word;overflow-wrap:anywhere;padding-right:4px}
-.qty{width:20%;text-align:right;white-space:nowrap}
-.sig{margin-top:16px;font-size:14px;font-weight:600;line-height:1.4}
-.sig .name{font-weight:800;margin-bottom:4px}
-.sig .line{margin-top:10px;letter-spacing:0.04em}
+.info-line{font-size:12px;font-weight:600;margin:3px 0;overflow-wrap:anywhere}
+table{font-size:12px;margin:6px 0}
+th{padding:4px 2px;font-weight:800;border-bottom:2px dashed #000;vertical-align:bottom;font-size:11px}
+td{padding:5px 2px;vertical-align:top;font-weight:600;font-size:12px}
+.code{width:26%;text-align:left;white-space:nowrap}
+.item{width:52%;text-align:left;white-space:normal;padding-right:3px}
+.qty{width:22%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sig{margin-top:12px;font-size:12px;font-weight:600;line-height:1.35}
+.sig .name{font-weight:800;margin-bottom:4px;text-align:center}
+.sig .dots{border-bottom:1px dotted #000;height:14px;width:100%;margin-top:8px}
+.sig .cap{text-align:center;font-size:11px;margin-top:2px}
 </style></head><body>
+<div class="slip">
 <div class="header">
   <div class="title">STOCK BF</div>
 </div>
@@ -75,9 +69,14 @@ td{padding:7px 2px;vertical-align:top;font-weight:600;font-size:14px}
 <div class="info-line">Submitted: ${escapeHtml(opts.submittedAt)}</div>
 <div class="divider"></div>
 <table>
+  <colgroup>
+    <col style="width:26%">
+    <col style="width:52%">
+    <col style="width:22%">
+  </colgroup>
   <thead>
     <tr>
-      <th class="code">Item Code</th>
+      <th class="code">Code</th>
       <th class="item">Item</th>
       <th class="qty">Qty</th>
     </tr>
@@ -88,15 +87,18 @@ td{padding:7px 2px;vertical-align:top;font-weight:600;font-size:14px}
 <div class="sig">
   <div class="name">Submitted By</div>
   <div>${escapeHtml(opts.cashier)}</div>
-  <div class="line">Submitted by signature<br>______________________________</div>
+  <div class="dots"></div>
+  <div class="cap">Signature</div>
 </div>
 <div class="sig">
-  <div class="name">Accepted By Name</div>
-  <div class="line">______________________________</div>
+  <div class="name">Accepted By</div>
+  <div class="dots"></div>
+  <div class="cap">Name</div>
 </div>
 <div class="sig">
-  <div class="name">Accepted By Signature</div>
-  <div class="line">______________________________</div>
+  <div class="dots"></div>
+  <div class="cap">Signature</div>
+</div>
 </div>
 </body></html>`
 }

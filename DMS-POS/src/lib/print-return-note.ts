@@ -1,4 +1,5 @@
 import { printOriginalThenCopy } from './print-receipt'
+import { THERMAL_SLIP_CSS } from './thermal-slip'
 
 export type ReturnNoteLine = {
   code: string
@@ -51,7 +52,7 @@ function commentText(opts: ReturnNoteOpts): string {
 }
 
 function dottedLine(caption: string): string {
-  return `<div class="sig-block">
+  return `<div class="sig">
   <div class="dots"></div>
   <div class="sig-caption">${escapeHtml(caption)}</div>
 </div>`
@@ -73,55 +74,46 @@ function buildReturnNoteHtml(opts: ReturnNoteOpts, variant: 'original' | 'copy')
   const footer =
     variant === 'original'
       ? `<div class="meta">Send By : ${escapeHtml(opts.submittedBy)}</div>
-<div class="sig-row">
-  <div class="sig-label">Send By :</div>
+<div class="sig-section">
+  <div class="sig-k">Send By :</div>
   ${dottedLine('Signature')}
 </div>
-<div class="sig-row">
-  <div class="sig-label">Received By :</div>
+<div class="sig-section">
+  <div class="sig-k">Received By :</div>
   ${dottedLine('Name')}
 </div>
-<div class="sig-row">
-  <div class="sig-label">Received By :</div>
+<div class="sig-section">
+  <div class="sig-k">Received By :</div>
   ${dottedLine('Signature')}
 </div>`
       : `<div class="meta">Send By : ${escapeHtml(opts.submittedBy)}</div>`
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${stamp}</title>
 <style>
-html,body{width:80mm;max-width:80mm;height:auto!important;overflow:visible!important;background:#fff}
-@media print {
-  @page { margin: 0; size: 80mm auto; }
-  html,body{width:80mm;max-width:80mm;height:auto!important;overflow:visible!important;margin:0}
-  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-}
-*{box-sizing:border-box;color:#000!important;-webkit-font-smoothing:none;font-smooth:never;text-rendering:geometricPrecision}
+${THERMAL_SLIP_CSS}
 body{
-  width:80mm;
   font-family:'Times New Roman',Times,Georgia,serif;
   font-weight:400;
-  padding:2mm 3mm 14mm;
-  margin:0;
   color:#000;
-  font-size:13px;
+  font-size:12px;
   line-height:1.35;
 }
-.title{text-align:center;font-size:20px;font-weight:700;margin:2px 0 8px}
-.stamp{text-align:center;font-size:15px;font-weight:700;letter-spacing:0.04em;margin:8px 0 6px}
-.meta{font-size:13px;margin:2px 0}
-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;margin:4px 0 10px}
-th,td{border:1px solid #000;padding:4px 3px;vertical-align:top}
+.title{text-align:center;font-size:18px;font-weight:700;margin:2px 0 8px}
+.stamp{text-align:center;font-size:14px;font-weight:700;letter-spacing:0.03em;margin:8px 0 6px}
+.meta{font-size:12px;margin:2px 0;overflow-wrap:anywhere}
+table{font-size:11px;margin:4px 0 10px}
+th,td{border:1px solid #000;padding:3px 2px;vertical-align:top}
 th{font-weight:700;text-align:center}
-td.code{width:18%;text-align:left;white-space:nowrap}
-td.item{width:62%;text-align:left;white-space:normal;word-wrap:break-word;overflow-wrap:anywhere}
-td.qty{width:20%;text-align:right;white-space:nowrap}
-.sig-row{display:flex;align-items:flex-end;gap:4px;margin-top:12px}
-.sig-label{flex:0 0 auto;white-space:nowrap;padding-bottom:2px}
-.sig-block{flex:1;min-width:0}
-.dots{border-bottom:1px dotted #000;height:16px}
-.sig-caption{text-align:right;font-size:11px;margin-top:1px}
+td.code,th.code{width:22%;text-align:left;white-space:nowrap}
+td.item,th.item{width:53%;text-align:left;white-space:normal}
+td.qty,th.qty{width:25%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sig-section{margin-top:10px}
+.sig-k{margin-bottom:2px}
+.dots{border-bottom:1px dotted #000;height:14px;width:100%}
+.sig-caption{text-align:center;font-size:11px;margin-top:2px}
 .cut-feed{height:16mm}
 </style></head><body>
+<div class="slip">
 <div class="title">Return Note</div>
 <div class="meta">Return No : ${escapeHtml(opts.returnNo)}</div>
 <div class="meta">Showroom : ${escapeHtml(opts.showroom)}</div>
@@ -129,6 +121,11 @@ td.qty{width:20%;text-align:right;white-space:nowrap}
 <div class="meta">Comment : ${escapeHtml(commentText(opts))}</div>
 <div class="stamp">${stamp}</div>
 <table>
+  <colgroup>
+    <col style="width:22%">
+    <col style="width:53%">
+    <col style="width:25%">
+  </colgroup>
   <thead>
     <tr>
       <th class="code">CODE</th>
@@ -140,6 +137,7 @@ td.qty{width:20%;text-align:right;white-space:nowrap}
 </table>
 ${footer}
 <div class="cut-feed"></div>
+</div>
 </body></html>`
 }
 

@@ -1,3 +1,5 @@
+import { THERMAL_SLIP_CSS } from './thermal-slip'
+
 export type PrintReceiptOpts = {
   title: string
   companyAddress?: string
@@ -40,42 +42,35 @@ function buildReceiptDocumentHtml(opts: PrintReceiptOpts): string {
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Receipt</title>
 <style>
-html,body{width:80mm;max-width:80mm;height:auto!important;overflow:visible!important;background:#fff}
-@media print {
-  @page { margin: 0; size: 80mm auto; }
-  html,body{width:80mm;max-width:80mm;height:auto!important;overflow:visible!important;margin:0}
-  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-}
-*{box-sizing:border-box;color:#000!important;-webkit-font-smoothing:none;font-smooth:never;text-rendering:geometricPrecision}
+${THERMAL_SLIP_CSS}
 body{
-  width:80mm;
   font-family:Arial,Helvetica,'Segoe UI',sans-serif;
   font-weight:600;
-  padding:2mm 3.5mm 12mm;
-  margin:0;
   color:#000;
-  font-size:14px;
-  line-height:1.5;
+  font-size:13px;
+  line-height:1.4;
 }
 .header{text-align:center;margin-bottom:6px}
-.company-name{font-size:18px;font-weight:800;margin:2px 0;letter-spacing:0.03em}
-.company-info{font-size:13px;font-weight:600;margin:2px 0;line-height:1.4}
+.company-name{font-size:16px;font-weight:800;margin:2px 0;letter-spacing:0}
+.company-info{font-size:12px;font-weight:600;margin:2px 0;line-height:1.35;text-align:center}
 .divider{border-top:2px dashed #000;margin:6px 0}
-.info-line{font-size:14px;font-weight:600;margin:3px 0}
-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px;margin:6px 0}
-th{padding:5px 1px;font-weight:800;border-bottom:2px dashed #000;vertical-align:bottom;white-space:nowrap;font-size:14px}
-td{padding:7px 1px;vertical-align:top;font-weight:600;font-size:14px}
-.item{width:38%;text-align:left;white-space:normal;word-wrap:break-word;overflow-wrap:anywhere;padding-right:3px}
-.each{width:22%;text-align:right;white-space:nowrap}
-.qty{width:12%;text-align:center;white-space:nowrap}
-.tot{width:28%;text-align:right;white-space:nowrap}
+.info-line{font-size:12px;font-weight:600;margin:3px 0}
+table{font-size:12px;margin:6px 0}
+th{padding:4px 2px;font-weight:800;border-bottom:2px dashed #000;vertical-align:bottom;font-size:11px}
+td{padding:5px 2px;vertical-align:top;font-weight:600;font-size:12px}
+.item{width:36%;text-align:left;white-space:normal;padding-right:3px}
+.each{width:22%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.qty{width:12%;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tot{width:30%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .totals{margin-top:6px;padding-top:4px}
-.total-row{display:flex;justify-content:space-between;margin:5px 0;font-size:15px;font-weight:800}
-.total-row.main{font-size:17px}
-.item-count{font-size:14px;font-weight:600;margin:7px 0;text-align:left}
-.policy{text-align:center;font-size:13px;font-weight:600;line-height:1.4;margin:4px 0}
-.thank-you{display:block;width:100%;text-align:center;font-weight:800;font-size:16px;margin:12px 0 0;letter-spacing:0.08em}
+.total-row{display:flex;justify-content:space-between;gap:8px;margin:5px 0;font-size:13px;font-weight:800}
+.total-row span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.total-row.main{font-size:15px}
+.item-count{font-size:12px;font-weight:600;margin:7px 0;text-align:left}
+.policy{text-align:center;font-size:11px;font-weight:600;line-height:1.35;margin:4px 0}
+.thank-you{display:block;width:100%;text-align:center;font-weight:800;font-size:14px;margin:12px 0 0;letter-spacing:0.04em}
 </style></head><body>
+<div class="slip">
 <div class="header">
   <div class="company-name">${escapeHtml(opts.title)}</div>
   ${opts.companyAddress ? `<div class="company-info">${escapeHtml(opts.companyAddress).replace(/\n/g, '<br>')}</div>` : ''}
@@ -88,6 +83,12 @@ ${opts.cashier ? `<div class="info-line">Cashier: ${escapeHtml(opts.cashier)}</d
 ${opts.saleNo ? `<div class="info-line">Bill No: ${escapeHtml(opts.saleNo)}</div>` : ''}
 <div class="divider"></div>
 <table>
+  <colgroup>
+    <col style="width:36%">
+    <col style="width:22%">
+    <col style="width:12%">
+    <col style="width:30%">
+  </colgroup>
   <thead>
     <tr>
       <th class="item">Item</th>
@@ -118,6 +119,7 @@ ${opts.saleNo ? `<div class="info-line">Bill No: ${escapeHtml(opts.saleNo)}</div
 <div class="divider"></div>
 ${extraFooter}
 <div class="thank-you">THANK YOU!</div>
+</div>
 </body></html>`
 }
 

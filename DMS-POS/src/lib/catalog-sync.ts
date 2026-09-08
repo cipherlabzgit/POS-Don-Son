@@ -6,6 +6,7 @@ import type { CategoryRow, ProductRow } from './types'
 
 function mapProduct(p: Record<string, unknown>): ProductRow {
   const ros = p.requireOpenStock ?? p.RequireOpenStock
+  const dip = p.displayInPOS ?? p.DisplayInPOS
   return {
     id: String(p.id ?? p.Id ?? ''),
     code: String(p.code ?? p.Code ?? ''),
@@ -15,6 +16,7 @@ function mapProduct(p: Record<string, unknown>): ProductRow {
     categoryName: String(p.categoryName ?? p.CategoryName ?? ''),
     sortOrder: Number(p.sortOrder ?? p.SortOrder ?? 0),
     requireOpenStock: ros === undefined || ros === null ? true : Boolean(ros),
+    displayInPOS: dip === undefined || dip === null ? true : Boolean(dip),
   }
 }
 

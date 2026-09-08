@@ -43,6 +43,9 @@ export interface Transfer {
     fullName: string;
   };
   approvedDate?: string;
+  receivedById?: string;
+  receivedByName?: string;
+  receivedAt?: string;
   createdAt: string;
   updatedAt: string;
   createdById: string;

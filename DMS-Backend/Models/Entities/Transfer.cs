@@ -69,10 +69,23 @@ public class Transfer : BaseEntity
     [Column("approved_date")]
     public DateTime? ApprovedDate { get; set; }
 
+    /// <summary>
+    /// Destination cashier who marked the transfer as received (does not approve).
+    /// </summary>
+    [Column("received_by_id")]
+    public Guid? ReceivedById { get; set; }
+
+    /// <summary>
+    /// When the destination cashier marked the transfer as received.
+    /// </summary>
+    [Column("received_at")]
+    public DateTime? ReceivedAt { get; set; }
+
     // Navigation properties
     public Outlet FromOutlet { get; set; } = null!;
     public Outlet ToOutlet { get; set; } = null!;
     public User? ApprovedBy { get; set; }
+    public User? ReceivedBy { get; set; }
     public ICollection<TransferItem> Items { get; set; } = new List<TransferItem>();
 }
 

@@ -5630,7 +5630,8 @@ namespace DMS_Backend.Migrations
                     b.HasIndex("UpdatedById");
 
                     b.HasIndex("OutletId", "BFDate", "ProductId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("is_active AND status <> 'Rejected'");
 
                     b.ToTable("stock_bf", (string)null);
                 });
@@ -5897,6 +5898,14 @@ namespace DMS_Backend.Migrations
                         .HasColumnType("text")
                         .HasColumnName("notes");
 
+                    b.Property<DateTime?>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_at");
+
+                    b.Property<Guid?>("ReceivedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("received_by_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text")
@@ -5935,6 +5944,8 @@ namespace DMS_Backend.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("FromOutletId");
+
+                    b.HasIndex("ReceivedById");
 
                     b.HasIndex("Status");
 
@@ -8190,6 +8201,11 @@ namespace DMS_Backend.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("DMS_Backend.Models.Entities.User", "ReceivedBy")
+                        .WithMany()
+                        .HasForeignKey("ReceivedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("DMS_Backend.Models.Entities.Outlet", "ToOutlet")
                         .WithMany()
                         .HasForeignKey("ToOutletId")
@@ -8205,6 +8221,8 @@ namespace DMS_Backend.Migrations
                     b.Navigation("CreatedBy");
 
                     b.Navigation("FromOutlet");
+
+                    b.Navigation("ReceivedBy");
 
                     b.Navigation("ToOutlet");
 

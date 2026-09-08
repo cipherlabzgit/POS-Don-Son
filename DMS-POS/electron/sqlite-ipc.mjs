@@ -10,7 +10,7 @@ import Database from 'better-sqlite3'
 /** @type {import('better-sqlite3').Database | null} */
 let db = null
 
-const SCHEMA_VERSION = 3
+const SCHEMA_VERSION = 4
 
 function getDbPath() {
   const dir = app.getPath('userData')
@@ -123,6 +123,14 @@ function migrate(database) {
     }
     database.pragma('user_version = 3')
   }
+
+  if (v < 4) {
+    const prodCols = database.prepare('PRAGMA table_info(products)').all().map((c) => c.name)
+    if (!prodCols.includes('display_in_pos')) {
+      database.exec('ALTER TABLE products ADD COLUMN display_in_pos INTEGER NOT NULL DEFAULT 1')
+    }
+    database.pragma('user_version = 4')
+  }
 }
 
 const ALLOWED = new Set([
@@ -165,11 +173,12 @@ function dispatch(d, op, payload) {
       const trx = d.transaction(() => {
         d.prepare('DELETE FROM products').run()
         const ins = d.prepare(`
-          INSERT INTO products (id, category_id, code, name, unit_price, category_name, sort_order, require_open_stock)
-          VALUES (@id, @category_id, @code, @name, @unit_price, @category_name, @sort_order, @require_open_stock)
+          INSERT INTO products (id, category_id, code, name, unit_price, category_name, sort_order, require_open_stock, display_in_pos)
+          VALUES (@id, @category_id, @code, @name, @unit_price, @category_name, @sort_order, @require_open_stock, @display_in_pos)
         `)
         for (const r of rows) {
           const ros = r.requireOpenStock ?? r.require_open_stock
+          const dip = r.displayInPOS ?? r.display_in_pos
           ins.run({
             id: String(r.id),
             category_id: String(r.categoryId ?? r.category_id ?? ''),
@@ -179,6 +188,7 @@ function dispatch(d, op, payload) {
             category_name: String(r.categoryName ?? r.category_name ?? ''),
             sort_order: Number(r.sortOrder ?? r.sort_order ?? 0),
             require_open_stock: ros === undefined || ros === null ? 1 : ros === true || ros === 1 ? 1 : 0,
+            display_in_pos: dip === undefined || dip === null ? 1 : dip === true || dip === 1 ? 1 : 0,
           })
         }
       })
@@ -399,11 +409,12 @@ function dispatch(d, op, payload) {
         d.prepare('DELETE FROM dropped_mutations').run()
 
         const insP = d.prepare(`
-          INSERT INTO products (id, category_id, code, name, unit_price, category_name, sort_order, require_open_stock)
-          VALUES (@id, @category_id, @code, @name, @unit_price, @category_name, @sort_order, @require_open_stock)
+          INSERT INTO products (id, category_id, code, name, unit_price, category_name, sort_order, require_open_stock, display_in_pos)
+          VALUES (@id, @category_id, @code, @name, @unit_price, @category_name, @sort_order, @require_open_stock, @display_in_pos)
         `)
         for (const r of /** @type {Record<string, unknown>[]} */ (b.products ?? [])) {
           const ros = r.requireOpenStock
+          const dip = r.displayInPOS
           insP.run({
             id: String(r.id),
             category_id: String(r.categoryId ?? ''),
@@ -413,6 +424,7 @@ function dispatch(d, op, payload) {
             category_name: String(r.categoryName ?? ''),
             sort_order: Number(r.sortOrder ?? 0),
             require_open_stock: ros === undefined || ros === null ? 1 : ros === true || ros === 1 ? 1 : 0,
+            display_in_pos: dip === undefined || dip === null ? 1 : dip === true || dip === 1 ? 1 : 0,
           })
         }
 
@@ -505,6 +517,7 @@ function dispatch(d, op, payload) {
 /** @param {Record<string, unknown>} r */
 function mapProductRow(r) {
   const ros = r.require_open_stock
+  const dip = r.display_in_pos
   return {
     id: String(r.id),
     categoryId: String(r.category_id),
@@ -514,6 +527,7 @@ function mapProductRow(r) {
     categoryName: String(r.category_name),
     sortOrder: Number(r.sort_order ?? 0),
     requireOpenStock: ros === undefined || ros === null ? true : Number(ros) !== 0,
+    displayInPOS: dip === undefined || dip === null ? true : Number(dip) !== 0,
   }
 }
 

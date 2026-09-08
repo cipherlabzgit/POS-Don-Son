@@ -27,20 +27,33 @@ public class TransferService : ITransferService
 
     public async Task<(List<TransferListDto> Transfers, int TotalCount)> GetAllAsync(
         int page, int pageSize, DateTime? fromDate, DateTime? toDate,
-        Guid? fromOutletId, Guid? toOutletId, string? status, CancellationToken cancellationToken = default)
+        Guid? fromOutletId, Guid? toOutletId, string? status, bool unreceivedOnly = false, CancellationToken cancellationToken = default)
     {
         var query = _context.Transfers
             .Include(t => t.FromOutlet)
             .Include(t => t.ToOutlet)
             .Include(t => t.CreatedBy)
             .Include(t => t.ApprovedBy)
+            .Include(t => t.ReceivedBy)
+            .Where(t => t.IsActive)
             .AsQueryable();
 
         if (fromDate.HasValue)
-            query = query.Where(t => t.TransferDate >= fromDate.Value);
+        {
+            var fromUtc = fromDate.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc)
+                : fromDate.Value.ToUniversalTime().Date;
+            query = query.Where(t => t.TransferDate >= fromUtc);
+        }
 
         if (toDate.HasValue)
-            query = query.Where(t => t.TransferDate <= toDate.Value);
+        {
+            var toUtc = toDate.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(toDate.Value.Date, DateTimeKind.Utc)
+                : toDate.Value.ToUniversalTime().Date;
+            var end = toUtc.TimeOfDay == TimeSpan.Zero ? toUtc.AddDays(1).AddTicks(-1) : toUtc;
+            query = query.Where(t => t.TransferDate <= end);
+        }
 
         if (fromOutletId.HasValue)
             query = query.Where(t => t.FromOutletId == fromOutletId.Value);
@@ -50,6 +63,14 @@ public class TransferService : ITransferService
 
         if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<TransferStatus>(status, true, out var statusEnum))
             query = query.Where(t => t.Status == statusEnum);
+
+        if (unreceivedOnly)
+        {
+            query = query.Where(t =>
+                t.ReceivedById == null &&
+                t.Status != TransferStatus.Rejected &&
+                t.Status != TransferStatus.Completed);
+        }
 
         var totalCount = await query.CountAsync(cancellationToken);
 
@@ -70,6 +91,7 @@ public class TransferService : ITransferService
             .Include(t => t.ToOutlet)
             .Include(t => t.CreatedBy)
             .Include(t => t.ApprovedBy)
+            .Include(t => t.ReceivedBy)
             .Include(t => t.Items)
                 .ThenInclude(i => i.Product)
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
@@ -87,6 +109,7 @@ public class TransferService : ITransferService
             .Include(t => t.ToOutlet)
             .Include(t => t.CreatedBy)
             .Include(t => t.ApprovedBy)
+            .Include(t => t.ReceivedBy)
             .Include(t => t.Items)
                 .ThenInclude(i => i.Product)
             .FirstOrDefaultAsync(t => t.TransferNo == transferNo, cancellationToken);
@@ -382,15 +405,19 @@ public class TransferService : ITransferService
     public async Task<TransferDetailDto?> CompleteReceiptAsync(Guid id, Guid userId, CancellationToken cancellationToken = default)
     {
         var transfer = await _context.Transfers
-            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Id == id && t.IsActive, cancellationToken);
 
         if (transfer == null)
             return null;
 
-        if (transfer.Status != TransferStatus.Approved)
-            throw new InvalidOperationException("Only approved transfers can be marked as received at the destination.");
+        if (transfer.Status == TransferStatus.Rejected)
+            throw new InvalidOperationException("Rejected transfers cannot be marked as received.");
 
-        transfer.Status = TransferStatus.Completed;
+        if (transfer.ReceivedById != null)
+            throw new InvalidOperationException("This transfer has already been marked as received.");
+
+        transfer.ReceivedById = userId;
+        transfer.ReceivedAt = DateTime.UtcNow;
         transfer.UpdatedById = userId;
         transfer.UpdatedAt = DateTime.UtcNow;
 

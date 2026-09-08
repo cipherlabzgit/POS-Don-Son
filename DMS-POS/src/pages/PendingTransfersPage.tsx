@@ -7,6 +7,7 @@ import { useAuthStore } from '../lib/auth-store'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError } from '../lib/api-errors'
+import { todayCalendarISO } from '../lib/calendar-date'
 
 type Props = { onBack: () => void }
 type Transfer = Record<string, unknown>
@@ -18,7 +19,7 @@ export function PendingTransfersPage({ onBack }: Props) {
   const hasPermission = useAuthStore((s) => s.hasPermission)
   const online      = useOnlineStatus(Boolean(token))
 
-  const canUpdate = hasPermission('operation:transfer:update')
+  const canReceive = hasPermission('operation:transfer:view') || hasPermission('operation:transfer:update')
 
   const [list, setList]         = useState<Transfer[]>([])
   const [selected, setSelected] = useState<Transfer | null>(null)
@@ -32,8 +33,17 @@ export function PendingTransfersPage({ onBack }: Props) {
     setLoading(true)
     setErr('')
     try {
-      const res = await fetchTransfers({ page: 1, pageSize: 100, toOutletId: outletId, status: 'Approved' })
-      setList((res.transfers as Transfer[]) ?? [])
+      const today = todayCalendarISO()
+      const res = await fetchTransfers({
+        page: 1,
+        pageSize: 100,
+        toOutletId: outletId,
+        fromDate: today,
+        toDate: today,
+        unreceivedOnly: true,
+      }) as Record<string, unknown>
+      const raw = (res.transfers ?? res.Transfers ?? []) as Transfer[]
+      setList(raw)
     } catch (e) {
       setErr((e as Error).message)
     } finally {
@@ -47,8 +57,8 @@ export function PendingTransfersPage({ onBack }: Props) {
     if (!selected) { setDetail(null); return }
     void (async () => {
       try {
-        const d = await fetchTransferDetail(String(selected.id))
-        setDetail(d as Transfer)
+        const d = await fetchTransferDetail(String(selected.id ?? selected.Id)) as Transfer
+        setDetail(d)
       } catch { setDetail(null) }
     })()
   }, [selected])
@@ -57,11 +67,11 @@ export function PendingTransfersPage({ onBack }: Props) {
     if (!detail?.id || !online) return
     setActing(true)
     try {
-      await completeTransferReceipt(String(detail.id))
+      await completeTransferReceipt(String(detail.id ?? detail.Id))
       setSelected(null)
       setDetail(null)
       await loadList()
-      toast('Transfer received — stock updated.', 'success')
+      toast('Transfer marked as received. Approval is unchanged.', 'success')
     } catch (e) {
       toast(formatSubmitError(e), 'error')
     } finally {
@@ -73,12 +83,12 @@ export function PendingTransfersPage({ onBack }: Props) {
     toast('Use the DMS web portal to reject or dispute a transfer.', 'info')
   }
 
-  const items = (detail?.items as Transfer[] | undefined) ?? []
+  const items = ((detail?.items ?? detail?.Items) as Transfer[] | undefined) ?? []
 
   return (
     <PosSubPageLayout
       title="Pending Transfers"
-      subtitle="Receive transfers sent to this showroom."
+      subtitle="Receive today’s transfers sent to this showroom."
       onBack={onBack}
       badge={
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${online ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
@@ -107,7 +117,7 @@ export function PendingTransfersPage({ onBack }: Props) {
           </div>
         ) : null}
         {err ? <p className="mb-4 text-sm text-red-600">{err}</p> : null}
-        {!canUpdate ? (
+        {!canReceive ? (
           <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
             You can view pending transfers but do not have permission to mark them as received.
           </p>
@@ -136,13 +146,13 @@ export function PendingTransfersPage({ onBack }: Props) {
                     </tr>
                   ) : (
                     list.map((t) => (
-                      <tr key={String(t.id)}
-                        className={`cursor-pointer hover:bg-[var(--neutral-50)] ${selected?.id === t.id ? 'bg-[var(--brand-primary)]/8 font-semibold' : ''}`}
+                      <tr key={String(t.id ?? t.Id)}
+                        className={`cursor-pointer hover:bg-[var(--neutral-50)] ${String(selected?.id ?? selected?.Id) === String(t.id ?? t.Id) ? 'bg-[var(--brand-primary)]/8 font-semibold' : ''}`}
                         onClick={() => setSelected(t)}>
-                        <td className="px-4 py-3 text-[var(--brand-primary)]">{String(t.transferNo)}</td>
-                        <td className="px-4 py-3">{String(t.fromOutletName ?? '')}</td>
-                        <td className="px-4 py-3">{new Date(String(t.transferDate)).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{String((t.items as unknown[])?.length ?? '—')}</td>
+                        <td className="px-4 py-3 text-[var(--brand-primary)]">{String(t.transferNo ?? t.TransferNo)}</td>
+                        <td className="px-4 py-3">{String(t.fromOutletName ?? t.FromOutletName ?? '')}</td>
+                        <td className="px-4 py-3">{new Date(String(t.transferDate ?? t.TransferDate)).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{String(t.totalItems ?? t.TotalItems ?? (t.items as unknown[])?.length ?? '—')}</td>
                       </tr>
                     ))
                   )}
@@ -156,10 +166,10 @@ export function PendingTransfersPage({ onBack }: Props) {
             <h2 className="mb-3 text-base font-bold text-[var(--foreground)]">Transfer Detail</h2>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-5 py-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <InfoField label="Transfer No" value={detail ? String(detail.transferNo ?? '—') : '—'} />
-                <InfoField label="From" value={detail ? String(detail.fromOutletName ?? '—') : '—'} />
-                <InfoField label="To" value={detail ? String(detail.toOutletName ?? '—') : '—'} />
-                <InfoField label="Date" value={detail?.transferDate ? new Date(String(detail.transferDate)).toLocaleDateString() : '—'} />
+                <InfoField label="Transfer No" value={detail ? String(detail.transferNo ?? detail.TransferNo ?? '—') : '—'} />
+                <InfoField label="From" value={detail ? String(detail.fromOutletName ?? detail.FromOutletName ?? '—') : '—'} />
+                <InfoField label="To" value={detail ? String(detail.toOutletName ?? detail.ToOutletName ?? '—') : '—'} />
+                <InfoField label="Date" value={detail?.transferDate || detail?.TransferDate ? new Date(String(detail.transferDate ?? detail.TransferDate)).toLocaleDateString() : '—'} />
                 {detail?.notes ? <div className="col-span-2"><InfoField label="Comment" value={String(detail.notes)} /></div> : null}
               </div>
             </div>
@@ -183,9 +193,9 @@ export function PendingTransfersPage({ onBack }: Props) {
                   ) : (
                     items.map((it) => (
                       <tr key={String(it.id ?? it.productId)}>
-                        <td className="px-4 py-3 font-mono text-xs text-[var(--muted-foreground)]">{String(it.productCode ?? '')}</td>
-                        <td className="px-4 py-3 font-medium">{String(it.productName ?? '')}</td>
-                        <td className="px-4 py-3 text-right font-semibold tabular-nums">{String(it.quantity ?? '')}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-[var(--muted-foreground)]">{String(it.productCode ?? it.ProductCode ?? '')}</td>
+                        <td className="px-4 py-3 font-medium">{String(it.productName ?? it.ProductName ?? '')}</td>
+                        <td className="px-4 py-3 text-right font-semibold tabular-nums">{String(it.quantity ?? it.Quantity ?? '')}</td>
                       </tr>
                     ))
                   )}
@@ -197,7 +207,7 @@ export function PendingTransfersPage({ onBack }: Props) {
             <div className="mt-4 flex justify-end gap-3">
               <button type="button"
                 className="pos-tap rounded-xl bg-[var(--status-success)] px-6 py-2.5 text-sm font-bold text-white shadow hover:brightness-95 disabled:opacity-40"
-                disabled={!detail?.id || !online || acting || !canUpdate}
+                disabled={!(detail?.id || detail?.Id) || !online || acting || !canReceive}
                 onClick={() => void markReceived()}>
                 {acting ? 'Processing…' : 'Received'}
               </button>

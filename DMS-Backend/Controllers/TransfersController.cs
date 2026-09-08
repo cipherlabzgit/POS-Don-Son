@@ -29,10 +29,11 @@ public class TransfersController : ControllerBase
         [FromQuery] Guid? fromOutletId = null,
         [FromQuery] Guid? toOutletId = null,
         [FromQuery] string? status = null,
+        [FromQuery] bool unreceivedOnly = false,
         CancellationToken cancellationToken = default)
     {
         var (transfers, totalCount) = await _transferService.GetAllAsync(
-            page, pageSize, fromDate, toDate, fromOutletId, toOutletId, status, cancellationToken);
+            page, pageSize, fromDate, toDate, fromOutletId, toOutletId, status, unreceivedOnly, cancellationToken);
 
         return Ok(ApiResponse<object>.SuccessResponse(new
         {
@@ -226,9 +227,8 @@ public class TransfersController : ControllerBase
     }
 
     [HttpPost("{id:guid}/complete-receipt")]
-    [HasPermission("operation:transfer:update")]
+    [HasPermission("operation:transfer:view")]
     [Audit]
-    [DayLockGuard]
     public async Task<ActionResult<ApiResponse<TransferDetailDto>>> CompleteReceipt(
         Guid id,
         CancellationToken cancellationToken = default)

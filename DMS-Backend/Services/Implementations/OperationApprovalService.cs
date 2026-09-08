@@ -57,7 +57,7 @@ public class OperationApprovalService : IOperationApprovalService
         // Execute sequentially to avoid DbContext threading issues
         // Each service call uses the same DbContext instance, which doesn't support concurrent operations
         var (deliveries, _) = await _deliveryService.GetAllAsync(1, int.MaxValue, null, null, null, "Pending", cancellationToken);
-        var (transfers, _) = await _transferService.GetAllAsync(1, int.MaxValue, null, null, null, null, "Pending", cancellationToken);
+        var (transfers, _) = await _transferService.GetAllAsync(1, int.MaxValue, null, null, null, null, "Pending", false, cancellationToken);
         var (disposals, _) = await _disposalService.GetAllAsync(1, int.MaxValue, null, null, null, "Pending", cancellationToken);
         var (cancellations, _) = await _cancellationService.GetAllAsync(1, int.MaxValue, null, null, null, "Pending", cancellationToken);
         var (labelPrintRequests, _) = await _labelPrintRequestService.GetAllAsync(1, int.MaxValue, null, null, null, "Pending", cancellationToken);

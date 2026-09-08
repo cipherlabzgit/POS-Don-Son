@@ -398,6 +398,17 @@ function TransferPageContent() {
                         {formatSlDate(transfer.createdAt)} • {formatSlDate(transfer.updatedAt)}
                       </p>
                     </div>
+                    <div>
+                      <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted-foreground)' }}>Received by</p>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                        {transfer.receivedByName || (transfer.receivedAt ? 'Received' : '—')}
+                      </p>
+                      {transfer.receivedAt ? (
+                        <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
+                          {formatSlDateTime(transfer.receivedAt, { dateStyle: 'short', timeStyle: 'short' })}
+                        </p>
+                      ) : null}
+                    </div>
                     {transfer.notes && (
                       <div>
                         <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted-foreground)' }}>Notes</p>

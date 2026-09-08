@@ -11,6 +11,8 @@ import { useOnlineStatus } from '../lib/use-online-status'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError, isAlreadyRecordedError } from '../lib/api-errors'
 import { SearchKeyboard } from '../components/SearchKeyboard'
+import { printTransferNotes } from '../lib/print-transfer-note'
+import { todayCalendarISO } from '../lib/calendar-date'
 
 type Props = { onBack: () => void }
 type TRow = { productId: string; name: string; code: string; qty: number }
@@ -131,23 +133,43 @@ export function NewTransferPage({ onBack }: Props) {
     if (rows.length === 0) { toast('Add at least one product line.', 'error'); return }
     submittingRef.current = true
     setSubmitting(true)
+    const snapshot = [...rows]
+    const dest = toChoices.find((o) => o.id === toOutletId)
+    const cashierName = user ? `${user.firstName} ${user.lastName}`.trim() : '—'
+    const submittedAt = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Colombo',
+      dateStyle: 'short',
+      timeStyle: 'medium',
+    }).format(new Date())
     try {
       const created = await createTransfer({
-        transferDate: new Date().toISOString(),
+        transferDate: `${todayCalendarISO()}T00:00:00.000Z`,
         fromOutletId,
         toOutletId,
         notes: notes.trim() || undefined,
-        items: rows.map((r) => ({ productId: r.productId, quantity: r.qty })),
+        items: snapshot.map((r) => ({ productId: r.productId, quantity: r.qty })),
       })
-      const id = recordId(created)
-      const status = created && typeof created === 'object'
-        ? String((created as Record<string, unknown>).status ?? (created as Record<string, unknown>).Status ?? '')
-        : ''
+      const rec = (created && typeof created === 'object') ? (created as Record<string, unknown>) : {}
+      const transferNo = String(rec.transferNo ?? rec.TransferNo ?? '').trim()
+      const status = String(rec.status ?? rec.Status ?? '')
       setRows([])
       setNotes('')
       const approved = status.toLowerCase() === 'approved'
       toast(approved ? 'Transfer approved.' : 'Transfer submitted for approval.', 'success')
-      if (!id) {
+      try {
+        await printTransferNotes({
+          transferNo: transferNo || '—',
+          submittedAt,
+          fromShowroom: outletLabel || '—',
+          toShowroom: dest ? `${dest.name} (${dest.code})` : '—',
+          submittedBy: cashierName || '—',
+          lines: snapshot.map((r) => ({ code: r.code, name: r.name, qty: r.qty })),
+        })
+      } catch (printErr) {
+        console.warn('[Transfer] print failed', printErr)
+        toast('Transfer saved. Printing the notes failed — reprint from the printer if needed.', 'info')
+      }
+      if (!recordId(created)) {
         /* Document was accepted even if the payload shape was unexpected. */
       }
     } catch (e) {

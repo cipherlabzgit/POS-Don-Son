@@ -99,7 +99,7 @@ export default function EditStockBFPage() {
         list.filter(
           (p) =>
             p.isActive !== false &&
-            (p.requireOpenStock || (!!includeProductId && p.id === includeProductId)),
+            (p.displayInPOS !== false || (!!includeProductId && p.id === includeProductId)),
         ),
       );
     } catch (error: any) {

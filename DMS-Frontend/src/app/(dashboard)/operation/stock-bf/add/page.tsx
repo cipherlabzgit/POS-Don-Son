@@ -50,6 +50,8 @@ function AddStockBFPageContent() {
   });
 
   const [stockBfItems, setStockBfItems] = useState<ItemManagementItem[]>([]);
+  const [entryLocked, setEntryLocked] = useState(false);
+  const [lockChecking, setLockChecking] = useState(false);
 
   const isFormValid = !!formData.bfDate && !!formData.showroomId && stockBfItems.length > 0;
 
@@ -58,6 +60,40 @@ function AddStockBFPageContent() {
     void fetchOutlets();
     void fetchProducts();
   }, [_hasHydrated]);
+
+  useEffect(() => {
+    if (!formData.bfDate || !formData.showroomId) {
+      setEntryLocked(false);
+      return;
+    }
+    let cancelled = false;
+    setLockChecking(true);
+    void (async () => {
+      try {
+        const response = await stockBfApi.getAll(1, 200, {
+          startDate: formData.bfDate,
+          endDate: formData.bfDate,
+          outletId: formData.showroomId,
+        });
+        const rows = Array.isArray(response.stockBFs) ? response.stockBFs : [];
+        const locked = rows.some((r: { status?: string }) => {
+          const s = String(r.status ?? '').toLowerCase();
+          return s !== 'rejected' && s !== 'cancelled';
+        });
+        if (!cancelled) {
+          setEntryLocked(locked);
+          if (locked) setStockBfItems([]);
+        }
+      } catch {
+        if (!cancelled) setEntryLocked(false);
+      } finally {
+        if (!cancelled) setLockChecking(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.bfDate, formData.showroomId]);
 
   const fetchOutlets = async () => {
     try {
@@ -79,7 +115,7 @@ function AddStockBFPageContent() {
       const response = await productsApi.getAll(1, 5000, undefined, undefined, true);
       const list = Array.isArray(response.products) ? response.products : [];
       setProducts(
-        list.filter((p) => p.isActive !== false && p.requireOpenStock),
+        list.filter((p) => p.isActive !== false && p.displayInPOS !== false),
       );
     } catch (error: any) {
       const msg =
@@ -94,6 +130,10 @@ function AddStockBFPageContent() {
   const handleSubmit = async () => {
     if (!canCreate) {
       toast.error('You do not have permission to create stock B/F');
+      return;
+    }
+    if (entryLocked) {
+      toast.error('Opening stock for this showroom and date is already submitted. Re-entry is allowed only after rejection.');
       return;
     }
     if (!formData.showroomId) {
@@ -143,7 +183,7 @@ function AddStockBFPageContent() {
             <div>
               <CardTitle>New Stock BF</CardTitle>
               <p className="mt-1 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                BF No: New Number — product list is limited to items that require open stock.
+                BF No: New Number — product list is limited to items displayed in POS.
               </p>
             </div>
             <Button variant="ghost" size="sm" onClick={() => router.push('/operation/stock-bf')}>
@@ -182,8 +222,14 @@ function AddStockBFPageContent() {
                 required
               />
             </div>
+            {entryLocked ? (
+              <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+                Opening stock for this showroom and date is already submitted. It can be entered again only if DMS rejects it.
+              </p>
+            ) : null}
           </div>
 
+          <fieldset disabled={entryLocked || lockChecking} className={entryLocked ? 'pointer-events-none opacity-60' : undefined}>
           <div className="border-t pt-6">
             <DeliveryLineItemsEntry
               products={products}
@@ -193,6 +239,7 @@ function AddStockBFPageContent() {
               showPricing={false}
             />
           </div>
+          </fieldset>
 
           <div className="flex flex-wrap justify-end gap-3 border-t pt-6">
             <Button
@@ -206,7 +253,7 @@ function AddStockBFPageContent() {
             <Button
               type="button"
               variant="primary"
-              disabled={isSubmitting || !canCreate || !isFormValid}
+              disabled={isSubmitting || !canCreate || !isFormValid || entryLocked || lockChecking}
               onClick={() => void handleSubmit()}
             >
               {isSubmitting ? (

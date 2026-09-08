@@ -13,5 +13,7 @@ public sealed class TransferListDto
     public int TotalItems { get; set; }
     public string? CreatedByName { get; set; }
     public string? ApprovedByName { get; set; }
+    public string? ReceivedByName { get; set; }
+    public DateTime? ReceivedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

@@ -1996,6 +1996,11 @@ public sealed class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.ApprovedById)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            entity.HasOne(e => e.ReceivedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ReceivedById)
+                .OnDelete(DeleteBehavior.SetNull);
+
             entity.HasIndex(e => e.TransferNo).IsUnique();
             entity.HasIndex(e => e.TransferDate);
             entity.HasIndex(e => e.Status);
@@ -2212,7 +2217,10 @@ public sealed class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasIndex(e => e.BFNo);  // Non-unique index for performance (multiple items can share the same BF number)
-            entity.HasIndex(e => new { e.OutletId, e.BFDate, e.ProductId }).IsUnique();
+            // Rejected rows stay for audit; a new Pending/Approved row may be entered after reject.
+            entity.HasIndex(e => new { e.OutletId, e.BFDate, e.ProductId })
+                .IsUnique()
+                .HasFilter("is_active AND status <> 'Rejected'");
             entity.HasIndex(e => e.Status);
         });
 

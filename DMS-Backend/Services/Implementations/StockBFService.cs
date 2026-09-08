@@ -73,7 +73,24 @@ public class StockBFService : IStockBFService
             .Where(s => s.OutletId == outletId &&
                         s.BFDate == bfDateUtc &&
                         ids.Contains(s.ProductId) &&
-                        s.IsActive)
+                        s.IsActive &&
+                        s.Status != StockBFStatus.Rejected)
+            .ToListAsync(cancellationToken);
+    }
+
+    private static InvalidOperationException StockBfAlreadySubmitted() =>
+        new("Opening stock for this showroom and date is already submitted. Re-entry is allowed only after the record is rejected.");
+
+    private async Task<List<StockBF>> GetBlockingStockBfsForOutletDateAsync(
+        Guid outletId,
+        DateTime bfDateUtc,
+        CancellationToken cancellationToken)
+    {
+        return await StockBFDetailQuery
+            .Where(s => s.IsActive &&
+                        s.OutletId == outletId &&
+                        s.BFDate == bfDateUtc &&
+                        s.Status != StockBFStatus.Rejected)
             .ToListAsync(cancellationToken);
     }
 
@@ -97,7 +114,7 @@ public class StockBFService : IStockBFService
         return _mapper.Map<List<StockBFDetailDto>>(existingActive);
     }
 
-    private async Task ValidateProductsRequireOpenStockAsync(
+    private async Task ValidateProductsDisplayInPosAsync(
         IEnumerable<Guid> productIds,
         CancellationToken cancellationToken)
     {
@@ -107,14 +124,14 @@ public class StockBFService : IStockBFService
 
         var flagged = await _context.Products
             .AsNoTracking()
-            .Where(p => ids.Contains(p.Id) && !p.RequireOpenStock)
+            .Where(p => ids.Contains(p.Id) && !p.DisplayInPOS)
             .Select(p => p.Name)
             .ToListAsync(cancellationToken);
 
         if (flagged.Count > 0)
         {
             throw new InvalidOperationException(
-                "Stock BF is only allowed for products that require showroom open stock. " +
+                "Stock BF is only allowed for products that are displayed in POS. " +
                 $"Not allowed: {string.Join(", ", flagged)}");
         }
     }
@@ -345,20 +362,17 @@ public class StockBFService : IStockBFService
         var bfDateUtc = EnsureUtc(dto.BFDate);
         ValidateBfDateRules(bfDateUtc, relaxedBfDateRules);
 
-        var existing = await _context.StockBFs
-            .FirstOrDefaultAsync(s => s.OutletId == dto.OutletId &&
-                                     s.BFDate == bfDateUtc &&
-                                     s.ProductId == dto.ProductId &&
-                                     s.IsActive,
-                                cancellationToken);
-
-        if (existing != null)
+        var blocking = await GetBlockingStockBfsForOutletDateAsync(dto.OutletId, bfDateUtc, cancellationToken);
+        var existingForProduct = blocking.FirstOrDefault(s => s.ProductId == dto.ProductId);
+        if (existingForProduct != null)
         {
-            return _mapper.Map<StockBFDetailDto>(await StockBFDetailQuery
-                .FirstAsync(s => s.Id == existing.Id, cancellationToken));
+            return _mapper.Map<StockBFDetailDto>(existingForProduct);
         }
 
-        await ValidateProductsRequireOpenStockAsync(new[] { dto.ProductId }, cancellationToken);
+        if (blocking.Count > 0)
+            throw StockBfAlreadySubmitted();
+
+        await ValidateProductsDisplayInPosAsync(new[] { dto.ProductId }, cancellationToken);
 
         // Check auto-approval configuration
         var autoApprovalEnabled = await _autoApprovalConfigService.IsAutoApprovalEnabledAsync("operation:stock-bf", cancellationToken);
@@ -427,7 +441,7 @@ public class StockBFService : IStockBFService
         var canAutoApprove = permissionCodes.Contains("*") || permissionCodes.Contains("operation:stock-bf:auto-approve");
         var shouldAutoApprove = autoApprovalEnabled && canAutoApprove;
 
-        // Idempotency: Check if this mutation has already been processed
+        // Idempotency: Check if this mutation has already been processed (ignore rejected rows)
         if (!string.IsNullOrWhiteSpace(dto.ClientMutationId))
         {
             var existingByMutationId = await _context.StockBFs
@@ -440,17 +454,16 @@ public class StockBFService : IStockBFService
                 .Where(s => s.ClientMutationId == dto.ClientMutationId &&
                            s.OutletId == dto.OutletId &&
                            s.BFDate == bfDateUtc &&
-                           s.IsActive)
+                           s.IsActive &&
+                           s.Status != StockBFStatus.Rejected)
                 .ToListAsync(cancellationToken);
 
             if (existingByMutationId.Any())
             {
-                // Return existing records (idempotent replay)
                 return _mapper.Map<List<StockBFDetailDto>>(existingByMutationId);
             }
         }
 
-        // Check for duplicates within the request
         var duplicateProducts = dto.Items
             .GroupBy(i => i.ProductId)
             .Where(g => g.Count() > 1)
@@ -460,33 +473,19 @@ public class StockBFService : IStockBFService
         if (duplicateProducts.Any())
             throw new ArgumentException("Duplicate products found in the request");
 
-        // Check for existing records (by product, not mutation ID)
         var productIds = dto.Items.Select(i => i.ProductId).ToList();
-        var idempotentReplay = await TryReturnExistingBulkAsync(
-            dto.OutletId, bfDateUtc, productIds, cancellationToken);
-        if (idempotentReplay.Count > 0)
-            return idempotentReplay;
-
-        var existingRecords = await _context.StockBFs
-            .Where(s => s.OutletId == dto.OutletId &&
-                       s.BFDate == bfDateUtc &&
-                       productIds.Contains(s.ProductId) &&
-                       s.IsActive)
-            .Select(s => s.ProductId)
-            .ToListAsync(cancellationToken);
-
-        if (existingRecords.Any())
+        var blocking = await GetBlockingStockBfsForOutletDateAsync(dto.OutletId, bfDateUtc, cancellationToken);
+        if (blocking.Count > 0)
         {
-            var existingProductNames = await _context.Products
-                .Where(p => existingRecords.Contains(p.Id))
-                .Select(p => p.Name)
-                .ToListAsync(cancellationToken);
+            var idempotentReplay = await TryReturnExistingBulkAsync(
+                dto.OutletId, bfDateUtc, productIds, cancellationToken);
+            if (idempotentReplay.Count > 0)
+                return idempotentReplay;
 
-            throw new InvalidOperationException(
-                $"Stock BF already exists for: {string.Join(", ", existingProductNames)}");
+            throw StockBfAlreadySubmitted();
         }
 
-        await ValidateProductsRequireOpenStockAsync(dto.Items.Select(i => i.ProductId), cancellationToken);
+        await ValidateProductsDisplayInPosAsync(dto.Items.Select(i => i.ProductId), cancellationToken);
 
         var now = DateTime.UtcNow;
         var createdIds = new List<Guid>();
@@ -631,13 +630,14 @@ public class StockBFService : IStockBFService
                                      s.OutletId == dto.OutletId &&
                                      s.BFDate == bfDateUtc &&
                                      s.ProductId == dto.ProductId &&
-                                     s.IsActive,
+                                     s.IsActive &&
+                                     s.Status != StockBFStatus.Rejected,
                                 cancellationToken);
 
         if (existing != null)
             throw new InvalidOperationException("Stock BF already exists for this outlet, date, and product combination");
 
-        await ValidateProductsRequireOpenStockAsync(new[] { dto.ProductId }, cancellationToken);
+        await ValidateProductsDisplayInPosAsync(new[] { dto.ProductId }, cancellationToken);
 
         stockBF.BFDate = bfDateUtc;
         stockBF.OutletId = dto.OutletId;

@@ -33,6 +33,8 @@ export interface ProductRow {
   sortOrder: number
   /** When false, product must not appear on Stock BF entry (synced from server). */
   requireOpenStock: boolean
+  /** When false, product is not sold on POS and must not appear on Stock BF. */
+  displayInPOS: boolean
 }
 
 export interface CategoryRow {

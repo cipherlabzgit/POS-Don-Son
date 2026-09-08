@@ -4,7 +4,7 @@ import { PosSubPageLayout } from '../components/PosSubPageLayout'
 import { CatalogStaleBanner } from '../components/CatalogStaleBanner'
 import { useAuthStore } from '../lib/auth-store'
 import { useSettingsStore } from '../lib/settings-store'
-import { loadAllActiveProducts } from '../lib/catalog-sync'
+import { loadProductsIntoDb } from '../lib/catalog-sync'
 import { offlineDb } from '../lib/offline-db'
 import type { ProductRow } from '../lib/types'
 import { fetchStockBfRecords, postStockBfBulk } from '../lib/api'
@@ -25,6 +25,11 @@ type HistRow = {
   productName: string
   quantity: number
   status: string
+}
+
+function isBlockingStockBfStatus(status: string) {
+  const s = status.toLowerCase()
+  return s !== 'rejected' && s !== 'cancelled'
 }
 
 export function StockBfPage({ onBack }: Props) {
@@ -56,9 +61,15 @@ export function StockBfPage({ onBack }: Props) {
   const [pendingProduct, setPendingProduct] = useState<ProductRow | null>(null)
 
   useEffect(() => {
+    if (!formLocked) return
+    setKbField(null)
+    setShowDrop(false)
+  }, [formLocked])
+
+  useEffect(() => {
     void (async () => {
       try {
-        const list = await loadAllActiveProducts()
+        const list = await loadProductsIntoDb()
         setProducts(list)
         if (list.length === 0) {
           toast(
@@ -76,11 +87,12 @@ export function StockBfPage({ onBack }: Props) {
   }, [online])
 
   useEffect(() => {
-    if (!online || !outletId || !canView) return
+    if (!outletId || (!canView && !canCreate)) return
     const today = todayCalendarISO()
     if (tab === 'history') setHistLoading(true)
     void (async () => {
       try {
+        if (!online || !canView) return
         const res = (await fetchStockBfRecords({
           outletId,
           fromDate: today,
@@ -97,24 +109,30 @@ export function StockBfPage({ onBack }: Props) {
           status: String(r.status ?? r.Status ?? '—'),
         }))
         setHistRows(mapped)
-        const blocking = mapped.some((r) => {
-          const s = r.status.toLowerCase()
-          return s !== 'rejected' && s !== 'cancelled'
-        })
-        setFormLocked(blocking)
+        const blocking = mapped.some((r) => isBlockingStockBfStatus(r.status))
+        if (mapped.length === 0) {
+          if (!submittingRef.current) setFormLocked(false)
+        } else {
+          setFormLocked(blocking)
+          if (blocking) {
+            setRows([])
+            setPendingProduct(null)
+            setSearch('')
+          }
+        }
       } catch (e) {
         if (tab === 'history') toast((e as Error).message, 'error')
       } finally {
         setHistLoading(false)
       }
     })()
-  }, [tab, online, outletId, canView, histNonce])
+  }, [tab, online, outletId, canView, canCreate, histNonce])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     if (!q) return []
     return products
-      .filter((p) => p.requireOpenStock !== false)
+      .filter((p) => p.displayInPOS !== false)
       .filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q))
       .slice(0, 12)
   }, [products, search])
@@ -130,8 +148,12 @@ export function StockBfPage({ onBack }: Props) {
   }
 
   function selectProduct(p: ProductRow) {
-    if (p.requireOpenStock === false) {
-      toast('This product does not use showroom open stock — it cannot be added to Stock BF.', 'error')
+    if (formLocked) {
+      toast('Opening stock for today is already submitted and locked.', 'error')
+      return
+    }
+    if (p.displayInPOS === false) {
+      toast('This product is not displayed in POS — it cannot be added to Stock BF.', 'error')
       return
     }
     setPendingProduct(p)
@@ -142,10 +164,14 @@ export function StockBfPage({ onBack }: Props) {
   }
 
   function addRow(p?: ProductRow) {
+    if (formLocked) {
+      toast('Opening stock for today is already submitted and locked.', 'error')
+      return
+    }
     const target = p ?? pendingProduct ?? filtered[0]
     if (!target) { toast('Select an item first.', 'info'); return }
-    if (target.requireOpenStock === false) {
-      toast('This product does not use showroom open stock — it cannot be added to Stock BF.', 'error')
+    if (target.displayInPOS === false) {
+      toast('This product is not displayed in POS — it cannot be added to Stock BF.', 'error')
       return
     }
     const qn = parseFloat(qty.replace(',', '.'))
@@ -162,10 +188,12 @@ export function StockBfPage({ onBack }: Props) {
   }
 
   function removeRow(productId: string) {
+    if (formLocked) return
     setRows((prev) => prev.filter((r) => r.productId !== productId))
   }
 
   function updateRowQty(productId: string, value: string) {
+    if (formLocked) return
     const qn = parseFloat(value.replace(',', '.'))
     if (!Number.isFinite(qn) || qn <= 0) return
     setRows((prev) => prev.map((r) => r.productId === productId ? { ...r, qty: qn } : r))
@@ -276,7 +304,7 @@ export function StockBfPage({ onBack }: Props) {
   return (
     <PosSubPageLayout
       title="Stock BF"
-      subtitle="Submit opening stock for today. Search lists only products that require open stock."
+      subtitle="Submit opening stock for today. Search lists only products displayed in POS."
       onBack={onBack}
       badge={
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${online ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
@@ -344,9 +372,10 @@ export function StockBfPage({ onBack }: Props) {
           <CatalogStaleBanner online={online} />
           {formLocked ? (
             <div className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-sm font-medium text-[var(--foreground)]">
-              Today’s opening stock is submitted and locked. It can be entered again only if an administrator rejects it in Approvals.
+              Today’s opening stock is submitted and locked. It can be entered again only if DMS rejects it.
             </div>
           ) : null}
+          <fieldset disabled={formLocked} className={formLocked ? 'pointer-events-none opacity-60' : undefined}>
           {/* Info strip */}
           <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-5 py-4 text-sm sm:grid-cols-4">
             <InfoField label="Showroom" value={outletLabel || '—'} />
@@ -484,6 +513,7 @@ export function StockBfPage({ onBack }: Props) {
               <Printer className="h-4 w-4" /> Submit &amp; Print
             </button>
           </div>
+          </fieldset>
         </div>
       )}
     </PosSubPageLayout>

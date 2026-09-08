@@ -15,6 +15,9 @@ public sealed class TransferDetailDto
     public Guid? ApprovedById { get; set; }
     public string? ApprovedByName { get; set; }
     public DateTime? ApprovedDate { get; set; }
+    public Guid? ReceivedById { get; set; }
+    public string? ReceivedByName { get; set; }
+    public DateTime? ReceivedAt { get; set; }
     public List<TransferItemDto> Items { get; set; } = new();
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }

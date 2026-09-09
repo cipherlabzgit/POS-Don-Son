@@ -297,7 +297,7 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
       console.warn('[ELECTRON-PRINT] Could not measure receipt height:', measureError)
     }
 
-    const printHeightPx = Math.min(Math.max(Number(contentHeightPx) || 0, 200) + 32, 20000)
+    const printHeightPx = Math.min(Math.max(Number(contentHeightPx) || 0, 200) + 96, 20000)
     printWin.setContentSize(receiptWidthPx, printHeightPx)
     await new Promise((r) => setTimeout(r, 250))
 

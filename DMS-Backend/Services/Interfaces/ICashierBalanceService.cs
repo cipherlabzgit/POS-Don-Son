@@ -11,5 +11,7 @@ public interface ICashierBalanceService
 
     Task SubmitAsync(SubmitCashierBalanceDto dto, Guid submittedByUserId, CancellationToken cancellationToken = default);
 
+    Task ResetApprovedForDateAsync(DateTime processDate, Guid resetByUserId, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<CashierBalanceRecentSubmissionDto>> GetRecentSubmissionsAsync(int count, CancellationToken cancellationToken = default);
 }

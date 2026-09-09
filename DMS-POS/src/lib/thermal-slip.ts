@@ -1,6 +1,7 @@
 /**
- * 80mm thermal rolls have a smaller printable area than the paper width.
- * Keep the page at 80mm and center a narrower slip so both edges stay clear.
+ * 80mm thermal paper (do not shrink the page).
+ * Printers clip a few millimetres at each edge — keep the sheet 80mm and
+ * inset the slip with padding so Qty / code stay on the printable area.
  */
 export const THERMAL_SLIP_CSS = `
 html,body{
@@ -19,12 +20,14 @@ html,body{
 }
 *{box-sizing:border-box;color:#000!important;-webkit-font-smoothing:none;font-smooth:never;text-rendering:geometricPrecision}
 .slip{
-  width:62mm;
-  max-width:62mm;
-  margin:0 auto;
-  padding:2mm 0 12mm;
+  width:80mm;
+  max-width:80mm;
+  margin:0;
+  padding:3mm 4.5mm 16mm;
   overflow-x:hidden;
 }
 .slip table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}
 .slip th,.slip td{overflow-wrap:anywhere;word-wrap:break-word}
+.slip tbody td{font-weight:400!important}
+.slip .qty{overflow:visible}
 `

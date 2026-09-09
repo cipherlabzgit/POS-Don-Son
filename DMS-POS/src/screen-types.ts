@@ -6,6 +6,5 @@ export type Screen =
   | 'transfer'
   | 'return'
   | 'cash'
-  | 'order-request'
   | 'diagnostics'
   | 'sale-records'

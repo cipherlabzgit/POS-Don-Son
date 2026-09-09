@@ -197,38 +197,6 @@ export async function fetchOutletsPage(page: number, pageSize: number) {
   return { outlets: items, totalCount }
 }
 
-export async function fetchDeliveryTurnsPage(page: number, pageSize: number) {
-  const { data } = await api.get('/api/delivery-turns', {
-    params: { page, pageSize, activeOnly: true },
-  })
-  const { items, totalCount } = readPagedPayload(
-    data,
-    ['deliveryTurns', 'DeliveryTurns'],
-    ['totalCount', 'TotalCount'],
-  )
-  return { deliveryTurns: items, totalCount }
-}
-
-export async function createOrderRequest(body: {
-  orderNo: string
-  orderDate: string
-  deliveryDate: string
-  deliveryTime: string
-  productionStartingDate: string
-  productionStartingTime: string
-  recipeRequestNumber?: string
-  useFreezerStock: boolean
-  notes?: string
-}) {
-  const { data } = await api.post<ApiEnvelope<unknown>>('/api/orders', body)
-  return unwrap(data)
-}
-
-export async function bulkUpsertOrderItems(orderId: string, items: { outletId: string; productId: string; deliveryTurnId: string; fullQuantity: number; miniQuantity: number; isExtraItem: boolean }[]) {
-  const { data } = await api.post<ApiEnvelope<unknown>>(`/api/orders/${encodeURIComponent(orderId)}/items/bulk-upsert`, items)
-  return unwrap(data)
-}
-
 export async function postPosSale(body: object) {
   const { data } = await api.post<ApiEnvelope<unknown>>('/api/pos-sales', body)
   return unwrap(data)
@@ -369,6 +337,8 @@ export async function fetchPosSales(params: {
   page?: number
   pageSize?: number
   outletId?: string
+  startDate?: string
+  endDate?: string
 }) {
   const { data } = await api.get<
     ApiEnvelope<{ sales: unknown[]; totalCount: number; page: number; pageSize: number }>
@@ -387,30 +357,6 @@ export async function requestPosSaleCancel(id: string, reason: string) {
     `/api/pos-sales/${encodeURIComponent(id)}/request-cancel`,
     { reason },
   )
-  return unwrap(data)
-}
-
-export async function createImmediateOrder(body: {
-  orderBillNo: string
-  orderDate: string
-  needByDate: string
-  needByTime: string
-  deliveryDate: string
-  deliveryTime: string
-  productionStartingDate: string
-  productionStartingTime: string
-  recipeRequestNumber: string
-  deliveryTurnId: string
-  outletId: string
-  productId: string
-  fullQuantity: number
-  miniQuantity: number
-  requestedBy: string
-  reason: string
-  isCustomized: boolean
-  customizationNotes?: string
-}) {
-  const { data } = await api.post<ApiEnvelope<unknown>>('/api/immediate-orders', body)
   return unwrap(data)
 }
 

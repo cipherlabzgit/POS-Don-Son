@@ -12,6 +12,9 @@ public sealed class CashierBalanceService : ICashierBalanceService
 {
     public const string LineApprovalType = "Cashier Balance";
     public const string ShowroomClosedApprovalType = "CashierBalanceShowroomClosed";
+    public const string ResetStatus = "Reset";
+    public const string LockedResubmitMessage =
+        "This showroom's cashier balance is already submitted and locked. It can be entered again only after it is rejected in Approvals, or after an approved date is reset in Day-End Process.";
 
     public static bool IsCashierBalanceApprovalType(string? approvalType) =>
         string.Equals(approvalType, LineApprovalType, StringComparison.OrdinalIgnoreCase)
@@ -117,7 +120,7 @@ public sealed class CashierBalanceService : ICashierBalanceService
         {
             lines.TryGetValue(outlet.Id, out var line);
             latestByLine.TryGetValue(line?.Id ?? Guid.Empty, out var latest);
-            var (status, locked) = ResolveLineLock(line, latest);
+            var (status, locked) = ResolveLineLock(line, latest, dayRow?.IsApproved == true);
             return new CashierBalanceOutletRowDto
             {
                 OutletId = outlet.Id,
@@ -222,24 +225,18 @@ public sealed class CashierBalanceService : ICashierBalanceService
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == submittedByUserId, cancellationToken);
 
-        var writable = new List<SubmitCashierBalanceLineDto>();
         foreach (var line in dto.Lines)
         {
             lineByOutlet.TryGetValue(line.OutletId, out var existingLine);
             latestByLine.TryGetValue(existingLine?.Id ?? Guid.Empty, out var latest);
-            var (_, locked) = ResolveLineLock(existingLine, latest);
+            var (_, locked) = ResolveLineLock(existingLine, latest, existingDay?.IsApproved == true);
             if (locked)
             {
-                continue;
+                throw new InvalidOperationException(LockedResubmitMessage);
             }
-
-            writable.Add(line);
         }
 
-        if (writable.Count == 0)
-        {
-            return;
-        }
+        var writable = dto.Lines;
 
         var isFullSubmit = dto.Lines.Count == outletDict.Count
             && outletDict.Keys.All(id => dto.Lines.Any(l => l.OutletId == id));
@@ -432,22 +429,94 @@ public sealed class CashierBalanceService : ICashierBalanceService
                 g => g.OrderByDescending(a => a.RequestedAt).ThenByDescending(a => a.CreatedAt).First());
     }
 
+    private static bool LineHasBeenEntered(CashierBalanceOutletLine line) =>
+        line.IsShowroomClosed
+        || line.CashierBalance.HasValue
+        || line.BalanceCash.HasValue
+        || line.BalanceCard.HasValue
+        || line.BalanceUber.HasValue
+        || line.BalancePickme.HasValue;
+
+    private static bool IsUnlockStatus(string? status) =>
+        string.Equals(status, "Rejected", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(status, ResetStatus, StringComparison.OrdinalIgnoreCase);
+
     private static (string? Status, bool Locked) ResolveLineLock(
         CashierBalanceOutletLine? line,
-        ApprovalQueue? latest)
+        ApprovalQueue? latest,
+        bool dayApproved)
     {
         if (line == null)
         {
             return (null, false);
         }
 
+        var entered = LineHasBeenEntered(line);
+        var status = latest?.Status;
+
+        if (IsUnlockStatus(status))
+        {
+            return (status, false);
+        }
+
         if (latest != null)
         {
-            var rejected = string.Equals(latest.Status, "Rejected", StringComparison.OrdinalIgnoreCase);
-            return (latest.Status, !rejected);
+            return (status, true);
+        }
+
+        if (entered || dayApproved)
+        {
+            return (dayApproved ? "Approved" : "Submitted", true);
         }
 
         return (null, false);
+    }
+
+    public async Task ResetApprovedForDateAsync(DateTime processDate, Guid resetByUserId, CancellationToken cancellationToken = default)
+    {
+        var pd = NormalizeProcessDate(processDate);
+        var day = await _context.CashierBalanceDays.FirstOrDefaultAsync(c => c.ProcessDate == pd, cancellationToken);
+        if (day is not { IsApproved: true })
+        {
+            throw new InvalidOperationException("Only an approved cashier balance date can be reset from Day-End Process.");
+        }
+
+        var now = DateTime.UtcNow;
+        day.IsApproved = false;
+        day.IsSubmitted = false;
+        day.ApprovedById = null;
+        day.ApprovedAt = null;
+        day.SubmittedAt = null;
+        day.SubmittedById = null;
+        day.UpdatedAt = now;
+
+        var lines = await _context.CashierBalanceOutletLines
+            .Where(l => l.ProcessDate == pd)
+            .Select(l => l.Id)
+            .ToListAsync(cancellationToken);
+
+        if (lines.Count > 0)
+        {
+            var approvals = await _context.ApprovalQueues
+                .Where(a => lines.Contains(a.EntityId) && IsCashierBalanceApprovalType(a.ApprovalType))
+                .ToListAsync(cancellationToken);
+
+            foreach (var group in approvals.GroupBy(a => a.EntityId))
+            {
+                var latest = group.OrderByDescending(a => a.RequestedAt).ThenByDescending(a => a.CreatedAt).First();
+                if (string.Equals(latest.Status, "Approved", StringComparison.OrdinalIgnoreCase))
+                {
+                    latest.Status = ResetStatus;
+                    latest.Notes = string.IsNullOrWhiteSpace(latest.Notes)
+                        ? "Reset from Day-End Process."
+                        : latest.Notes + " Reset from Day-End Process.";
+                    latest.UpdatedById = resetByUserId;
+                    latest.UpdatedAt = now;
+                }
+            }
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     private static readonly JsonSerializerOptions ApprovalPayloadJson = new()

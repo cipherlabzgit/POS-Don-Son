@@ -173,6 +173,22 @@ export const dayEndApi = {
     }
   },
 
+  async resetCashierBalance(processDate: string): Promise<void> {
+    const res = await api.post(`${BASE}/cashier-balance/reset`, {}, {
+      params: { processDate },
+    });
+    const body = res.data as Record<string, unknown> | undefined;
+    const success = Boolean(body?.success ?? body?.Success);
+    if (!success) {
+      const err = (body?.error ?? body?.Error) as { message?: string } | undefined;
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String(err.message ?? 'Reset failed')
+          : 'Reset failed';
+      throw new Error(msg);
+    }
+  },
+
   async submit(payload: { processDate: string; lines: SubmitDayEndLine[] }): Promise<void> {
     const res = await api.post(`${BASE}/submit`, {
       processDate: payload.processDate,

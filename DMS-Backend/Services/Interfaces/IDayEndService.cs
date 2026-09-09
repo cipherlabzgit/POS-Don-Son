@@ -10,5 +10,7 @@ public interface IDayEndService
 
     Task ApproveCashierBalanceForDateAsync(DateTime processDate, Guid approvedByUserId, CancellationToken cancellationToken = default);
 
+    Task ResetCashierBalanceForDateAsync(DateTime processDate, Guid resetByUserId, CancellationToken cancellationToken = default);
+
     Task SubmitDayEndAsync(SubmitDayEndDto dto, Guid submittedByUserId, CancellationToken cancellationToken = default);
 }

@@ -7,7 +7,7 @@ import { useAuthStore } from '../lib/auth-store'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError } from '../lib/api-errors'
-import { todayCalendarISO } from '../lib/calendar-date'
+import { useSriLankaBusinessDay } from '../lib/use-sri-lanka-business-day'
 
 type Props = { onBack: () => void }
 type Transfer = Record<string, unknown>
@@ -20,6 +20,7 @@ export function PendingTransfersPage({ onBack }: Props) {
   const online      = useOnlineStatus(Boolean(token))
 
   const canReceive = hasPermission('operation:transfer:view') || hasPermission('operation:transfer:update')
+  const businessDay = useSriLankaBusinessDay()
 
   const [list, setList]         = useState<Transfer[]>([])
   const [selected, setSelected] = useState<Transfer | null>(null)
@@ -33,7 +34,7 @@ export function PendingTransfersPage({ onBack }: Props) {
     setLoading(true)
     setErr('')
     try {
-      const today = todayCalendarISO()
+      const today = businessDay
       const res = await fetchTransfers({
         page: 1,
         pageSize: 100,
@@ -51,7 +52,11 @@ export function PendingTransfersPage({ onBack }: Props) {
     }
   }
 
-  useEffect(() => { void loadList() }, [outletId, online])
+  useEffect(() => {
+    setSelected(null)
+    setDetail(null)
+    void loadList()
+  }, [outletId, online, businessDay])
 
   useEffect(() => {
     if (!selected) { setDetail(null); return }

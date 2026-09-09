@@ -8,7 +8,6 @@ import { useCustomerDisplaySync } from './hooks/use-customer-display-sync'
 import { NewTransferPage } from './pages/NewTransferPage'
 import { DeliveryReturnPage } from './pages/DeliveryReturnPage'
 import { CashSubmissionPage } from './pages/CashSubmissionPage'
-import { OrderRequestPage } from './pages/OrderRequestPage'
 import { SaleRecordsPage } from './pages/SaleRecordsPage'
 import { NetworkDiagnosticsPage } from './pages/NetworkDiagnosticsPage'
 import { PosAccessDeniedPage } from './pages/PosAccessDeniedPage'
@@ -117,7 +116,6 @@ function CashierApp() {
       {screen === 'transfer' ? <NewTransferPage onBack={() => setScreen('pos')} /> : null}
       {screen === 'return' ? <DeliveryReturnPage onBack={() => setScreen('pos')} /> : null}
       {screen === 'cash' ? <CashSubmissionPage onBack={() => setScreen('pos')} /> : null}
-      {screen === 'order-request' ? <OrderRequestPage onBack={() => setScreen('pos')} /> : null}
       {screen === 'sale-records' ? <SaleRecordsPage onBack={() => setScreen('pos')} /> : null}
       {screen === 'diagnostics' ? <NetworkDiagnosticsPage onBack={() => setScreen('pos')} /> : null}
     </>

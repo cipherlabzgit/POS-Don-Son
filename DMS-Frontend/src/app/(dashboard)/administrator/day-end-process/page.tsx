@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Bell, CheckCircle, Lock, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Bell, CheckCircle, Lock, AlertTriangle, ShieldAlert, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { previousCalendarDayUtcISO } from '@/lib/date-restrictions';
 import { useDayEndStore } from '@/lib/stores/day-end-store';
@@ -87,6 +87,7 @@ function DayEndProcessContent() {
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [weekStartDay, setWeekStartDay] = useState(3);
   const [weeksToShow, setWeeksToShow] = useState(2);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -205,6 +206,24 @@ function DayEndProcessContent() {
       toast.error(getDayEndApiErrorMessage(e));
     } finally {
       setIsApproving(false);
+    }
+  };
+
+  const handleResetCashierBalance = async () => {
+    if (dayLocked) return;
+    const ok = window.confirm(
+      'Reset approved cashier balances for this date? Showrooms will be able to submit again. Day-end for this date will stay incomplete until balances are re-approved.',
+    );
+    if (!ok) return;
+    setIsResetting(true);
+    try {
+      await dayEndApi.resetCashierBalance(processDate);
+      toast.success('Cashier balance was reset. Showrooms can submit again.');
+      await loadContext();
+    } catch (e) {
+      toast.error(getDayEndApiErrorMessage(e));
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -501,6 +520,19 @@ function DayEndProcessContent() {
                   disabled={loading || isApproving}
                 >
                   Approve cashier balance for this date
+                </PermissionButton>
+              )}
+              {cashierApproved && !dayLocked && (
+                <PermissionButton
+                  permission="cashier-balance:edit"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleResetCashierBalance()}
+                  isLoading={isResetting}
+                  disabled={loading || isResetting}
+                >
+                  <RotateCcw className="w-3 h-3 mr-1" />
+                  Reset cashier balance
                 </PermissionButton>
               )}
             </div>

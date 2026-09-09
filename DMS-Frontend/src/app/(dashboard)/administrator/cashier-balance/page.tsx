@@ -274,8 +274,9 @@ function CashierBalanceContent() {
         </h1>
         <p className="mt-1" style={{ color: 'var(--muted-foreground)' }}>
           Record daily takings split by <strong>Cash</strong>, <strong>Card</strong>, <strong>Uber</strong>, and{' '}
-          <strong>PickMe</strong> for each showroom. After a showroom submits, that row stays locked until an admin
-          rejects it in Approvals.
+          <strong>PickMe</strong> for each showroom. After submit, the entry is locked for everyone including
+          administrators. Re-entry is allowed only if Approvals reject it, or if an approved date is reset from
+          Day-End Process.
         </p>
       </div>
 
@@ -479,7 +480,13 @@ function CashierBalanceContent() {
                             </div>
                             {r.isLocked || statusLock ? (
                               <div className="text-[11px] mt-1 font-semibold" style={{ color: '#B45309' }}>
-                                {r.lineStatus === 'Approved' ? 'Approved — locked' : 'Submitted — locked until rejected'}
+                                {r.lineStatus === 'Approved'
+                                  ? 'Approved — locked (reset from Day-End Process to re-enter)'
+                                  : 'Submitted — locked until rejected or Day-End reset'}
+                              </div>
+                            ) : r.lineStatus === 'Rejected' || r.lineStatus === 'Reset' ? (
+                              <div className="text-[11px] mt-1 font-semibold" style={{ color: '#047857' }}>
+                                {r.lineStatus === 'Reset' ? 'Reset — open for re-entry' : 'Rejected — open for re-entry'}
                               </div>
                             ) : null}
                           </td>

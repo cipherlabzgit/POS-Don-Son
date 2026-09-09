@@ -62,9 +62,54 @@ export function SearchKeyboard({
 
   const rows = digits ? NUM : ALPHA
 
+  useEffect(() => {
+    function isNativeTextField(el: EventTarget | null) {
+      if (!(el instanceof HTMLElement)) return false
+      if (el.isContentEditable) return true
+      if (el.tagName === 'TEXTAREA') return true
+      if (el.tagName !== 'INPUT') return false
+      const type = (el as HTMLInputElement).type
+      return type !== 'button' && type !== 'submit' && type !== 'checkbox' && type !== 'radio'
+    }
+
+    function onKey(e: KeyboardEvent) {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return
+      if (isNativeTextField(e.target)) return
+
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+        return
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        onEnter?.()
+        onClose()
+        return
+      }
+      if (e.key === 'Backspace') {
+        e.preventDefault()
+        onChange(value.slice(0, -1))
+        return
+      }
+      if (e.key === ' ') {
+        e.preventDefault()
+        onChange(value + ' ')
+        return
+      }
+      if (e.key.length === 1) {
+        e.preventDefault()
+        onChange(value + e.key)
+      }
+    }
+
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [value, onChange, onClose, onEnter])
+
   return createPortal(
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[80] flex justify-center">
-      <div className="pointer-events-auto w-full max-w-3xl rounded-t-xl border-t-2 border-[var(--brand-primary)] bg-[#141414] px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-6px_24px_rgba(0,0,0,0.4)]">
+      <div data-pos-osk className="pointer-events-auto w-full max-w-3xl rounded-t-xl border-t-2 border-[var(--brand-primary)] bg-[#141414] px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-6px_24px_rgba(0,0,0,0.4)]">
         <div className="mb-1 flex items-center justify-end">
           <button
             type="button"

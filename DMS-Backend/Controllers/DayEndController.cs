@@ -59,6 +59,24 @@ public sealed class DayEndController : ControllerBase
         }
     }
 
+    [HttpPost("cashier-balance/reset")]
+    [HasPermission("cashier-balance:edit")]
+    public async Task<ActionResult<ApiResponse<object>>> ResetCashierBalance(
+        [FromQuery] DateTime processDate,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await _dayEndService.ResetCashierBalanceForDateAsync(processDate, userId, cancellationToken);
+            return Ok(ApiResponse<object>.SuccessResponse(new { Message = "Cashier balance was reset. Showrooms can submit again." }));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ApiResponse<object>.FailureResponse(Error.Validation(ex.Message)));
+        }
+    }
+
     [HttpPost("submit")]
     [HasPermission("day-end:execute")]
     public async Task<ActionResult<ApiResponse<object>>> Submit(

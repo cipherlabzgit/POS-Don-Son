@@ -71,22 +71,23 @@ function buildTransferNoteHtml(opts: TransferNoteOpts, variant: 'original' | 'co
     )
     .join('')
 
+  const cashierLine = `<div class="meta">Submitted By : ${escapeHtml(opts.submittedBy)}</div>`
   const footer =
     variant === 'original'
-      ? `<div class="meta">Send By : ${escapeHtml(opts.submittedBy)}</div>
+      ? `${cashierLine}
 <div class="sig-section">
-  <div class="sig-k">Send By :</div>
-  ${dottedLine('Signature')}
+  <div class="sig-k">Submitted By :</div>
+  ${dottedLine('Submitted By Signature')}
 </div>
 <div class="sig-section">
   <div class="sig-k">Received By :</div>
-  ${dottedLine('Name')}
+  ${dottedLine('Received By Name')}
 </div>
 <div class="sig-section">
   <div class="sig-k">Received By :</div>
-  ${dottedLine('Signature')}
+  ${dottedLine('Received By Signature')}
 </div>`
-      : `<div class="meta">Send By : ${escapeHtml(opts.submittedBy)}</div>`
+      : cashierLine
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${stamp}</title>
 <style>
@@ -100,13 +101,14 @@ body{
 }
 .title{text-align:center;font-size:18px;font-weight:700;margin:2px 0 8px}
 .stamp{text-align:center;font-size:14px;font-weight:700;letter-spacing:0.03em;margin:8px 0 6px}
-.meta{font-size:12px;margin:2px 0;overflow-wrap:anywhere}
+.meta{font-size:12px;font-weight:400;margin:2px 0;overflow-wrap:anywhere}
 table{font-size:11px;margin:4px 0 10px}
 th,td{border:1px solid #000;padding:3px 2px;vertical-align:top}
 th{font-weight:700;text-align:center}
-td.code,th.code{width:22%;text-align:left;white-space:nowrap}
-td.item,th.item{width:53%;text-align:left;white-space:normal}
-td.qty,th.qty{width:25%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+td{font-weight:400}
+td.code,th.code{width:24%;text-align:left;white-space:nowrap}
+td.item,th.item{width:50%;text-align:left;white-space:normal}
+td.qty,th.qty{width:26%;min-width:12mm;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .sig-section{margin-top:10px}
 .sig-k{margin-bottom:2px}
 .dots{border-bottom:1px dotted #000;height:14px;width:100%}
@@ -123,9 +125,9 @@ td.qty,th.qty{width:25%;text-align:right;white-space:nowrap;font-variant-numeric
 <div class="stamp">${stamp}</div>
 <table>
   <colgroup>
-    <col style="width:22%">
-    <col style="width:53%">
-    <col style="width:25%">
+    <col style="width:24%">
+    <col style="width:50%">
+    <col style="width:26%">
   </colgroup>
   <thead>
     <tr>

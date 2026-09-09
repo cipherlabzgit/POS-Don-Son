@@ -6,15 +6,9 @@ import { useAuthStore } from '../lib/auth-store'
 import { useSettingsStore } from '../lib/settings-store'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError, isAlreadyRecordedError } from '../lib/api-errors'
+import { useSriLankaBusinessDay } from '../lib/use-sri-lanka-business-day'
 
 type Props = { onBack: () => void }
-
-function localIsoDate(d = new Date()) {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
 
 export function CashSubmissionPage({ onBack }: Props) {
   const token = useAuthStore((s) => s.accessToken)
@@ -27,12 +21,10 @@ export function CashSubmissionPage({ onBack }: Props) {
   const canView = hasPermission('cashier-balance:view')
   const canEdit = hasPermission('cashier-balance:edit')
 
-  const processDate = localIsoDate()
+  const processDate = useSriLankaBusinessDay()
 
-  const [nowClock, setNowClock] = useState(() => new Date())
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [ctxSubmitted, setCtxSubmitted] = useState(false)
   const [ctxApproved, setCtxApproved] = useState(false)
   const [lineLocked, setLineLocked] = useState(false)
   const [lineStatus, setLineStatus] = useState('')
@@ -47,11 +39,6 @@ export function CashSubmissionPage({ onBack }: Props) {
     || user?.email?.trim()
     || '—'
 
-  useEffect(() => {
-    const id = window.setInterval(() => setNowClock(new Date()), 1000)
-    return () => window.clearInterval(id)
-  }, [])
-
   const loadContext = useCallback(async () => {
     if (!canView) { setLoading(false); setLoadError(null); return }
     if (!online) { setLoading(false); setLoadError(null); return }
@@ -64,7 +51,6 @@ export function CashSubmissionPage({ onBack }: Props) {
     setLoadError(null)
     try {
       const ctx = (await fetchCashierBalanceContext(processDate)) as Record<string, unknown>
-      setCtxSubmitted(Boolean(ctx.isSubmitted ?? ctx.IsSubmitted))
       setCtxApproved(Boolean(ctx.isApproved ?? ctx.IsApproved))
 
       const outletsRaw = (ctx.outlets ?? ctx.Outlets ?? []) as Record<string, unknown>[]
@@ -109,7 +95,7 @@ export function CashSubmissionPage({ onBack }: Props) {
     if (!canEdit) { toast('You do not have permission to submit cashier balances.', 'error'); return }
     if (!online) { toast('Cash submission requires an online connection.', 'error'); return }
     if (!outletId) { toast('This till is not assigned to a showroom.', 'error'); return }
-    if (ctxSubmitted || lineLocked) { toast('This showroom is already submitted for this date.', 'error'); return }
+    if (lineLocked || ctxApproved) { toast('This showroom is already submitted for this date.', 'error'); return }
     submittingRef.current = true
     setSubmitting(true)
     try {
@@ -144,7 +130,7 @@ export function CashSubmissionPage({ onBack }: Props) {
     }
   }
 
-  const locked = ctxSubmitted || lineLocked || !canEdit
+  const locked = lineLocked || ctxApproved || !canEdit
   const statusText = loading
     ? 'Loading…'
     : locked && canEdit
@@ -177,7 +163,12 @@ export function CashSubmissionPage({ onBack }: Props) {
           <InfoField label="Showroom" value={outletLabel || '—'} />
           <InfoField
             label="Date"
-            value={nowClock.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })}
+            value={new Date(`${processDate}T12:00:00+05:30`).toLocaleDateString('en-GB', {
+              timeZone: 'Asia/Colombo',
+              year: 'numeric',
+              month: 'short',
+              day: '2-digit',
+            })}
           />
           <InfoField label="Cashier" value={cashier} />
           <InfoField label="Status" value={statusText} />
@@ -191,7 +182,8 @@ export function CashSubmissionPage({ onBack }: Props) {
 
         {locked && canEdit ? (
           <div className="mb-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-sm font-medium text-[var(--foreground)]">
-            This showroom is submitted and locked. It can be edited again only if an administrator rejects it in Approvals.
+            This showroom is submitted and locked. It can be entered again only if Approvals reject it, or if an
+            approved date is reset in Day-End Process.
           </div>
         ) : null}
 

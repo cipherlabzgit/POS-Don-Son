@@ -10,3 +10,11 @@ export function todayCalendarISO(now: Date = new Date()): string {
     day: '2-digit',
   }).format(now)
 }
+
+/** Milliseconds until the next Asia/Colombo midnight (00:00). Sri Lanka has no DST. */
+export function msUntilNextColomboMidnight(now: Date = new Date()): number {
+  const today = todayCalendarISO(now)
+  const startOfToday = new Date(`${today}T00:00:00+05:30`)
+  const nextMidnight = startOfToday.getTime() + 24 * 60 * 60 * 1000
+  return Math.max(250, nextMidnight - now.getTime())
+}

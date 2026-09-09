@@ -17,10 +17,10 @@ import { fetchOutletsPage, fetchPendingTransferCount, fetchPosSaleRecordsUnreadC
 import { enqueueMutation, processPendingQueue } from '../lib/sync-queue'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { isElectronPos, printReceiptHtml, type PrintReceiptOpts } from '../lib/print-receipt'
-import { formatReceiptContact, RECEIPT_COMPANY_ADDRESS } from '../lib/receipt-company'
+import { formatReceiptContact, RECEIPT_COMPANY_ADDRESS, RECEIPT_COMPANY_NAME, RECEIPT_FOOD_POLICY } from '../lib/receipt-company'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError, isUnreachableNetworkError } from '../lib/api-errors'
-import { todayCalendarISO } from '../lib/calendar-date'
+import { useSriLankaBusinessDay } from '../lib/use-sri-lanka-business-day'
 import { OnlineBadge } from '../components/OnlineBadge'
 import { PaymentModal } from '../components/PaymentModal'
 import { PostSalePopups, type PostSaleState } from '../components/PostSalePopups'
@@ -70,6 +70,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const canCashierBalanceEdit = hasPermission('cashier-balance:edit')
   const canSaleRecordsView =
     hasPermission('pos:sale-records:view') || hasPermission('pos:sale:view')
+  const businessDay = useSriLankaBusinessDay()
 
   const outletId    = useSettingsStore((s) => s.outletId)
   const outletLabel = useSettingsStore((s) => s.outletLabel)
@@ -274,8 +275,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
     let cancelled = false
     const tick = async () => {
       try {
-        const today = todayCalendarISO()
-        const n = await fetchPendingTransferCount(outletId, today, today)
+        const n = await fetchPendingTransferCount(outletId, businessDay, businessDay)
         if (!cancelled) setPendingTransferCount(n)
       } catch {
         /* ignore poll errors */
@@ -287,7 +287,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       cancelled = true
       window.clearInterval(id)
     }
-  }, [accessToken, online, canTransferView, outletId])
+  }, [accessToken, online, canTransferView, outletId, businessDay])
 
   useEffect(() => {
     if (!accessToken) {
@@ -405,7 +405,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       cash: receipt.cash,
       total: receipt.total,
       receiptOpts: {
-        title: 'DON & SONS (PVT) LTD',
+        title: RECEIPT_COMPANY_NAME,
         companyAddress: receiptCompanyAddress,
         companyPhone: `Tel:${receiptCompanyPhone}`,
         outletLabel: receipt.outletLabel,
@@ -417,7 +417,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
         cashier: user ? `${user.firstName} ${user.lastName}`.trim() : '',
         paymentMethod: receipt.paymentMethod,
         saleNo: receipt.saleNo,
-        footerLines: ['FOOD ARE NOT RETURNABLE', 'COMPLAINT MUST BE LODGED BEFORE', '12 NOON NEXT DAY'],
+        footerLines: [RECEIPT_FOOD_POLICY],
       },
     })
   }
@@ -538,12 +538,12 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
     const dateTimeStr = now.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) + ' ' +
                        now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
     const cashier = user ? `${user.firstName} ${user.lastName}`.trim() : ''
-    const footerLines = ['FOOD ARE NOT RETURNABLE', 'COMPLAINT MUST BE LODGED BEFORE', '12 NOON NEXT DAY']
+    const footerLines = [RECEIPT_FOOD_POLICY]
 
     let opts: PrintReceiptOpts | null = null
     if (lines.length > 0) {
       opts = {
-        title: 'DON & SONS (PVT) LTD',
+        title: RECEIPT_COMPANY_NAME,
         companyAddress: receiptCompanyAddress,
         companyPhone: `Tel:${receiptCompanyPhone}`,
         outletLabel,
@@ -557,7 +557,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       }
     } else if (lastReceipt) {
       opts = {
-        title: 'DON & SONS (PVT) LTD',
+        title: RECEIPT_COMPANY_NAME,
         companyAddress: receiptCompanyAddress,
         companyPhone: `Tel:${receiptCompanyPhone}`,
         outletLabel: lastReceipt.outletLabel,
@@ -684,6 +684,13 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               onPendingClick={() => setSyncPopoverOpen((v) => !v)}
             />
             {syncPopoverOpen && pendingInfo.count > 0 ? (
+              <>
+              <button
+                type="button"
+                className="fixed inset-0 z-[55] cursor-default"
+                aria-label="Close pending sync"
+                onClick={() => setSyncPopoverOpen(false)}
+              />
               <div className="absolute right-0 top-full z-[60] mt-1 w-72 rounded-xl border border-[var(--border)] bg-white p-3 shadow-2xl">
                 <p className="text-xs font-bold uppercase tracking-wide text-[var(--muted-foreground)]">Pending sync</p>
                 <ul className="mt-2 max-h-40 space-y-1.5 overflow-auto text-xs text-[var(--foreground)]">
@@ -700,11 +707,13 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                   onClick={() => {
                     void processPendingQueue(true)
                     toast('Sync queue processing…', 'info')
+                    setSyncPopoverOpen(false)
                   }}
                 >
                   Sync now
                 </button>
               </div>
+              </>
             ) : null}
           </div>
 
@@ -748,8 +757,9 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
           {/* Logged-in cashier */}
           <div className="relative">
             <button type="button" onClick={() => setUserMenu((v) => !v)}
-              className="flex max-w-[16rem] items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-white hover:bg-white/20"
+              className="relative z-[51] flex max-w-[16rem] items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-white hover:bg-white/20"
               title={`${cashierName} (${cashierRole})`}
+              aria-expanded={userMenu}
               aria-label={`Logged in as ${cashierName}`}>
               <UserRound className="h-4 w-4 shrink-0" />
               <span className="min-w-0 text-left">
@@ -759,7 +769,14 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               <ChevronRight className="h-3.5 w-3.5 shrink-0 rotate-90" />
             </button>
             {userMenu ? (
-              <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-[var(--border)] bg-white py-2 shadow-xl">
+              <>
+                <button
+                  type="button"
+                  className="fixed inset-0 z-40 cursor-default"
+                  aria-label="Close user menu"
+                  onClick={() => setUserMenu(false)}
+                />
+                <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-[var(--border)] bg-white py-2 shadow-xl">
                 <div className="border-b border-[var(--border)] px-4 pb-2">
                   <p className="text-[10px] font-semibold uppercase text-[var(--muted-foreground)]">Logged in as</p>
                   <p className="text-sm font-semibold text-[var(--foreground)]">{cashierName}</p>
@@ -770,17 +787,17 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                   <div>
                     <p className="mb-1 text-[10px] font-semibold uppercase text-[var(--muted-foreground)]">Screen zoom</p>
                     <div className="flex items-center gap-1">
-                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => setZoom(zoomPercent - 10)}>-</button>
+                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => { setZoom(zoomPercent - 10); setUserMenu(false) }}>-</button>
                       <span className="flex-1 text-center text-sm font-semibold">{zoomPercent}%</span>
-                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => setZoom(zoomPercent + 10)}>+</button>
+                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => { setZoom(zoomPercent + 10); setUserMenu(false) }}>+</button>
                     </div>
                   </div>
                   <div>
                     <p className="mb-1 text-[10px] font-semibold uppercase text-[var(--muted-foreground)]">Product button size</p>
                     <div className="flex items-center gap-1">
-                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => setProductTilePercent(productTilePercent - 10)}>-</button>
+                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => { setProductTilePercent(productTilePercent - 10); setUserMenu(false) }}>-</button>
                       <span className="flex-1 text-center text-sm font-semibold">{productTilePercent}%</span>
-                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => setProductTilePercent(productTilePercent + 10)}>+</button>
+                      <button type="button" className="pos-tap rounded-lg border border-[var(--border)] px-2 text-[var(--foreground)]" onClick={() => { setProductTilePercent(productTilePercent + 10); setUserMenu(false) }}>+</button>
                     </div>
                   </div>
                 </div>
@@ -791,7 +808,8 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                   <MenuAction icon={<Power className="h-4 w-4 text-amber-600" />} label="Shutdown" textClass="text-amber-700" onClick={() => { handleShutdown(); setUserMenu(false) }} />
                   <MenuAction icon={<LogOut className="h-4 w-4 text-red-600" />} label="Logout" textClass="text-red-600" onClick={() => { logout(); setUserMenu(false) }} />
                 </nav>
-              </div>
+                </div>
+              </>
             ) : null}
           </div>
         </div>
@@ -1161,9 +1179,6 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               {canTransferView ? (
                 <OpBtn icon={<Inbox className="h-5 w-5" />} label="Pending Transfers" hint="Confirm goods arriving here" onClick={() => { onOpenScreen('transfers'); setDrawer(false) }} />
               ) : null}
-              {hasPermission('order:create') ? (
-                <OpBtn icon={<Package className="h-5 w-5" />} label="Order Request" hint="Create showroom custom order requests" onClick={() => { onOpenScreen('order-request'); setDrawer(false) }} />
-              ) : null}
               {canDeliveryReturnCreate ? (
                 <OpBtn icon={<Undo2 className="h-5 w-5" />} label="Delivery Return" hint="Return items to warehouse" onClick={() => { onOpenScreen('return'); setDrawer(false) }} />
               ) : null}
@@ -1208,8 +1223,15 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
 
 function MenuAction({ icon, label, onClick, textClass = 'text-[var(--foreground)]' }: { icon: ReactNode; label: string; onClick: () => void; textClass?: string }) {
   return (
-    <button type="button" onClick={onClick}
-      className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm hover:bg-[var(--neutral-50)] ${textClass}`}>
+    <button
+      type="button"
+      onPointerDown={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        onClick()
+      }}
+      className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm hover:bg-[var(--neutral-50)] ${textClass}`}
+    >
       {icon}
       <span>{label}</span>
     </button>

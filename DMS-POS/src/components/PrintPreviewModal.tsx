@@ -38,32 +38,32 @@ export function PrintPreviewModal({ opts, onClose }: Props) {
 
         {/* Receipt preview */}
         <div className="min-h-0 flex-1 overflow-y-auto bg-gray-50 p-4">
-          <div className="mx-auto max-w-[320px] rounded-xl bg-white p-5 shadow font-mono text-[11px]">
+          <div className="mx-auto w-[80mm] max-w-full rounded-xl bg-white px-4 py-3 pb-6 shadow text-[11px] font-normal">
             {/* Company header */}
             <div className="mb-1 text-center text-sm font-bold">
               {opts.title}
             </div>
             {opts.companyAddress && (
-              <div className="mb-1 text-center text-[9px] leading-tight text-gray-600 whitespace-pre-line">
+              <div className="mb-1 text-center text-[9px] font-normal leading-tight text-gray-600 whitespace-pre-line">
                 {opts.companyAddress}
               </div>
             )}
             {opts.companyPhone && (
-              <div className="mb-2 text-center text-[9px] text-gray-600">{opts.companyPhone}</div>
+              <div className="mb-2 text-center text-[9px] font-normal text-gray-600">{opts.companyPhone}</div>
             )}
 
             <div className="my-2 border-t border-dashed border-gray-400" />
 
             {/* Transaction info */}
-            <div className="mb-1 text-[10px]">Showroom : {opts.outletLabel}</div>
+            <div className="mb-1 text-[10px] font-normal">Showroom : {opts.outletLabel}</div>
             {opts.dateTime && (
-              <div className="mb-1 text-[10px]">Date: {opts.dateTime}</div>
+              <div className="mb-1 text-[10px] font-normal">Date: {opts.dateTime}</div>
             )}
             {opts.cashier && (
-              <div className="mb-1 text-[10px]">Cashier: {opts.cashier}</div>
+              <div className="mb-1 text-[10px] font-normal">Cashier: {opts.cashier}</div>
             )}
             {opts.saleNo && (
-              <div className="mb-1 text-[10px]">Bill No: {opts.saleNo}</div>
+              <div className="mb-1 text-[10px] font-normal">Bill No: {opts.saleNo}</div>
             )}
 
             <div className="my-2 border-t border-dashed border-gray-400" />
@@ -71,10 +71,10 @@ export function PrintPreviewModal({ opts, onClose }: Props) {
             {/* Items table */}
             <table className="w-full table-fixed text-[10px]">
               <colgroup>
-                <col className="w-[40%]" />
-                <col className="w-[22%]" />
-                <col className="w-[14%]" />
-                <col className="w-[24%]" />
+                <col className="w-[38%]" />
+                <col className="w-[20%]" />
+                <col className="w-[16%]" />
+                <col className="w-[26%]" />
               </colgroup>
               <thead>
                 <tr className="border-b border-dashed border-gray-400">
@@ -87,10 +87,10 @@ export function PrintPreviewModal({ opts, onClose }: Props) {
               <tbody>
                 {opts.lines.map((line, i) => (
                   <tr key={i}>
-                    <td className="py-1 pr-2 align-top break-words">{line.name}</td>
-                    <td className="py-1 px-1 text-right align-top tabular-nums whitespace-nowrap">{line.unitPrice.toFixed(2)}</td>
-                    <td className="py-1 px-1 text-center align-top tabular-nums whitespace-nowrap">{line.qty}</td>
-                    <td className="py-1 pl-1 text-right align-top tabular-nums whitespace-nowrap">{line.amount.toFixed(2)}</td>
+                    <td className="py-1 pr-2 align-top break-words font-normal">{line.name}</td>
+                    <td className="py-1 px-1 text-right align-top font-normal tabular-nums whitespace-nowrap">{line.unitPrice.toFixed(2)}</td>
+                    <td className="py-1 px-1 text-center align-top font-normal tabular-nums whitespace-nowrap">{line.qty}</td>
+                    <td className="py-1 pl-1 text-right align-top font-normal tabular-nums whitespace-nowrap">{line.amount.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -125,7 +125,7 @@ export function PrintPreviewModal({ opts, onClose }: Props) {
 
             {/* Footer message */}
             {(opts.footerLines ?? []).filter(Boolean).length > 0 && (
-              <div className="space-y-0.5 text-center text-[10px] leading-tight text-gray-600">
+              <div className="space-y-0.5 text-center text-[10px] font-normal leading-tight text-gray-700">
                 {(opts.footerLines ?? []).filter(Boolean).map((line, i) => (
                   <div key={i}>{line}</div>
                 ))}

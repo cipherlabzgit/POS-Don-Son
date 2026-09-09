@@ -14,7 +14,10 @@ import { printStockBfHtml } from '../lib/print-stock-bf'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError, isConflictStatus, isUnreachableNetworkError, isAlreadyRecordedError } from '../lib/api-errors'
 import { todayCalendarISO } from '../lib/calendar-date'
+import { useSriLankaBusinessDay } from '../lib/use-sri-lanka-business-day'
 import { SearchKeyboard } from '../components/SearchKeyboard'
+import { ItemSearchField, filterItemChoices } from '../components/ItemSearchField'
+import { QtyStepper } from '../components/QtyStepper'
 
 type Props = { onBack: () => void }
 type BfRow = { productId: string; code: string; name: string; qty: number }
@@ -73,8 +76,7 @@ export function StockBfPage({ onBack }: Props) {
   const qtyRef = useRef<HTMLInputElement>(null)
   const [kbField, setKbField] = useState<'search' | null>(null)
   const [pendingProduct, setPendingProduct] = useState<ProductRow | null>(null)
-  const formLockedRef = useRef(false)
-  formLockedRef.current = formLocked
+  const businessDay = useSriLankaBusinessDay()
 
   useEffect(() => {
     if (!formLocked) return
@@ -104,7 +106,7 @@ export function StockBfPage({ onBack }: Props) {
 
   useEffect(() => {
     if (!outletId || (!canView && !canCreate)) return
-    const today = todayCalendarISO()
+    const today = businessDay
     void (async () => {
       try {
         if (online && canView) {
@@ -127,14 +129,9 @@ export function StockBfPage({ onBack }: Props) {
             setSearch('')
             setLockStatus(String(blockingRaw[0]?.status ?? blockingRaw[0]?.Status ?? 'Pending'))
           } else if (!submittingRef.current) {
-            if (raw.length > 0) {
-              setFormLocked(false)
-              setLockStatus('')
-              setRows([])
-            } else if (!formLockedRef.current) {
-              setFormLocked(false)
-              setLockStatus('')
-            }
+            setFormLocked(false)
+            setLockStatus('')
+            setRows([])
           }
           return
         }
@@ -152,6 +149,7 @@ export function StockBfPage({ onBack }: Props) {
         } else if (!submittingRef.current) {
           setFormLocked(false)
           setLockStatus('')
+          setRows([])
         }
       } catch (e) {
         if (!submittingRef.current) {
@@ -159,16 +157,12 @@ export function StockBfPage({ onBack }: Props) {
         }
       }
     })()
-  }, [online, outletId, canView, canCreate, reloadNonce, products])
+  }, [online, outletId, canView, canCreate, reloadNonce, products, businessDay])
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return []
-    return products
-      .filter((p) => p.displayInPOS !== false)
-      .filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q))
-      .slice(0, 12)
-  }, [products, search])
+  const filtered = useMemo(
+    () => filterItemChoices(products, search, { posOnly: true, limit: 20 }),
+    [products, search],
+  )
 
   function focusQtySelected() {
     setQty('1')
@@ -369,50 +363,27 @@ export function StockBfPage({ onBack }: Props) {
 
         {!formLocked ? (
           <div className="relative mb-4 flex flex-wrap items-end gap-3">
-            <div className="relative min-w-[220px] flex-1">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Item</label>
-              <input
-                ref={searchRef}
-                value={search}
-                readOnly
-                inputMode="none"
-                placeholder="Search item code or name"
-                onPointerDown={(e) => { e.preventDefault(); setShowDrop(true); setKbField('search') }}
-                onFocus={(e) => { e.currentTarget.blur(); setShowDrop(true); setKbField('search') }}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-[var(--foreground)] placeholder:text-[var(--neutral-400)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
-                autoComplete="off"
-              />
-              {showDrop && filtered.length > 0 ? (
-                <ul className="pos-search-dropdown absolute left-0 right-0 bottom-full mb-1 max-h-40 overflow-auto rounded-xl border border-[var(--border)] bg-white shadow-xl">
-                  {filtered.map((p) => (
-                    <li key={p.id}>
-                      <button type="button" className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--neutral-50)]"
-                        onMouseDown={(e) => { e.preventDefault(); selectProduct(p) }}>
-                        <span className="font-mono text-xs text-[var(--neutral-400)]">{p.code}</span>
-                        <span className="ml-2 font-medium text-[var(--foreground)]">{p.name}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
+            <ItemSearchField
+              value={search}
+              onChange={(next) => {
+                setSearch(next)
+                setPendingProduct(null)
+              }}
+              inputRef={searchRef}
+              open={showDrop}
+              onOpenChange={setShowDrop}
+              items={filtered}
+              onSelect={selectProduct}
+              onOpenKeyboard={() => setKbField('search')}
+            />
 
-            <div className="w-28">
+            <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Qty</label>
-              <input
-                ref={qtyRef}
+              <QtyStepper
                 value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                onFocus={(e) => e.currentTarget.select()}
-                onClick={(e) => e.currentTarget.select()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addRow()
-                  }
-                }}
-                inputMode="decimal"
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-center text-[var(--foreground)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
+                onChange={setQty}
+                inputRef={qtyRef}
+                onEnter={() => addRow()}
               />
             </div>
 
@@ -450,13 +421,13 @@ export function StockBfPage({ onBack }: Props) {
                       {formLocked ? (
                         <span className="tabular-nums font-semibold text-[var(--foreground)]">{r.qty}</span>
                       ) : (
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={r.qty}
-                          onChange={(e) => updateRowQty(r.productId, e.target.value)}
-                          className="w-20 rounded-lg border border-[var(--border)] bg-white px-2 py-1 text-right text-sm font-semibold tabular-nums focus:border-[var(--brand-primary)] focus:outline-none"
-                        />
+                        <div className="flex justify-end">
+                          <QtyStepper
+                            compact
+                            value={r.qty}
+                            onChange={(next) => updateRowQty(r.productId, next)}
+                          />
+                        </div>
                       )}
                     </td>
                     {!formLocked ? (

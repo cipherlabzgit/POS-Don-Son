@@ -230,6 +230,25 @@ public sealed class ApprovalQueueService : IApprovalQueueService
         approval.UpdatedById = rejectedByUserId;
         approval.UpdatedAt = DateTime.UtcNow;
 
+        if (CashierBalanceService.IsCashierBalanceApprovalType(approval.ApprovalType))
+        {
+            var line = await _context.CashierBalanceOutletLines
+                .FirstOrDefaultAsync(l => l.Id == approval.EntityId, cancellationToken);
+            if (line != null)
+            {
+                var day = await _context.CashierBalanceDays
+                    .FirstOrDefaultAsync(d => d.ProcessDate == line.ProcessDate, cancellationToken);
+                if (day != null)
+                {
+                    day.IsApproved = false;
+                    day.IsSubmitted = false;
+                    day.ApprovedById = null;
+                    day.ApprovedAt = null;
+                    day.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Approval rejected: {Id} by user {UserId}. Reason: {Reason}", 

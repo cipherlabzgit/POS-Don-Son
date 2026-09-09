@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { X } from 'lucide-react'
 import { formatSubmitError } from '../lib/api-errors'
 import { fetchPosSales, requestPosSaleCancel } from '../lib/api'
+import { todayCalendarISO } from '../lib/calendar-date'
+import { useSriLankaBusinessDay } from '../lib/use-sri-lanka-business-day'
 import { useAuthStore } from '../lib/auth-store'
 import { offlineDb } from '../lib/offline-db'
 import { refreshPendingLocalPosSaleStatuses } from '../lib/pos-sale-status-refresh'
@@ -40,14 +42,24 @@ function formatBillDateTime(iso?: string) {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
-  const day = String(d.getDate()).padStart(2, '0')
-  const mon = MONTHS[d.getMonth()]
-  const year = d.getFullYear()
-  let hours = d.getHours()
-  const minutes = String(d.getMinutes()).padStart(2, '0')
-  const ampm = hours >= 12 ? 'PM' : 'AM'
-  hours = hours % 12 || 12
-  return `${day}/${mon}/${year} - ${String(hours).padStart(2, '0')}:${minutes}${ampm}`
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Colombo',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).formatToParts(d)
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? ''
+  const monRaw = get('month')
+  const mon = MONTHS.find((m) => m.toLowerCase() === monRaw.toLowerCase().slice(0, 3)) ?? monRaw
+  const day = get('day')
+  const year = get('year')
+  const hour = get('hour').padStart(2, '0')
+  const minute = get('minute')
+  const dayPeriod = get('dayPeriod').replace(/\s/g, '').toUpperCase()
+  return `${day}/${mon}/${year} - ${hour}:${minute}${dayPeriod}`
 }
 
 function normalizeSale(raw: SaleRow & { CancelRequested?: boolean; CancellationReason?: string }): SaleRow {
@@ -72,6 +84,7 @@ export function TransactionHistoryModal({
   outletLabel,
 }: TransactionHistoryModalProps) {
   const user = useAuthStore((s) => s.user)
+  const businessDay = useSriLankaBusinessDay()
   const cashier = user ? `${user.firstName} ${user.lastName}`.trim() || user.email : '—'
 
   const [loading, setLoading] = useState(false)
@@ -91,7 +104,7 @@ export function TransactionHistoryModal({
       setReason('')
       setKbOpen(false)
     }
-  }, [open, outletId])
+  }, [open, outletId, businessDay])
 
   useEffect(() => {
     if (!open || !outletId) {
@@ -110,6 +123,8 @@ export function TransactionHistoryModal({
           page,
           pageSize: 15,
           outletId,
+          startDate: businessDay,
+          endDate: businessDay,
         })) as {
           sales?: SaleRow[]
           Sales?: SaleRow[]
@@ -126,7 +141,9 @@ export function TransactionHistoryModal({
       } catch (e) {
         if (!navigator.onLine) {
           const local = await offlineDb.listLocalSalesForOutlet(outletId, 50)
-          const list = local.map((s) => ({
+          const list = local
+            .filter((s) => todayCalendarISO(new Date(s.createdAt)) === businessDay)
+            .map((s) => ({
             id: s.id,
             saleNo: s.saleNo,
             soldAt: new Date(s.createdAt).toISOString(),
@@ -155,7 +172,7 @@ export function TransactionHistoryModal({
         setLoading(false)
       }
     })()
-  }, [open, outletId, page, outletLabel])
+  }, [open, outletId, page, outletLabel, businessDay])
 
   const selected = useMemo(
     () => sales.find((s) => s.id === selectedId) ?? null,
@@ -219,7 +236,7 @@ export function TransactionHistoryModal({
           ) : err ? (
             <p className="text-sm text-red-600">{err}</p>
           ) : sales.length === 0 ? (
-            <p className="text-sm text-[var(--muted-foreground)]">No sales found for this outlet.</p>
+            <p className="text-sm text-[var(--muted-foreground)]">No bills for today.</p>
           ) : (
             <>
               <div className="overflow-hidden rounded-lg border border-neutral-300">

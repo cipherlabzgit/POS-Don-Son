@@ -10,11 +10,13 @@ public sealed class DayEndService : IDayEndService
 {
     private readonly ApplicationDbContext _context;
     private readonly IDayLockService _dayLockService;
+    private readonly ICashierBalanceService _cashierBalanceService;
 
-    public DayEndService(ApplicationDbContext context, IDayLockService dayLockService)
+    public DayEndService(ApplicationDbContext context, IDayLockService dayLockService, ICashierBalanceService cashierBalanceService)
     {
         _context = context;
         _dayLockService = dayLockService;
+        _cashierBalanceService = cashierBalanceService;
     }
 
     private static DateTime NormalizeProcessDate(DateTime d) =>
@@ -112,6 +114,17 @@ public sealed class DayEndService : IDayEndService
         row.UpdatedAt = now;
 
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task ResetCashierBalanceForDateAsync(DateTime processDate, Guid resetByUserId, CancellationToken cancellationToken = default)
+    {
+        var pd = NormalizeProcessDate(processDate);
+        if (await _dayLockService.IsDateLockedAsync(pd, cancellationToken))
+        {
+            throw new InvalidOperationException("This date is day-locked. Unlock the day before resetting cashier balance.");
+        }
+
+        await _cashierBalanceService.ResetApprovedForDateAsync(pd, resetByUserId, cancellationToken);
     }
 
     public async Task SubmitDayEndAsync(SubmitDayEndDto dto, Guid submittedByUserId, CancellationToken cancellationToken = default)

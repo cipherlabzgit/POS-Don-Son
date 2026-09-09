@@ -4,7 +4,7 @@ namespace DMS_Backend.Common;
 
 internal static class PosSaleListQuery
 {
-    /// <summary>Parses yyyy-MM-dd filters into UTC half-open range [start, end).</summary>
+    /// <summary>Parses yyyy-MM-dd (Sri Lanka calendar) into UTC half-open SoldAt range [start, end).</summary>
     public static (DateTime? SoldFromUtcInclusive, DateTime? SoldToUtcExclusive) ParseSoldAtRange(
         string? startDateIso,
         string? endDateIso)
@@ -15,13 +15,13 @@ internal static class PosSaleListQuery
         if (!string.IsNullOrWhiteSpace(startDateIso)
             && DateOnly.TryParse(startDateIso, CultureInfo.InvariantCulture, DateTimeStyles.None, out var sd))
         {
-            start = DateTime.SpecifyKind(sd.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+            start = DeliveryPlanPreloadRules.SlDateToUtcMidnight(sd);
         }
 
         if (!string.IsNullOrWhiteSpace(endDateIso)
             && DateOnly.TryParse(endDateIso, CultureInfo.InvariantCulture, DateTimeStyles.None, out var ed))
         {
-            endExclusive = DateTime.SpecifyKind(ed.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+            endExclusive = DeliveryPlanPreloadRules.SlDateToUtcMidnight(ed.AddDays(1));
         }
 
         return (start, endExclusive);

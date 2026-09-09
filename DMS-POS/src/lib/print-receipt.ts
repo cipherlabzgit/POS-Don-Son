@@ -45,29 +45,29 @@ function buildReceiptDocumentHtml(opts: PrintReceiptOpts): string {
 ${THERMAL_SLIP_CSS}
 body{
   font-family:Arial,Helvetica,'Segoe UI',sans-serif;
-  font-weight:600;
+  font-weight:400;
   color:#000;
   font-size:13px;
   line-height:1.4;
 }
 .header{text-align:center;margin-bottom:6px}
 .company-name{font-size:16px;font-weight:800;margin:2px 0;letter-spacing:0}
-.company-info{font-size:12px;font-weight:600;margin:2px 0;line-height:1.35;text-align:center}
+.company-info{font-size:12px;font-weight:400;margin:2px 0;line-height:1.35;text-align:center}
 .divider{border-top:2px dashed #000;margin:6px 0}
-.info-line{font-size:12px;font-weight:600;margin:3px 0}
+.info-line{font-size:12px;font-weight:400;margin:3px 0}
 table{font-size:12px;margin:6px 0}
-th{padding:4px 2px;font-weight:800;border-bottom:2px dashed #000;vertical-align:bottom;font-size:11px}
-td{padding:5px 2px;vertical-align:top;font-weight:600;font-size:12px}
-.item{width:36%;text-align:left;white-space:normal;padding-right:3px}
-.each{width:22%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.qty{width:12%;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
-.tot{width:30%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+th{padding:4px 2px;font-weight:700;border-bottom:2px dashed #000;vertical-align:bottom;font-size:11px}
+td{padding:4px 1px;vertical-align:top;font-weight:400;font-size:12px}
+.item{width:36%;text-align:left;white-space:normal;padding-right:2px}
+.each{width:20%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.qty{width:18%;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tot{width:26%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .totals{margin-top:6px;padding-top:4px}
-.total-row{display:flex;justify-content:space-between;gap:8px;margin:5px 0;font-size:13px;font-weight:800}
+.total-row{display:flex;justify-content:space-between;gap:8px;margin:5px 0;font-size:13px;font-weight:400}
 .total-row span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
-.total-row.main{font-size:15px}
-.item-count{font-size:12px;font-weight:600;margin:7px 0;text-align:left}
-.policy{text-align:center;font-size:11px;font-weight:600;line-height:1.35;margin:4px 0}
+.total-row.main{font-size:15px;font-weight:800}
+.item-count{font-size:12px;font-weight:400;margin:7px 0;text-align:left}
+.policy{text-align:center;font-size:11px;font-weight:400;line-height:1.35;margin:6px 0;text-transform:none}
 .thank-you{display:block;width:100%;text-align:center;font-weight:800;font-size:14px;margin:12px 0 0;letter-spacing:0.04em}
 </style></head><body>
 <div class="slip">
@@ -85,9 +85,9 @@ ${opts.saleNo ? `<div class="info-line">Bill No: ${escapeHtml(opts.saleNo)}</div
 <table>
   <colgroup>
     <col style="width:36%">
-    <col style="width:22%">
-    <col style="width:12%">
-    <col style="width:30%">
+    <col style="width:20%">
+    <col style="width:18%">
+    <col style="width:26%">
   </colgroup>
   <thead>
     <tr>

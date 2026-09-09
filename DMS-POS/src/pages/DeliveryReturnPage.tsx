@@ -11,7 +11,10 @@ import { useOnlineStatus } from '../lib/use-online-status'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError } from '../lib/api-errors'
 import { SearchKeyboard } from '../components/SearchKeyboard'
+import { ItemSearchField, filterItemChoices } from '../components/ItemSearchField'
+import { QtyStepper } from '../components/QtyStepper'
 import { printReturnNotes } from '../lib/print-return-note'
+import { useSriLankaBusinessDay } from '../lib/use-sri-lanka-business-day'
 
 type Props = { onBack: () => void }
 type DRow = { productId: string; name: string; code: string; qty: number }
@@ -25,6 +28,7 @@ export function DeliveryReturnPage({ onBack }: Props) {
   const outletLabel = useSettingsStore((s) => s.outletLabel)
 
   const canCreate = hasPermission('operation:delivery-return:create')
+  const businessDay = useSriLankaBusinessDay()
 
   const [nowClock, setNowClock]         = useState(() => new Date())
   const [comment, setComment]           = useState('')
@@ -64,11 +68,18 @@ export function DeliveryReturnPage({ onBack }: Props) {
     return () => window.clearInterval(id)
   }, [])
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return []
-    return products.filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q)).slice(0, 12)
-  }, [products, search])
+  useEffect(() => {
+    setRows([])
+    setComment('')
+    setSearch('')
+    setPendingProduct(null)
+    setQty('1')
+  }, [businessDay])
+
+  const filtered = useMemo(
+    () => filterItemChoices(products, search, { limit: 20 }),
+    [products, search],
+  )
 
   function focusQtySelected() {
     setQty('1')
@@ -105,6 +116,12 @@ export function DeliveryReturnPage({ onBack }: Props) {
   }
 
   function removeRow(id: string) { setRows((prev) => prev.filter((r) => r.productId !== id)) }
+
+  function updateRowQty(productId: string, value: string) {
+    const qn = parseFloat(value.replace(',', '.'))
+    if (!Number.isFinite(qn) || qn <= 0) return
+    setRows((prev) => prev.map((r) => r.productId === productId ? { ...r, qty: qn } : r))
+  }
 
   async function submit() {
     if (!canCreate) { toast('You do not have permission to submit delivery returns.', 'error'); return }
@@ -210,49 +227,26 @@ export function DeliveryReturnPage({ onBack }: Props) {
 
         {/* Search row */}
         <div className="relative mb-4 flex flex-wrap items-end gap-3">
-          <div className="relative min-w-[220px] flex-1">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Item</label>
-            <input
-              ref={searchRef}
-              value={search}
-              readOnly
-              inputMode="none"
-              placeholder="Search item code or name"
-              onPointerDown={(e) => { e.preventDefault(); setShowDrop(true); setKbField('search') }}
-              onFocus={(e) => { e.currentTarget.blur(); setShowDrop(true); setKbField('search') }}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-[var(--foreground)] placeholder:text-[var(--neutral-400)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
-              autoComplete="off"
-            />
-            {showDrop && filtered.length > 0 ? (
-              <ul className="pos-search-dropdown absolute left-0 right-0 bottom-full mb-1 max-h-40 overflow-auto rounded-xl border border-[var(--border)] bg-white shadow-xl">
-                {filtered.map((p) => (
-                  <li key={p.id}>
-                    <button type="button" className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--neutral-50)]"
-                      onMouseDown={(e) => { e.preventDefault(); selectProduct(p) }}>
-                      <span className="font-mono text-xs text-[var(--neutral-400)]">{p.code}</span>
-                      <span className="ml-2 font-medium text-[var(--foreground)]">{p.name}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-          <div className="w-28">
+          <ItemSearchField
+            value={search}
+            onChange={(next) => {
+              setSearch(next)
+              setPendingProduct(null)
+            }}
+            inputRef={searchRef}
+            open={showDrop}
+            onOpenChange={setShowDrop}
+            items={filtered}
+            onSelect={selectProduct}
+            onOpenKeyboard={() => setKbField('search')}
+          />
+          <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Qty</label>
-            <input
-              ref={qtyRef}
+            <QtyStepper
               value={qty}
-              onChange={(e) => setQty(e.target.value)}
-              onFocus={(e) => e.currentTarget.select()}
-              onClick={(e) => e.currentTarget.select()}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  addRow()
-                }
-              }}
-              inputMode="decimal"
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-4 py-3 text-center text-[var(--foreground)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
+              onChange={setQty}
+              inputRef={qtyRef}
+              onEnter={() => addRow()}
             />
           </div>
           <button type="button"
@@ -281,7 +275,11 @@ export function DeliveryReturnPage({ onBack }: Props) {
                   <tr key={r.productId} className="hover:bg-[var(--neutral-50)]">
                     <td className="px-4 py-3 font-mono text-xs text-[var(--muted-foreground)]">{r.code}</td>
                     <td className="px-4 py-3 font-medium text-[var(--foreground)]">{r.name}</td>
-                    <td className="px-4 py-3 text-right font-semibold tabular-nums">{r.qty}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex justify-end">
+                        <QtyStepper compact value={r.qty} onChange={(next) => updateRowQty(r.productId, next)} />
+                      </div>
+                    </td>
                     <td className="px-4 py-3">
                       <button type="button" className="pos-tap rounded-lg p-1 text-red-500 hover:bg-red-50" onClick={() => removeRow(r.productId)}>
                         <X className="h-4 w-4" />

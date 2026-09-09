@@ -39,7 +39,7 @@ function buildStockBfDocumentHtml(opts: StockBfPrintOpts): string {
 ${THERMAL_SLIP_CSS}
 body{
   font-family:Arial,Helvetica,'Segoe UI',sans-serif;
-  font-weight:600;
+  font-weight:400;
   color:#000;
   font-size:13px;
   line-height:1.4;
@@ -47,15 +47,15 @@ body{
 .header{text-align:center;margin-bottom:6px}
 .title{font-size:16px;font-weight:800;margin:4px 0 8px;letter-spacing:0.02em;text-align:center}
 .divider{border-top:2px dashed #000;margin:6px 0}
-.info-line{font-size:12px;font-weight:600;margin:3px 0;overflow-wrap:anywhere}
+.info-line{font-size:12px;font-weight:400;margin:3px 0;overflow-wrap:anywhere}
 table{font-size:12px;margin:6px 0}
-th{padding:4px 2px;font-weight:800;border-bottom:2px dashed #000;vertical-align:bottom;font-size:11px}
-td{padding:5px 2px;vertical-align:top;font-weight:600;font-size:12px}
-.code{width:26%;text-align:left;white-space:nowrap}
+th{padding:4px 2px;font-weight:700;border-bottom:2px dashed #000;vertical-align:bottom;font-size:11px}
+td{padding:5px 2px;vertical-align:top;font-weight:400;font-size:12px}
+.code{width:24%;text-align:left;white-space:nowrap}
 .item{width:52%;text-align:left;white-space:normal;padding-right:3px}
-.qty{width:22%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.sig{margin-top:12px;font-size:12px;font-weight:600;line-height:1.35}
-.sig .name{font-weight:800;margin-bottom:4px;text-align:center}
+.qty{width:24%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sig{margin-top:12px;font-size:12px;font-weight:400;line-height:1.35}
+.sig .name{font-weight:700;margin-bottom:4px;text-align:center}
 .sig .dots{border-bottom:1px dotted #000;height:14px;width:100%;margin-top:8px}
 .sig .cap{text-align:center;font-size:11px;margin-top:2px}
 </style></head><body>
@@ -70,9 +70,9 @@ td{padding:5px 2px;vertical-align:top;font-weight:600;font-size:12px}
 <div class="divider"></div>
 <table>
   <colgroup>
-    <col style="width:26%">
+    <col style="width:24%">
     <col style="width:52%">
-    <col style="width:22%">
+    <col style="width:24%">
   </colgroup>
   <thead>
     <tr>
@@ -88,16 +88,14 @@ td{padding:5px 2px;vertical-align:top;font-weight:600;font-size:12px}
   <div class="name">Submitted By</div>
   <div>${escapeHtml(opts.cashier)}</div>
   <div class="dots"></div>
-  <div class="cap">Signature</div>
+  <div class="cap">Submitted By Signature</div>
 </div>
 <div class="sig">
   <div class="name">Accepted By</div>
   <div class="dots"></div>
-  <div class="cap">Name</div>
-</div>
-<div class="sig">
+  <div class="cap">Accepted By Name</div>
   <div class="dots"></div>
-  <div class="cap">Signature</div>
+  <div class="cap">Accepted By Signature</div>
 </div>
 </div>
 </body></html>`

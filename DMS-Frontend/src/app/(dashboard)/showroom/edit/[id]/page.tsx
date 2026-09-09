@@ -276,7 +276,7 @@ export default function EditShowroomPage() {
                 label="Phone Number"
                 value={formData.phone || ''}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="011-2345678"
+                placeholder="07123 456 756"
                 fullWidth
               />
               <div className="flex flex-col">

@@ -1,4 +1,4 @@
-import { printOriginalThenCopy } from './print-receipt'
+import { printCopyThenOriginal } from './print-receipt'
 import { THERMAL_SLIP_CSS } from './thermal-slip'
 
 export type TransferNoteLine = {
@@ -144,9 +144,9 @@ ${footer}
 </body></html>`
 }
 
-/** Prints TRANSFER ORIGINAL, waits for the cutter, then prints TRANSFER COPY. */
+/** Prints TRANSFER COPY first, waits for the cutter, then prints TRANSFER ORIGINAL. */
 export async function printTransferNotes(opts: TransferNoteOpts): Promise<void> {
-  await printOriginalThenCopy(
+  await printCopyThenOriginal(
     buildTransferNoteHtml(opts, 'original'),
     buildTransferNoteHtml(opts, 'copy'),
   )

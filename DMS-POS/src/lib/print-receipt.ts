@@ -52,7 +52,7 @@ body{
 }
 .header{text-align:center;margin-bottom:6px}
 .company-name{font-size:16px;font-weight:800;margin:2px 0;letter-spacing:0}
-.company-info{font-size:12px;font-weight:400;margin:2px 0;line-height:1.35;text-align:center}
+.company-info{font-size:12px;font-weight:400;margin:2px 0;line-height:1.35;text-align:center;white-space:normal;overflow-wrap:anywhere}
 .divider{border-top:2px dashed #000;margin:6px 0}
 .info-line{font-size:12px;font-weight:400;margin:3px 0}
 table{font-size:12px;margin:6px 0}
@@ -219,6 +219,13 @@ export async function printOriginalThenCopy(originalHtml: string, copyHtml: stri
   await printHtmlJob(originalHtml, 'ORIGINAL')
   await new Promise((r) => setTimeout(r, 3500))
   await printHtmlJob(copyHtml, 'COPY')
+}
+
+/** COPY slip first, wait for cutter, then ORIGINAL slip. */
+export async function printCopyThenOriginal(originalHtml: string, copyHtml: string): Promise<void> {
+  await printHtmlJob(copyHtml, 'COPY')
+  await new Promise((r) => setTimeout(r, 3500))
+  await printHtmlJob(originalHtml, 'ORIGINAL')
 }
 
 export async function printReceiptHtml(

@@ -11,8 +11,14 @@ export const RECEIPT_FOOD_POLICY =
 /** Head-office contact shown on every receipt. */
 export const RECEIPT_HQ_PHONE = '0112 911 412'
 
-/** HQ number plus the Phone field from the DMS Showroom record. */
+function digitsOnly(value: string): string {
+  return value.replace(/\D/g, '')
+}
+
+/** HQ number plus the Phone Number from the DMS Showroom module. */
 export function formatReceiptContact(showroomPhone?: string | null): string {
   const local = (showroomPhone ?? '').trim()
-  return local ? `${RECEIPT_HQ_PHONE} / ${local}` : RECEIPT_HQ_PHONE
+  if (!local) return RECEIPT_HQ_PHONE
+  if (digitsOnly(local) === digitsOnly(RECEIPT_HQ_PHONE)) return RECEIPT_HQ_PHONE
+  return `${RECEIPT_HQ_PHONE} / ${local}`
 }

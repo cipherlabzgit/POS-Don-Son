@@ -178,68 +178,70 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
     if (!accessToken || !online) return
     let cancelled = false
     void (async () => {
+      const mapOutlet = (o: Record<string, unknown>) => ({
+        id: String(o.id ?? o.Id ?? ''),
+        code: String(o.code ?? o.Code ?? ''),
+        name: String(o.name ?? o.Name ?? ''),
+        address: String(o.address ?? o.Address ?? ''),
+        phone: String(o.phone ?? o.Phone ?? '').trim(),
+      })
+
       try {
         const data = await fetchOutletsPage(1, 100)
-        if (cancelled) return
-        const rows = (data.outlets as Record<string, unknown>[]).map((o) => ({
-          id: String(o.id ?? o.Id ?? ''),
-          code: String(o.code ?? o.Code ?? ''),
-          name: String(o.name ?? o.Name ?? ''),
-          address: String(o.address ?? o.Address ?? ''),
-          phone: String(o.phone ?? o.Phone ?? ''),
-        })).filter((o) => o.id)
-        setOutlets(rows)
-        const cfg = (await window.dmsPos?.getSecureConfig?.()) ?? (await window.dmsPos?.getConfig?.())
-        const fromFile = (cfg?.posVerificationCode || '').trim()
-        if (fromFile) useSettingsStore.getState().setAssignedShowroomCode(fromFile)
-        const isDesktop = window.dmsPos?.mode === 'electron'
-        const verification = isDesktop
-          ? fromFile
-          : (fromFile || useSettingsStore.getState().assignedShowroomCode.trim())
-        if (!verification) {
-          setOutlet(null, 'Showroom')
-          setShowroomBindError(
-            isDesktop
-              ? 'This desktop till needs a POS Verification Code before it can connect to a showroom. Press Ctrl+Shift+A to open the hidden admin panel.'
-              : 'This till has no POS Verification Code. A system administrator must configure it.',
-          )
-          return
-        }
-        try {
-          const match = await resolveOutletByPosVerificationCode(verification)
-          if (cancelled) return
-          if (!match.id) {
-            setOutlet(null, 'Showroom')
-            setShowroomBindError('POS Verification Code was not found in DMS. Ask an administrator to set it on the showroom.')
-            return
-          }
-          setShowroomBindError('')
-          setOutlet(match.id, match.name || match.code)
-          setOutlets((prev) => {
-            const existing = prev.find((o) => o.id === match.id)
-            const rest = prev.filter((o) => o.id !== match.id)
-            return [
-              ...rest,
-              {
-                id: match.id,
-                code: match.code,
-                name: match.name || match.code,
-                address: match.address,
-                phone: (match.phone || existing?.phone || '').trim(),
-              },
-            ]
-          })
-        } catch {
-          if (cancelled) return
-          setOutlet(null, 'Showroom')
-          setShowroomBindError('POS Verification Code was not found in DMS. Ask an administrator to set it on the showroom.')
+        if (!cancelled) {
+          setOutlets((data.outlets as Record<string, unknown>[]).map(mapOutlet).filter((o) => o.id))
         }
       } catch (err) {
         if (!cancelled) {
-          setOutlets([])
-          console.warn('[outlets] Failed to load showrooms:', err)
-          toast('Could not load showrooms from server. Check the network connection and permissions.', 'error')
+          console.warn('[outlets] Failed to load showroom list:', err)
         }
+      }
+
+      const cfg = (await window.dmsPos?.getSecureConfig?.()) ?? (await window.dmsPos?.getConfig?.())
+      if (cancelled) return
+      const fromFile = (cfg?.posVerificationCode || '').trim()
+      if (fromFile) useSettingsStore.getState().setAssignedShowroomCode(fromFile)
+      const isDesktop = window.dmsPos?.mode === 'electron'
+      const verification = isDesktop
+        ? fromFile
+        : (fromFile || useSettingsStore.getState().assignedShowroomCode.trim())
+      if (!verification) {
+        setOutlet(null, 'Showroom')
+        setShowroomBindError(
+          isDesktop
+            ? 'This desktop till needs a POS Verification Code before it can connect to a showroom. Press Ctrl+Shift+A to open the hidden admin panel.'
+            : 'This till has no POS Verification Code. A system administrator must configure it.',
+        )
+        return
+      }
+      try {
+        const match = await resolveOutletByPosVerificationCode(verification)
+        if (cancelled) return
+        if (!match.id) {
+          setOutlet(null, 'Showroom')
+          setShowroomBindError('POS Verification Code was not found in DMS. Ask an administrator to set it on the showroom.')
+          return
+        }
+        setShowroomBindError('')
+        setOutlet(match.id, match.name || match.code)
+        setOutlets((prev) => {
+          const existing = prev.find((o) => o.id === match.id)
+          const rest = prev.filter((o) => o.id !== match.id)
+          return [
+            ...rest,
+            {
+              id: match.id,
+              code: match.code,
+              name: match.name || match.code,
+              address: match.address,
+              phone: (match.phone || existing?.phone || '').trim(),
+            },
+          ]
+        })
+      } catch {
+        if (cancelled) return
+        setOutlet(null, 'Showroom')
+        setShowroomBindError('POS Verification Code was not found in DMS. Ask an administrator to set it on the showroom.')
       }
     })()
     return () => { cancelled = true }
@@ -407,7 +409,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       receiptOpts: {
         title: RECEIPT_COMPANY_NAME,
         companyAddress: receiptCompanyAddress,
-        companyPhone: `Tel:${receiptCompanyPhone}`,
+        companyPhone: `Tel: ${receiptCompanyPhone}`,
         outletLabel: receipt.outletLabel,
         lines: receipt.lines,
         total: receipt.total,
@@ -545,7 +547,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       opts = {
         title: RECEIPT_COMPANY_NAME,
         companyAddress: receiptCompanyAddress,
-        companyPhone: `Tel:${receiptCompanyPhone}`,
+        companyPhone: `Tel: ${receiptCompanyPhone}`,
         outletLabel,
         lines: lines.map((l) => ({ name: l.name, unitPrice: l.unitPrice, qty: l.qty, amount: l.qty * l.unitPrice })),
         total: sub,
@@ -559,7 +561,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       opts = {
         title: RECEIPT_COMPANY_NAME,
         companyAddress: receiptCompanyAddress,
-        companyPhone: `Tel:${receiptCompanyPhone}`,
+        companyPhone: `Tel: ${receiptCompanyPhone}`,
         outletLabel: lastReceipt.outletLabel,
         lines: lastReceipt.lines,
         total: lastReceipt.total,

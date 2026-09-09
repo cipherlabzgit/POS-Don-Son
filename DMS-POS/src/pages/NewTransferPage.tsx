@@ -170,7 +170,7 @@ export function NewTransferPage({ onBack }: Props) {
       setRows([])
       setNotes('')
       const approved = status.toLowerCase() === 'approved'
-      toast(approved ? 'Transfer approved. Printing original and copy…' : 'Transfer submitted. Printing original and copy…', 'success')
+      toast(approved ? 'Transfer approved. Printing copy then original…' : 'Transfer submitted. Printing copy then original…', 'success')
       try {
         await printTransferNotes({
           transferNo: transferNo || '—',
@@ -192,7 +192,7 @@ export function NewTransferPage({ onBack }: Props) {
       if (isAlreadyRecordedError(e)) {
         setRows([])
         setNotes('')
-        toast('Transfer submitted. Printing original and copy…', 'success')
+        toast('Transfer submitted. Printing copy then original…', 'success')
         try {
           await printTransferNotes({
             transferNo: '—',

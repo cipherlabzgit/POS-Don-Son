@@ -149,7 +149,7 @@ export function DeliveryReturnPage({ onBack }: Props) {
       const status = String(rec.status ?? rec.Status ?? '')
       setRows([]); setComment('')
       const approved = status.toLowerCase() === 'approved'
-      toast(approved ? 'Return approved. Printing original and copy…' : 'Return submitted. Printing original and copy…', 'success')
+      toast(approved ? 'Return approved. Printing copy then original…' : 'Return submitted. Printing copy then original…', 'success')
       try {
         await printReturnNotes({
           returnNo: returnNo || '—',

@@ -20,7 +20,7 @@ interface Window {
       configPath?: string
       encrypted?: boolean
     } | null>
-    shutdown?: () => void
+    shutdown?: () => Promise<{ success: boolean; error?: string }>
     toggleFullscreen?: () => void
     isFullscreen?: () => Promise<boolean>
     sqliteOp?: (op: string, payload?: unknown) => Promise<unknown>

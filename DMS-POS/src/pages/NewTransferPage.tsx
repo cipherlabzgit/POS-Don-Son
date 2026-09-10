@@ -347,6 +347,7 @@ export function NewTransferPage({ onBack }: Props) {
 
         {kbField ? (
           <SearchKeyboard
+            key={kbField}
             value={kbField === 'comment' ? notes : search}
             onChange={(next) => {
               if (kbField === 'comment') {
@@ -362,6 +363,7 @@ export function NewTransferPage({ onBack }: Props) {
             }}
             label={kbField === 'comment' ? 'Comment' : 'Item search'}
             placeholder={kbField === 'comment' ? 'Optional comment' : 'Search item code or name'}
+            forItemCode={kbField === 'search'}
           />
         ) : null}
 

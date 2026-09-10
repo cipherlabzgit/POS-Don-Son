@@ -6,6 +6,7 @@ import { Modal, ModalFooter } from '@/components/ui/modal';
 import { Minus, Plus, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { DEFAULT_BRAND_COLOR } from '@/lib/stores/theme-store';
+import { filterByCodeOrName, foldProductSearch } from '@/lib/product-search';
 
 export interface ProductionCancelProduct {
   id: string;
@@ -104,19 +105,10 @@ export default function ProductionCancelItemsEntry({
     });
   }, []);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    const matches = products
-      .filter(
-        (p) =>
-          p.code.toLowerCase().includes(q) ||
-          p.name.toLowerCase().includes(q)
-      )
-      .slice(0, 15);
-    
-    return matches;
-  }, [products, query]);
+  const filtered = useMemo(
+    () => filterByCodeOrName(products, query, { limit: 15, whenEmpty: 'none' }),
+    [products, query],
+  );
 
   useEffect(() => {
     setHighlight(0);
@@ -218,14 +210,7 @@ export default function ProductionCancelItemsEntry({
       return;
     }
     
-    // Calculate filtered products fresh to avoid stale state
-    const currentFiltered = products
-      .filter(
-        (p) =>
-          p.code.toLowerCase().includes(q.toLowerCase()) ||
-          p.name.toLowerCase().includes(q.toLowerCase())
-      )
-      .slice(0, 15);
+    const currentFiltered = filterByCodeOrName(products, q, { limit: 15, whenEmpty: 'none' });
     
     if (currentFiltered.length === 0) {
       toast.error('No matching products found');
@@ -234,13 +219,13 @@ export default function ProductionCancelItemsEntry({
     
     // First, try to find exact match by code
     let product: ProductionCancelProduct | undefined = products.find(
-      (p) => p.code.toLowerCase() === q.toLowerCase()
+      (p) => foldProductSearch(p.code) === foldProductSearch(q)
     );
     
     // If no exact match, try exact match by name
     if (!product) {
       product = products.find(
-        (p) => p.name.toLowerCase() === q.toLowerCase()
+        (p) => foldProductSearch(p.name) === foldProductSearch(q)
       );
     }
     

@@ -6,6 +6,7 @@ import Input from '@/components/ui/input';
 import Select from '@/components/ui/select';
 import { Plus, XCircle, Edit2, Check, X, Search, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { filterByCodeOrName } from '@/lib/product-search';
 
 export interface ProductionLineProduct {
   id: string;
@@ -53,13 +54,7 @@ function ProductSearchCombobox({
   const selected = products.find((p) => p.id === value);
   const displayValue = selected ? `${selected.code} - ${selected.name}` : '';
 
-  const filtered = query.trim()
-    ? products.filter(
-        (p) =>
-          p.code.toLowerCase().includes(query.toLowerCase()) ||
-          p.name.toLowerCase().includes(query.toLowerCase()),
-      )
-    : products;
+  const filtered = filterByCodeOrName(products, query);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

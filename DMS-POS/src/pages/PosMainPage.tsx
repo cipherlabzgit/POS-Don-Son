@@ -31,6 +31,7 @@ import { QtyNumpad } from '../components/QtyNumpad'
 import { SearchKeyboard } from '../components/SearchKeyboard'
 import { DiagnosticPage } from './DiagnosticPage'
 import type { CategoryRow, ProductRow } from '../lib/types'
+import { filterByCodeOrName } from '../lib/product-search'
 import { offlineDb } from '../lib/offline-db'
 import type { Screen } from '../screen-types'
 
@@ -125,6 +126,8 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const [previewOpts, setPreviewOpts] = useState<PrintReceiptOpts | null>(null)
   const [postSale, setPostSale] = useState<PostSaleState | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  const [confirmShutdown, setConfirmShutdown] = useState(false)
+  const [shuttingDown, setShuttingDown] = useState(false)
   const [catsExpanded, setCatsExpanded] = useState(false)
   const [catPage, setCatPage] = useState(0)
   const [saleRecordUnread, setSaleRecordUnread] = useState(0)
@@ -352,9 +355,9 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
     let list = products
     if (categoryId === 'fav') list = list.filter((p) => favIds.includes(p.id))
     else if (categoryId !== 'all') list = list.filter((p) => p.categoryId === categoryId)
-    const q = search.trim().toLowerCase()
-    if (q) list = list.filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q))
-    return list.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name))
+    list = [...list].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name))
+    if (search.trim()) list = filterByCodeOrName(list, search)
+    return list
   }, [products, categoryId, search, favIds])
 
   // ── Category row ────────────────────────────────────────────────────────────
@@ -638,9 +641,33 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   }
 
   // ── Electron helpers ────────────────────────────────────────────────────────
-  type DmsPosApi = { shutdown?: () => void; toggleFullscreen?: () => void }
+  type DmsPosApi = { shutdown?: () => Promise<{ success?: boolean; error?: string } | void>; toggleFullscreen?: () => void }
   const dmsPosApi = typeof window !== 'undefined' ? (window as unknown as { dmsPos?: DmsPosApi }).dmsPos : undefined
-  function handleShutdown() { dmsPosApi?.shutdown?.() }
+  function handleShutdown() {
+    setUserMenu(false)
+    setConfirmShutdown(true)
+  }
+  async function confirmDeviceShutdown() {
+    if (shuttingDown) return
+    setShuttingDown(true)
+    try {
+      if (!dmsPosApi?.shutdown) {
+        toast('Device shutdown is only available on the POS terminal app.', 'error')
+        setConfirmShutdown(false)
+        return
+      }
+      const result = await dmsPosApi.shutdown()
+      if (result && result.success === false) {
+        toast(result.error || 'Unable to shut down this device.', 'error')
+        setConfirmShutdown(false)
+      }
+    } catch (error) {
+      toast((error as Error).message || 'Unable to shut down this device.', 'error')
+      setConfirmShutdown(false)
+    } finally {
+      setShuttingDown(false)
+    }
+  }
   function handleFullscreen() { dmsPosApi?.toggleFullscreen?.() }
 
   return (
@@ -807,7 +834,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                   <MenuAction icon={<Maximize2 className="h-4 w-4" />} label="Toggle fullscreen" onClick={() => { handleFullscreen(); setUserMenu(false) }} />
                   <MenuAction icon={<Cloud className="h-4 w-4" />} label="Refresh cache" onClick={() => { void loadData(); setUserMenu(false); toast('Refreshing catalogue…', 'info') }} />
                   <MenuAction icon={<Stethoscope className="h-4 w-4 text-blue-600" />} label="Diagnostic" textClass="text-blue-600" onClick={() => { setDiagnosticOpen(true); setUserMenu(false) }} />
-                  <MenuAction icon={<Power className="h-4 w-4 text-amber-600" />} label="Shutdown" textClass="text-amber-700" onClick={() => { handleShutdown(); setUserMenu(false) }} />
+                  <MenuAction icon={<Power className="h-4 w-4 text-amber-600" />} label="Shutdown" textClass="text-amber-700" onClick={handleShutdown} />
                   <MenuAction icon={<LogOut className="h-4 w-4 text-red-600" />} label="Logout" textClass="text-red-600" onClick={() => { logout(); setUserMenu(false) }} />
                 </nav>
                 </div>
@@ -953,7 +980,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                 type="button"
                 disabled={catsExpanded || catPage <= 0}
                 onClick={() => setCatPage((p) => Math.max(0, p - 1))}
-                className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
+                className="pos-tap flex h-20 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
                 aria-label="Previous categories"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -967,7 +994,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                     key={c.id}
                     type="button"
                     onClick={() => selectCategory(c.id)}
-                    className={`flex h-10 min-w-0 items-center justify-center rounded-lg px-1.5 text-center text-xs font-bold leading-tight shadow ${c.colour} ${
+                    className={`flex h-20 min-w-0 items-center justify-center rounded-lg px-1.5 text-center text-sm font-bold leading-tight shadow ${c.colour} ${
                       categoryId === c.id ? 'ring-2 ring-[var(--brand-accent)] ring-offset-1' : ''
                     }`}
                   >
@@ -979,14 +1006,14 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                 type="button"
                 disabled={catsExpanded || catPage >= catPageCount - 1}
                 onClick={() => setCatPage((p) => Math.min(catPageCount - 1, p + 1))}
-                className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
+                className="pos-tap flex h-20 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
                 aria-label="Next categories"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
               <button
                 type="button"
-                className="pos-tap flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white"
+                className="pos-tap flex h-20 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white"
                 onClick={() => setCatsExpanded((open) => !open)}
                 aria-label={catsExpanded ? 'Collapse categories' : 'Show all categories'}
                 aria-expanded={catsExpanded}
@@ -1055,7 +1082,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                       longPressTimerRef.current = null
                     }
                   }}
-                  className="product-tile group relative flex aspect-square cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-[var(--pos-product-tile-border)] bg-[var(--pos-product-tile)] p-2 text-center text-stone-900 shadow-sm hover:border-[var(--brand-primary)]"
+                  className="product-tile group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-[var(--pos-product-tile-border)] bg-[var(--pos-product-tile)] p-2 text-center text-stone-900 shadow-sm hover:border-[var(--brand-primary)]"
                 >
                   <button
                     type="button"
@@ -1100,6 +1127,34 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       </div>
 
       {/* ── Modals ── */}
+      {confirmShutdown ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-white p-6 text-center shadow-2xl">
+            <p className="font-pos-title text-xl font-bold text-[var(--foreground)]">Shutdown this device?</p>
+            <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+              Yes will power off this computer now. The POS app will not close by itself.
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                disabled={shuttingDown}
+                className="pos-tap rounded-xl bg-[var(--brand-primary)] py-3 text-base font-bold text-white disabled:opacity-50"
+                onClick={() => void confirmDeviceShutdown()}
+              >
+                {shuttingDown ? 'Shutting down…' : 'Yes'}
+              </button>
+              <button
+                type="button"
+                disabled={shuttingDown}
+                className="pos-tap rounded-xl border border-[var(--border)] py-3 text-base font-semibold text-[var(--foreground)] disabled:opacity-50"
+                onClick={() => setConfirmShutdown(false)}
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {confirmClear ? (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-white p-6 text-center shadow-2xl">
@@ -1152,7 +1207,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
         <DiagnosticPage onClose={() => { setDiagnosticOpen(false); void loadData() }} />
       ) : null}
       {searchKbOpen ? (
-        <SearchKeyboard value={search} onChange={setSearch} onClose={() => setSearchKbOpen(false)} />
+        <SearchKeyboard value={search} onChange={setSearch} onClose={() => setSearchKbOpen(false)} forItemCode />
       ) : null}
 
       {/* ── Operations drawer (slides from left) ── */}

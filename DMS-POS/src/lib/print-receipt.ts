@@ -1,4 +1,4 @@
-import { THERMAL_SLIP_CSS } from './thermal-slip'
+import { THERMAL_SLIP_CSS, THERMAL_WIDTH_PX } from './thermal-slip'
 
 export type PrintReceiptOpts = {
   title: string
@@ -58,19 +58,19 @@ body{
 table{font-size:12px;margin:6px 0}
 th{padding:4px 2px;font-weight:700;border-bottom:2px dashed #000;vertical-align:bottom;font-size:11px}
 td{padding:4px 1px;vertical-align:top;font-weight:400;font-size:12px}
-.item{width:36%;text-align:left;white-space:normal;padding-right:2px}
-.each{width:20%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.qty{width:18%;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
-.tot{width:26%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.item{text-align:left;white-space:normal;padding-right:2px}
+.each{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;padding-right:2px}
+.qty{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;padding-right:2px}
+.tot{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .totals{margin-top:6px;padding-top:4px}
 .total-row{display:flex;justify-content:space-between;gap:8px;margin:5px 0;font-size:13px;font-weight:400}
-.total-row span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.total-row span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
 .total-row.main{font-size:15px;font-weight:800}
 .item-count{font-size:12px;font-weight:400;margin:7px 0;text-align:left}
-.policy{text-align:center;font-size:11px;font-weight:400;line-height:1.35;margin:6px 0;text-transform:none}
-.thank-you{display:block;width:100%;text-align:center;font-weight:800;font-size:14px;margin:12px 0 0;letter-spacing:0.04em}
+.policy{text-align:center;font-size:11px;font-weight:400;line-height:1.35;margin:6px 0;text-transform:none;overflow-wrap:anywhere}
+.thank-you{display:block;width:100%;text-align:center;font-weight:800;font-size:14px;margin:8px 0 0;letter-spacing:0.04em}
 </style></head><body>
-<div class="slip">
+<div class="slip cols-4">
 <div class="header">
   <div class="company-name">${escapeHtml(opts.title)}</div>
   ${opts.companyAddress ? `<div class="company-info">${escapeHtml(opts.companyAddress).replace(/\n/g, '<br>')}</div>` : ''}
@@ -84,10 +84,10 @@ ${opts.saleNo ? `<div class="info-line">Bill No: ${escapeHtml(opts.saleNo)}</div
 <div class="divider"></div>
 <table>
   <colgroup>
-    <col style="width:36%">
-    <col style="width:20%">
-    <col style="width:18%">
-    <col style="width:26%">
+    <col>
+    <col style="width:15mm">
+    <col style="width:8mm">
+    <col style="width:16mm">
   </colgroup>
   <thead>
     <tr>
@@ -128,7 +128,7 @@ function printViaIframe(html: string): Promise<boolean> {
     const iframe = document.createElement('iframe')
     iframe.setAttribute('aria-hidden', 'true')
     iframe.style.cssText =
-      'position:fixed;left:-10000px;top:0;width:320px;height:1200px;border:0;opacity:0;pointer-events:none'
+      `position:fixed;left:-10000px;top:0;width:${THERMAL_WIDTH_PX}px;height:1200px;border:0;opacity:0;pointer-events:none`
     document.body.appendChild(iframe)
 
     const win = iframe.contentWindow

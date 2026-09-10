@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type { ProductRow } from '../lib/types'
+import { filterByCodeOrName } from '../lib/product-search'
 
 type Props = {
   value: string
@@ -21,11 +22,10 @@ export function filterItemChoices(
   opts?: { posOnly?: boolean; limit?: number },
 ): ProductRow[] {
   const catalog = opts?.posOnly ? products.filter((p) => p.displayInPOS !== false) : products
-  const q = search.trim().toLowerCase()
-  const matched = q
-    ? catalog.filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q))
-    : catalog
-  return matched.slice(0, opts?.limit ?? 20)
+  return filterByCodeOrName(catalog, search, {
+    limit: opts?.limit ?? 20,
+    whenEmpty: 'all',
+  })
 }
 
 export function ItemSearchField({
@@ -83,7 +83,7 @@ export function ItemSearchField({
               e.preventDefault()
               onOpenChange(false)
             }
-            if (e.key === 'Enter' && items[0]) {
+            if (e.key === 'Enter' && value.trim() && items[0]) {
               e.preventDefault()
               onSelect(items[0])
             }

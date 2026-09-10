@@ -30,7 +30,7 @@
       width: 80mm;
       max-width: 80mm;
       margin: 0;
-      padding: 3mm 4.5mm 16mm;
+      padding: 1mm 14mm 5mm 2.5mm;
       box-sizing: border-box;
       overflow-x: hidden;
       color: #000;
@@ -46,9 +46,9 @@
     .sale table { font-size: 12px; margin: 6px 0; }
     .sale th { padding: 4px 2px; font-weight: 700; border-bottom: 2px dashed #000; font-size: 11px; }
     .sale td { padding: 4px 1px; font-weight: 400; font-size: 12px; vertical-align: top; }
-    .sale .item { width: 36%; text-align: left; }
+    .sale .item { width: 42%; text-align: left; }
     .sale .each { width: 20%; text-align: right; white-space: nowrap; }
-    .sale .qty { width: 18%; text-align: center; white-space: nowrap; }
+    .sale .qty { width: 12%; text-align: center; white-space: nowrap; }
     .sale .tot { width: 26%; text-align: right; white-space: nowrap; }
     .sale .total-row { display: flex; justify-content: space-between; margin: 5px 0; font-size: 13px; font-weight: 400; }
     .sale .total-row.main { font-size: 15px; font-weight: 800; }
@@ -64,9 +64,9 @@
     .note th, .note td { border: 1px solid #000; padding: 3px 2px; vertical-align: top; }
     .note th { font-weight: 700; text-align: center; }
     .note td { font-weight: 400; }
-    .note td.code, .note th.code { width: 24%; text-align: left; white-space: nowrap; }
-    .note td.item, .note th.item { width: 50%; text-align: left; }
-    .note td.qty, .note th.qty { width: 26%; text-align: right; white-space: nowrap; }
+    .note td.code, .note th.code { width: 22%; text-align: left; white-space: nowrap; }
+    .note td.item, .note th.item { width: 58%; text-align: left; }
+    .note td.qty, .note th.qty { width: 20%; text-align: right; white-space: nowrap; }
 
     .bf { font-family: Arial, Helvetica, sans-serif; font-size: 13px; }
     .bf .title { font-size: 16px; font-weight: 800; text-align: center; margin: 4px 0 8px; }
@@ -74,9 +74,9 @@
     .bf .info-line { font-size: 12px; font-weight: 400; margin: 3px 0; }
     .bf th { padding: 4px 2px; font-weight: 700; border-bottom: 2px dashed #000; font-size: 11px; }
     .bf td { padding: 5px 2px; font-weight: 400; font-size: 12px; }
-    .bf .code { width: 24%; }
-    .bf .item { width: 52%; }
-    .bf .qty { width: 24%; text-align: right; white-space: nowrap; }
+    .bf .code { width: 22%; }
+    .bf .item { width: 58%; }
+    .bf .qty { width: 20%; text-align: right; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -92,7 +92,7 @@
       <div class="card">
         <div class="label">1. Sale receipt</div>
         <div class="paper">
-          <div class="slip sale">
+          <div class="slip sale cols-4">
             <div class="company-name">Don &amp; Sons (Pvt) Ltd</div>
             <div class="company-info">NO: 302/D, OLD KANDY ROAD,<br>DALUGAMA, KELANIYA</div>
             <div class="company-info">Tel: 0112 911 412 / 07123 456 756</div>
@@ -104,7 +104,7 @@
             <div class="divider"></div>
             <table>
               <colgroup>
-                <col style="width:36%"><col style="width:20%"><col style="width:18%"><col style="width:26%">
+                <col><col style="width:15mm"><col style="width:8mm"><col style="width:16mm">
               </colgroup>
               <thead>
                 <tr>
@@ -152,7 +152,7 @@
       <div class="card">
         <div class="label">2. Stock BF</div>
         <div class="paper">
-          <div class="slip bf">
+          <div class="slip bf cols-3">
             <div class="title">STOCK BF</div>
             <div class="divider"></div>
             <div class="info-line">Showroom: Kadirana-01</div>
@@ -161,7 +161,7 @@
             <div class="divider"></div>
             <table>
               <colgroup>
-                <col style="width:24%"><col style="width:52%"><col style="width:24%">
+                <col style="width:16mm"><col><col style="width:12mm">
               </colgroup>
               <thead>
                 <tr><th class="code">Code</th><th class="item">Item</th><th class="qty">Qty</th></tr>
@@ -188,7 +188,7 @@
       <div class="card">
         <div class="label">3. Transfer note</div>
         <div class="paper">
-          <div class="slip note">
+          <div class="slip note cols-3">
             <div class="title">Transfer Note</div>
             <div class="meta">Transfer No : TR-2026-000012</div>
             <div class="meta">Transfer From : Kadirana-01</div>
@@ -198,7 +198,7 @@
             <div class="stamp">TRANSFER ORIGINAL</div>
             <table>
               <colgroup>
-                <col style="width:24%"><col style="width:50%"><col style="width:26%">
+                <col style="width:16mm"><col><col style="width:12mm">
               </colgroup>
               <thead>
                 <tr><th class="code">CODE</th><th class="item">ITEM</th><th class="qty">QTY</th></tr>
@@ -226,7 +226,7 @@
       <div class="card">
         <div class="label">4. Return note</div>
         <div class="paper">
-          <div class="slip note">
+          <div class="slip note cols-3">
             <div class="title">Return Note</div>
             <div class="meta">Return No : RN-2026-000008</div>
             <div class="meta">Showroom : Kadirana-01</div>
@@ -235,7 +235,7 @@
             <div class="stamp">RETURN ORIGINAL</div>
             <table>
               <colgroup>
-                <col style="width:24%"><col style="width:50%"><col style="width:26%">
+                <col style="width:16mm"><col><col style="width:12mm">
               </colgroup>
               <thead>
                 <tr><th class="code">CODE</th><th class="item">ITEM</th><th class="qty">QTY</th></tr>
@@ -262,7 +262,7 @@
       <div class="card">
         <div class="label">5. Transfer COPY (cashier name only)</div>
         <div class="paper">
-          <div class="slip note">
+          <div class="slip note cols-3">
             <div class="title">Transfer Note</div>
             <div class="meta">Transfer No : TR-2026-000012</div>
             <div class="meta">Transfer From : Kadirana-01</div>
@@ -272,7 +272,7 @@
             <div class="stamp">TRANSFER COPY</div>
             <table>
               <colgroup>
-                <col style="width:24%"><col style="width:50%"><col style="width:26%">
+                <col style="width:16mm"><col><col style="width:12mm">
               </colgroup>
               <thead>
                 <tr><th class="code">CODE</th><th class="item">ITEM</th><th class="qty">QTY</th></tr>
@@ -290,7 +290,7 @@
       <div class="card">
         <div class="label">6. Return COPY (cashier name only)</div>
         <div class="paper">
-          <div class="slip note">
+          <div class="slip note cols-3">
             <div class="title">Return Note</div>
             <div class="meta">Return No : RN-2026-000008</div>
             <div class="meta">Showroom : Kadirana-01</div>
@@ -299,7 +299,7 @@
             <div class="stamp">RETURN COPY</div>
             <table>
               <colgroup>
-                <col style="width:24%"><col style="width:50%"><col style="width:26%">
+                <col style="width:16mm"><col><col style="width:12mm">
               </colgroup>
               <thead>
                 <tr><th class="code">CODE</th><th class="item">ITEM</th><th class="qty">QTY</th></tr>

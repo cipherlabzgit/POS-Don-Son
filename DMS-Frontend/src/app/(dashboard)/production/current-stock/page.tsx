@@ -8,6 +8,7 @@ import { Search, RefreshCw } from 'lucide-react';
 import { currentStockApi, type CurrentStock } from '@/lib/api/current-stock';
 import { ProtectedPage } from '@/components/auth';
 import toast from 'react-hot-toast';
+import { filterByCodeOrName } from '@/lib/product-search';
 
 export default function CurrentStockPage() {
   return (
@@ -55,12 +56,12 @@ function CurrentStockPageContent() {
     toast.success('Stock data refreshed');
   };
 
-  const filteredStocks = Array.isArray(stocks) ? stocks.filter(s => {
-    const matchesSearch = searchTerm === '' || 
-      s.productCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.productName?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  }) : [];
+  const filteredStocks = Array.isArray(stocks)
+    ? filterByCodeOrName(stocks, searchTerm, {
+        code: (s) => s.productCode,
+        name: (s) => s.productName,
+      })
+    : [];
 
   const totalPages = Math.ceil(filteredStocks.length / pageSize);
   const paginatedStocks = filteredStocks.slice(

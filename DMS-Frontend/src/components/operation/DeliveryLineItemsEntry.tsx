@@ -13,6 +13,7 @@ import {
   parseDeliveryImportFile,
 } from '@/lib/delivery-import-excel';
 import { DEFAULT_BRAND_COLOR } from '@/lib/stores/theme-store';
+import { filterByCodeOrName, foldProductSearch } from '@/lib/product-search';
 
 export interface DeliveryLineItemsEntryProps {
   products: Product[];
@@ -159,17 +160,10 @@ export default function DeliveryLineItemsEntry({
     });
   }, []);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return products
-      .filter(
-        (p) =>
-          p.code.toLowerCase().includes(q) ||
-          p.name.toLowerCase().includes(q)
-      )
-      .slice(0, 15);
-  }, [products, query]);
+  const filtered = useMemo(
+    () => filterByCodeOrName(products, query, { limit: 15, whenEmpty: 'none' }),
+    [products, query],
+  );
 
   const highlightedProduct =
     filtered.length > 0
@@ -274,7 +268,7 @@ export default function DeliveryLineItemsEntry({
       return;
     }
     let product: Product | undefined = products.find(
-      (p) => p.code.toLowerCase() === q.toLowerCase()
+      (p) => foldProductSearch(p.code) === foldProductSearch(q)
     );
     if (!product && filtered.length === 1) product = filtered[0];
     if (!product && filtered.length > 0 && highlight >= 0 && highlight < filtered.length) {

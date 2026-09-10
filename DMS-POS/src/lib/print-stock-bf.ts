@@ -1,5 +1,5 @@
 import { isElectronPos } from './print-receipt'
-import { THERMAL_SLIP_CSS } from './thermal-slip'
+import { THERMAL_SLIP_CSS, THERMAL_WIDTH_PX } from './thermal-slip'
 
 export type StockBfPrintLine = {
   code: string
@@ -51,15 +51,15 @@ body{
 table{font-size:12px;margin:6px 0}
 th{padding:4px 2px;font-weight:700;border-bottom:2px dashed #000;vertical-align:bottom;font-size:11px}
 td{padding:5px 2px;vertical-align:top;font-weight:400;font-size:12px}
-.code{width:24%;text-align:left;white-space:nowrap}
-.item{width:52%;text-align:left;white-space:normal;padding-right:3px}
-.qty{width:24%;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.code{text-align:left;white-space:nowrap}
+.item{text-align:left;white-space:normal;padding-right:3px}
+.qty{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .sig{margin-top:12px;font-size:12px;font-weight:400;line-height:1.35}
 .sig .name{font-weight:700;margin-bottom:4px;text-align:center}
 .sig .dots{border-bottom:1px dotted #000;height:14px;width:100%;margin-top:8px}
 .sig .cap{text-align:center;font-size:11px;margin-top:2px}
 </style></head><body>
-<div class="slip">
+<div class="slip cols-3">
 <div class="header">
   <div class="title">STOCK BF</div>
 </div>
@@ -70,9 +70,9 @@ td{padding:5px 2px;vertical-align:top;font-weight:400;font-size:12px}
 <div class="divider"></div>
 <table>
   <colgroup>
-    <col style="width:24%">
-    <col style="width:52%">
-    <col style="width:24%">
+    <col style="width:16mm">
+    <col>
+    <col style="width:12mm">
   </colgroup>
   <thead>
     <tr>
@@ -106,7 +106,7 @@ function printViaIframe(html: string): Promise<boolean> {
     const iframe = document.createElement('iframe')
     iframe.setAttribute('aria-hidden', 'true')
     iframe.style.cssText =
-      'position:fixed;left:-10000px;top:0;width:320px;height:1200px;border:0;opacity:0;pointer-events:none'
+      `position:fixed;left:-10000px;top:0;width:${THERMAL_WIDTH_PX}px;height:1200px;border:0;opacity:0;pointer-events:none`
     document.body.appendChild(iframe)
     const win = iframe.contentWindow
     const doc = iframe.contentDocument

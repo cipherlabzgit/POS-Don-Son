@@ -38,7 +38,7 @@ export function PrintPreviewModal({ opts, onClose }: Props) {
 
         {/* Receipt preview */}
         <div className="min-h-0 flex-1 overflow-y-auto bg-gray-50 p-4">
-          <div className="mx-auto w-[80mm] max-w-full rounded-xl bg-white px-4 py-3 pb-6 shadow text-[11px] font-normal">
+          <div className="mx-auto w-[80mm] max-w-full rounded-xl bg-white pl-[2.5mm] pr-[14mm] pt-[1mm] pb-[5mm] shadow text-[11px] font-normal">
             {/* Company header */}
             <div className="mb-1 text-center text-sm font-bold">
               {opts.title}
@@ -71,9 +71,9 @@ export function PrintPreviewModal({ opts, onClose }: Props) {
             {/* Items table */}
             <table className="w-full table-fixed text-[10px]">
               <colgroup>
-                <col className="w-[38%]" />
+                <col className="w-[42%]" />
                 <col className="w-[20%]" />
-                <col className="w-[16%]" />
+                <col className="w-[12%]" />
                 <col className="w-[26%]" />
               </colgroup>
               <thead>

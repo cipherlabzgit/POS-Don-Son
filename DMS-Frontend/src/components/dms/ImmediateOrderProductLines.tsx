@@ -10,6 +10,7 @@ import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import { Plus, XCircle, Search, ChevronDown } from 'lucide-react';
 import type { Product } from '@/lib/api/products';
+import { filterByCodeOrName } from '@/lib/product-search';
 import { toast } from 'sonner';
 
 export interface ImmediateOrderLineItem {
@@ -34,13 +35,7 @@ function ProductSearchCombobox({
   const selected = products.find((p) => p.id === value);
   const displayValue = selected ? `${selected.code} — ${selected.name}` : '';
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter(
-      (p) => p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q),
-    );
-  }, [products, query]);
+  const filtered = useMemo(() => filterByCodeOrName(products, query), [products, query]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

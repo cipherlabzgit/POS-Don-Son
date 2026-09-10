@@ -9,6 +9,8 @@ type Props = {
   label?: string
   placeholder?: string
   onEnter?: () => void
+  /** Item-code search: caps stay on and digits stay on the letter layout so BI2 is three taps. */
+  forItemCode?: boolean
 }
 
 const ALPHA = {
@@ -28,17 +30,18 @@ const KEY =
 const MOD =
   'pos-tap flex h-8 items-center justify-center rounded-md bg-[#2a2a2a] px-2.5 text-[11px] font-bold uppercase tracking-wide text-white hover:bg-[#3a3a3a] active:scale-[0.97]'
 
-/** Compact on-screen keyboard (~9.5rem). Dropdowns should use z-[90] so they sit above it. */
-export const POS_OSK_HEIGHT = '9.5rem'
+/** Compact on-screen keyboard. Dropdowns should use z-[90] so they sit above it. */
+export const POS_OSK_HEIGHT = '11rem'
 
 export function SearchKeyboard({
   value,
   onChange,
   onClose,
   onEnter,
+  forItemCode = false,
 }: Props) {
   const [digits, setDigits] = useState(false)
-  const [shift, setShift] = useState(false)
+  const [shift, setShift] = useState(forItemCode)
 
   useEffect(() => {
     const root = document.documentElement
@@ -51,9 +54,10 @@ export function SearchKeyboard({
   }, [])
 
   function press(ch: string) {
-    const next = shift && !digits ? ch.toUpperCase() : ch
+    const letters = !digits && /[a-z]/i.test(ch)
+    const next = shift && letters ? ch.toUpperCase() : ch
     onChange(value + next)
-    if (shift) setShift(false)
+    if (shift && !forItemCode) setShift(false)
   }
 
   function backspace() {
@@ -122,6 +126,15 @@ export function SearchKeyboard({
         </div>
 
         <div className="space-y-1">
+          {!digits && forItemCode ? (
+            <div className="flex gap-1">
+              {NUM.r1.map((k) => (
+                <button key={k} type="button" className={KEY} onClick={() => press(k)}>
+                  {k}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div className="flex gap-1">
             {rows.r1.map((k) => (
               <button key={k} type="button" className={KEY} onClick={() => press(k)}>
@@ -142,7 +155,7 @@ export function SearchKeyboard({
                 type="button"
                 className={`${MOD} w-11 ${shift ? 'bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-dark)]' : ''}`}
                 onClick={() => setShift((s) => !s)}
-                aria-label="Shift"
+                aria-label={forItemCode ? 'Caps lock' : 'Shift'}
               >
                 <ArrowBigUp className="h-4 w-4" />
               </button>
@@ -162,7 +175,7 @@ export function SearchKeyboard({
               className={`${MOD} min-w-[3.25rem]`}
               onClick={() => {
                 setDigits((d) => !d)
-                setShift(false)
+                if (!forItemCode) setShift(false)
               }}
             >
               {digits ? 'ABC' : '123'}

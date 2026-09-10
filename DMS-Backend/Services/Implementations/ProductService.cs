@@ -75,9 +75,25 @@ public class ProductService : IProductService
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var products = await query
-            .OrderBy(p => p.SortOrder)
-            .ThenBy(p => p.Code)
+        IQueryable<Product> ordered = query;
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var searchLower = searchTerm.Trim().ToLower();
+            ordered = query
+                .OrderBy(p => p.Code.ToLower() == searchLower ? 0 : 1)
+                .ThenBy(p => p.Name.ToLower() == searchLower ? 0 : 1)
+                .ThenBy(p => p.Code.ToLower().StartsWith(searchLower) ? 0 : 1)
+                .ThenBy(p => p.Name.ToLower().StartsWith(searchLower) ? 0 : 1)
+                .ThenBy(p => p.Code.ToLower().Contains(searchLower) ? 0 : 1)
+                .ThenBy(p => p.SortOrder)
+                .ThenBy(p => p.Code);
+        }
+        else
+        {
+            ordered = query.OrderBy(p => p.SortOrder).ThenBy(p => p.Code);
+        }
+
+        var products = await ordered
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);

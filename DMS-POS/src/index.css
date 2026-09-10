@@ -101,7 +101,7 @@ body {
 
 /* Compact on-screen keyboard: keep page content and item dropdowns above it */
 html.pos-osk-open #root {
-  padding-bottom: var(--pos-osk-height, 9.5rem);
+  padding-bottom: var(--pos-osk-height, 11rem);
 }
 .pos-search-dropdown {
   z-index: 90;
@@ -183,11 +183,11 @@ html.pos-osk-open #root {
 /* ─── Product tile press feedback ─── */
 .product-tile {
   transition: transform 100ms ease, box-shadow 100ms ease;
-  /* Uniform tile footprint; size driven by --pos-tile-min (product button size control) */
-  aspect-ratio: 3 / 4;
+  /* Width from grid; height is 25% shorter than the previous 3:4 tile. */
+  aspect-ratio: 1 / 0.75;
   width: 100%;
-  min-height: var(--pos-tile-min, 140px);
-  max-height: calc(var(--pos-tile-min, 140px) * 1.45);
+  min-height: calc(var(--pos-tile-min, 140px) * 0.75);
+  max-height: calc(var(--pos-tile-min, 140px) * 1.45 * 0.75);
   font-size: var(--pos-tile-font, 0.875rem);
 }
 .product-tile:active { transform: scale(0.95); }

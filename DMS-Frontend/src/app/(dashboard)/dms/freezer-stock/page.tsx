@@ -27,6 +27,7 @@ import { productsApi, type Product } from '@/lib/api/products';
 import { productionSectionsApi, type ProductionSection } from '@/lib/api/production-sections';
 import { toast } from 'sonner';
 import { formatSlDate, formatSlDateTime } from '@/lib/sri-lanka-time';
+import { filterByCodeOrName } from '@/lib/product-search';
 
 const LOW_STOCK_THRESHOLD = 10;
 const PRODUCT_PAGE_SIZE = 500;
@@ -140,11 +141,10 @@ export default function FreezerStockPage() {
   const qtyFor = (productId: string, sectionId: string) =>
     groupedStock[productId]?.[sectionId]?.currentStock ?? 0;
 
-  const filteredProducts = useMemo(() => {
-    const q = productSearch.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter((p) => p.name.toLowerCase().includes(q));
-  }, [products, productSearch]);
+  const filteredProducts = useMemo(
+    () => filterByCodeOrName(products, productSearch),
+    [products, productSearch],
+  );
 
   const lowStockItems = stockItems.filter((s) => s.currentStock < LOW_STOCK_THRESHOLD);
 

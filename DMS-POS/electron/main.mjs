@@ -1,4 +1,5 @@
 import { app, BrowserWindow, Menu, ipcMain, shell, dialog, screen, globalShortcut } from 'electron'
+import { execFile } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -167,19 +168,25 @@ ipcMain.handle('app:get-config', () => {
 })
 
 ipcMain.handle('app:shutdown', async () => {
-  if (!mainWin || mainWin.isDestroyed()) {
+  if (process.platform !== 'win32') {
     app.quit()
-    return
+    return { success: false, error: 'Device shutdown is only supported on Windows' }
   }
-  const { response } = await dialog.showMessageBox(mainWin, {
-    type: 'question',
-    buttons: ['Shutdown', 'Cancel'],
-    defaultId: 1,
-    cancelId: 1,
-    title: 'Shutdown POS',
-    message: 'Are you sure you want to close the POS terminal?',
+  return await new Promise((resolve) => {
+    execFile(
+      'shutdown.exe',
+      ['/s', '/t', '0'],
+      { windowsHide: true },
+      (error) => {
+        if (error) {
+          console.error('[SHUTDOWN] Device shutdown failed:', error)
+          resolve({ success: false, error: error.message || String(error) })
+          return
+        }
+        resolve({ success: true })
+      },
+    )
   })
-  if (response === 0) app.quit()
 })
 
 ipcMain.handle('app:toggle-fullscreen', () => {
@@ -297,7 +304,7 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
       console.warn('[ELECTRON-PRINT] Could not measure receipt height:', measureError)
     }
 
-    const printHeightPx = Math.min(Math.max(Number(contentHeightPx) || 0, 200) + 96, 20000)
+    const printHeightPx = Math.min(Math.max(Number(contentHeightPx) || 0, 200), 20000)
     printWin.setContentSize(receiptWidthPx, printHeightPx)
     await new Promise((r) => setTimeout(r, 250))
 
@@ -316,11 +323,13 @@ ipcMain.handle('app:print-silent', async (_event, html) => {
             copies: 1,
             landscape: false,
             scaleFactor: 100,
-            dpi: { horizontal: 203, vertical: 203 },
             margins: { marginType: 'none' },
+            preferCSSPageSize: true,
+            header: '',
+            footer: '',
             pageSize: {
-              width: receiptWidthMm * 1000,
-              height: Math.max(pxToMicrons(printHeightPx), 50_000),
+              width: 80_000,
+              height: Math.max(pxToMicrons(printHeightPx), 40_000),
             },
           },
           (success, failureReason) => {

@@ -174,6 +174,15 @@ export function StockBfPage({ onBack }: Props) {
     }, 0)
   }
 
+  function focusSearch() {
+    window.setTimeout(() => {
+      const el = searchRef.current
+      if (!el) return
+      el.focus()
+      el.select()
+    }, 0)
+  }
+
   function selectProduct(p: ProductRow) {
     if (formLocked) {
       toast('Opening stock for today is already submitted and locked.', 'error')
@@ -195,7 +204,7 @@ export function StockBfPage({ onBack }: Props) {
       toast('Opening stock for today is already submitted and locked.', 'error')
       return
     }
-    const target = p ?? pendingProduct ?? filtered[0]
+    const target = p ?? pendingProduct
     if (!target) { toast('Select an item first.', 'info'); return }
     if (target.displayInPOS === false) {
       toast('This product is not displayed in POS — it cannot be added to Stock BF.', 'error')
@@ -212,6 +221,8 @@ export function StockBfPage({ onBack }: Props) {
     setSearch('')
     setQty('1')
     setShowDrop(false)
+    setKbField(null)
+    focusSearch()
   }
 
   function removeRow(productId: string) {
@@ -273,12 +284,18 @@ export function StockBfPage({ onBack }: Props) {
       }
 
       if (andPrint) {
-        await printStockBfHtml({
-          showroom: outletLabel || 'Showroom',
-          cashier: cashier === '—' ? '' : cashier,
-          submittedAt: new Date().toLocaleString(),
-          lines: snapshot.map((r) => ({ code: r.code, name: r.name, qty: r.qty })),
-        })
+        try {
+          const printed = await printStockBfHtml({
+            showroom: outletLabel || 'Showroom',
+            cashier: cashier === '—' ? '' : cashier,
+            submittedAt: new Date().toLocaleString(),
+            lines: snapshot.map((r) => ({ code: r.code, name: r.name, qty: r.qty })),
+          })
+          if (!printed) toast('Opening stock saved. Printing failed — reprint if needed.', 'info')
+        } catch (printErr) {
+          console.warn('[StockBf] print failed', printErr)
+          toast('Opening stock saved. Printing failed — reprint if needed.', 'info')
+        }
       }
 
       setRows(snapshot)
@@ -453,10 +470,11 @@ export function StockBfPage({ onBack }: Props) {
             }}
             onClose={() => setKbField(null)}
             onEnter={() => {
-              if (filtered[0]) selectProduct(filtered[0])
+              if (search.trim() && filtered[0]) selectProduct(filtered[0])
             }}
             label="Item search"
             placeholder="Search item code or name"
+            forItemCode
           />
         ) : null}
 

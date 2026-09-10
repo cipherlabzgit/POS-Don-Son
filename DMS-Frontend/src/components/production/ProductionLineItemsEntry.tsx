@@ -6,6 +6,7 @@ import { Modal, ModalFooter } from '@/components/ui/modal';
 import { Upload, FileSpreadsheet, Minus, Plus, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { DEFAULT_BRAND_COLOR } from '@/lib/stores/theme-store';
+import { filterByCodeOrName, foldProductSearch } from '@/lib/product-search';
 
 export interface ProductionLineProduct {
   id: string;
@@ -110,19 +111,10 @@ export default function ProductionLineItemsEntry({
     });
   }, []);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    const matches = products
-      .filter(
-        (p) =>
-          p.code.toLowerCase().includes(q) ||
-          p.name.toLowerCase().includes(q)
-      )
-      .slice(0, 15);
-    
-    return matches;
-  }, [products, query]);
+  const filtered = useMemo(
+    () => filterByCodeOrName(products, query, { limit: 15, whenEmpty: 'none' }),
+    [products, query],
+  );
 
   const highlightedProduct = filtered.length > 0
     ? filtered[Math.min(Math.max(highlight, 0), filtered.length - 1)]
@@ -229,14 +221,7 @@ export default function ProductionLineItemsEntry({
       return;
     }
     
-    // Calculate filtered products fresh to avoid stale state
-    const currentFiltered = products
-      .filter(
-        (p) =>
-          p.code.toLowerCase().includes(q.toLowerCase()) ||
-          p.name.toLowerCase().includes(q.toLowerCase())
-      )
-      .slice(0, 15);
+    const currentFiltered = filterByCodeOrName(products, q, { limit: 15, whenEmpty: 'none' });
     
     if (currentFiltered.length === 0) {
       toast.error('No matching products found');
@@ -245,13 +230,13 @@ export default function ProductionLineItemsEntry({
     
     // First, try to find exact match by code
     let product: ProductionLineProduct | undefined = products.find(
-      (p) => p.code.toLowerCase() === q.toLowerCase()
+      (p) => foldProductSearch(p.code) === foldProductSearch(q)
     );
     
     // If no exact match, try exact match by name
     if (!product) {
       product = products.find(
-        (p) => p.name.toLowerCase() === q.toLowerCase()
+        (p) => foldProductSearch(p.name) === foldProductSearch(q)
       );
     }
     

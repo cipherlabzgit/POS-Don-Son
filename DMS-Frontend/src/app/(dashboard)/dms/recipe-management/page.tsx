@@ -14,6 +14,7 @@ import { ingredientsApi, type Ingredient } from '@/lib/api/ingredients';
 import { productionSectionsApi, type ProductionSection } from '@/lib/api/production-sections';
 import toast from 'react-hot-toast';
 import { formatSlDate } from '@/lib/sri-lanka-time';
+import { filterByCodeOrName } from '@/lib/product-search';
 
 export default function RecipeManagementPage() {
   const [selectedProductId, setSelectedProductId] = useState<string>('');
@@ -352,11 +353,7 @@ export default function RecipeManagementPage() {
   };
 
   const selectedProduct = products.find(p => p.id === selectedProductId);
-  const filteredProducts = products.filter(p =>
-    productSearch === '' ||
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    p.code.toLowerCase().includes(productSearch.toLowerCase())
-  );
+  const filteredProducts = filterByCodeOrName(products, productSearch);
 
   const ingredientOptions = ingredients.map(i => ({ value: i.id, label: `${i.code} - ${i.name}` }));
   const sectionOptions = productionSections.map(s => ({ value: s.id, label: s.name }));

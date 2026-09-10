@@ -18,6 +18,7 @@ import { getDateBounds, todayISO } from '@/lib/date-restrictions';
 import toast from 'react-hot-toast';
 import { ProtectedPage } from '@/components/auth';
 import { formatSlDate } from '@/lib/sri-lanka-time';
+import { filterByCodeOrName } from '@/lib/product-search';
 
 function addCalendarDays(isoDate: string, days: number): string {
   const d = new Date(`${isoDate}T12:00:00`);
@@ -61,13 +62,7 @@ function ProductSearchField({
     ? `${selected.code} — ${selected.name}${selected.allowFutureLabelPrint ? ' ☀️' : ''}`
     : '';
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter(
-      (p) => p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q),
-    );
-  }, [products, query]);
+  const filtered = useMemo(() => filterByCodeOrName(products, query), [products, query]);
 
   useEffect(() => {
     setHighlighted(0);

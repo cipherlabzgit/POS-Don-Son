@@ -1,5 +1,5 @@
 import { Printer, X } from 'lucide-react'
-import { printReceiptHtml, type PrintReceiptOpts } from '../lib/print-receipt'
+import { printReceiptHtml, receiptPaidLabel, type PrintReceiptOpts } from '../lib/print-receipt'
 
 type Props = {
   opts: PrintReceiptOpts
@@ -105,7 +105,7 @@ export function PrintPreviewModal({ opts, onClose }: Props) {
                 <span>{opts.total.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between text-[10px]">
-                <span>CASH</span>
+                <span>{receiptPaidLabel(opts.paymentMethod)}</span>
                 <span>{opts.cash.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between text-[10px]">

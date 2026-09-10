@@ -483,6 +483,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
           id?: string
           saleNo?: string
           paymentMethod?: string
+          PaymentMethod?: string
           totalAmount?: number
           status?: string
           lines?: { productName?: string; quantity?: number; unitPrice?: number; lineTotal?: number }[]
@@ -494,7 +495,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
         receiptSnapshot = {
           outletLabel,
           total: Number(detail.totalAmount ?? totalSnap),
-          paymentMethod: String(detail.paymentMethod ?? method),
+          paymentMethod: String(detail.paymentMethod ?? detail.PaymentMethod ?? method),
           cash: cashPaid,
           change: changeAmount,
           dateTime: dateTimeStr,

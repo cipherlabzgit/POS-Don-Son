@@ -17,6 +17,12 @@ export type PrintReceiptOpts = {
   footerLines?: string[]
 }
 
+/** Label under TOTAL: Cash or Card. */
+export function receiptPaidLabel(paymentMethod?: string | null): string {
+  const method = (paymentMethod ?? '').trim().toLowerCase()
+  return method.includes('card') ? 'Card' : 'Cash'
+}
+
 /** Full HTML document for the receipt (no inline print script — caller triggers print). */
 function buildReceiptDocumentHtml(opts: PrintReceiptOpts): string {
   const rows = opts.lines
@@ -39,6 +45,8 @@ function buildReceiptDocumentHtml(opts: PrintReceiptOpts): string {
     .filter(Boolean)
     .map((l) => `<div class="policy">${escapeHtml(l)}</div>`)
     .join('')
+
+  const paidLabel = receiptPaidLabel(opts.paymentMethod)
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Receipt</title>
 <style>
@@ -106,7 +114,7 @@ ${opts.saleNo ? `<div class="info-line">Bill No: ${escapeHtml(opts.saleNo)}</div
     <span>${Number(opts.total).toFixed(2)}</span>
   </div>
   <div class="total-row">
-    <span>CASH</span>
+    <span>${escapeHtml(paidLabel)}</span>
     <span>${Number(opts.cash).toFixed(2)}</span>
   </div>
   <div class="total-row">

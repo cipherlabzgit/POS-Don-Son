@@ -110,6 +110,15 @@ export function NewTransferPage({ onBack }: Props) {
     }, 0)
   }
 
+  function focusSearch() {
+    window.setTimeout(() => {
+      const el = searchRef.current
+      if (!el) return
+      el.focus()
+      el.select()
+    }, 0)
+  }
+
   function selectProduct(p: ProductRow) {
     setPendingProduct(p)
     setSearch(`${p.code} — ${p.name}`)
@@ -119,8 +128,8 @@ export function NewTransferPage({ onBack }: Props) {
   }
 
   function addRow(p?: ProductRow) {
-    const target = p ?? pendingProduct ?? filtered[0]
-    if (!target) { toast('Select an item first.', 'info'); return }
+    const target = p ?? pendingProduct
+    if (!target) { toast('Select an item first.', 'info'); focusSearch(); return }
     const qn = parseFloat(qty.replace(',', '.'))
     if (!Number.isFinite(qn) || qn <= 0) { toast('Enter a valid quantity.', 'error'); return }
     setRows((prev) => {
@@ -132,6 +141,8 @@ export function NewTransferPage({ onBack }: Props) {
     setSearch('')
     setQty('1')
     setShowDrop(false)
+    setKbField(null)
+    focusSearch()
   }
 
   function removeRow(id: string) { setRows((prev) => prev.filter((r) => r.productId !== id)) }
@@ -359,7 +370,7 @@ export function NewTransferPage({ onBack }: Props) {
             }}
             onClose={() => setKbField(null)}
             onEnter={() => {
-              if (kbField === 'search' && filtered[0]) selectProduct(filtered[0])
+              if (kbField === 'search' && search.trim() && filtered[0]) selectProduct(filtered[0])
             }}
             label={kbField === 'comment' ? 'Comment' : 'Item search'}
             placeholder={kbField === 'comment' ? 'Optional comment' : 'Search item code or name'}

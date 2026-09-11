@@ -56,8 +56,8 @@ td{padding:5px 2px;vertical-align:top;font-weight:400;font-size:12px}
 .qty{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .sig{margin-top:12px;font-size:12px;font-weight:400;line-height:1.35}
 .sig .name{font-weight:700;margin-bottom:4px;text-align:center}
-.sig .dots{border-bottom:1px dotted #000;height:14px;width:100%;margin-top:8px}
-.sig .cap{text-align:center;font-size:11px;margin-top:2px}
+.sig .dots{border-bottom:1px dotted #000;height:32px;width:100%;margin-top:14px}
+.sig .cap{text-align:center;font-size:11px;margin-top:4px}
 </style></head><body>
 <div class="slip cols-3">
 <div class="header">

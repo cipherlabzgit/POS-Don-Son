@@ -132,7 +132,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const [catPage, setCatPage] = useState(0)
   const [saleRecordUnread, setSaleRecordUnread] = useState(0)
   const [pendingTransferCount, setPendingTransferCount] = useState(0)
-  const CATS_PER_PAGE = 7
+  const CATS_PER_PAGE = 6
 
   const catalogScrollRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -995,7 +995,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                     key={c.id}
                     type="button"
                     onClick={() => selectCategory(c.id)}
-                    className={`flex h-20 min-w-0 items-center justify-center rounded-lg px-1.5 text-center text-sm font-bold leading-tight shadow ${c.colour} ${
+                    className={`flex h-20 min-w-0 items-center justify-center rounded-lg px-2 text-center text-sm font-bold leading-tight shadow ${c.colour} ${
                       categoryId === c.id ? 'ring-2 ring-[var(--brand-accent)] ring-offset-1' : ''
                     }`}
                   >

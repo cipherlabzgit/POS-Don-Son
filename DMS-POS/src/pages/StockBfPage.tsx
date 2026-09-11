@@ -205,7 +205,7 @@ export function StockBfPage({ onBack }: Props) {
       return
     }
     const target = p ?? pendingProduct
-    if (!target) { toast('Select an item first.', 'info'); return }
+    if (!target) { toast('Select an item first.', 'info'); focusSearch(); return }
     if (target.displayInPOS === false) {
       toast('This product is not displayed in POS — it cannot be added to Stock BF.', 'error')
       return

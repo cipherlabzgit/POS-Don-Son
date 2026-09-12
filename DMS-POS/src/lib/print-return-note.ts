@@ -109,10 +109,10 @@ td{font-weight:400}
 td.code,th.code{text-align:left;white-space:nowrap}
 td.item,th.item{text-align:left;white-space:normal}
 td.qty,th.qty{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.sig-section{margin-top:10px}
+.sig-section{margin-top:8px}
 .sig-k{margin-bottom:2px}
-.dots{border-bottom:1px dotted #000;height:14px;width:100%}
-.sig-caption{text-align:center;font-size:11px;margin-top:2px}
+.dots{border-bottom:1px dotted #000;height:12mm;width:100%;margin-top:3mm}
+.sig-caption{text-align:center;font-size:11px;margin-top:3px}
 .cut-feed{height:5mm}
 </style></head><body>
 <div class="slip cols-3">

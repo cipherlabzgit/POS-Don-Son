@@ -1,5 +1,5 @@
 import { isElectronPos } from './print-receipt'
-import { THERMAL_SLIP_CSS, THERMAL_WIDTH_PX } from './thermal-slip'
+import { signatureWriteFieldHtml, THERMAL_SLIP_CSS, THERMAL_WIDTH_PX } from './thermal-slip'
 
 export type StockBfPrintLine = {
   code: string
@@ -56,9 +56,6 @@ td{padding:5px 2px;vertical-align:top;font-weight:400;font-size:12px}
 .qty{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .sig{margin-top:12px;font-size:12px;font-weight:400;line-height:1.35}
 .sig .name{font-weight:700;margin-bottom:4px;text-align:center}
-.sig .pad{font-size:13px;line-height:1.5}
-.sig .dots{border-bottom:1px dotted #000;width:100%;height:auto;line-height:2px;margin:0}
-.sig .cap{text-align:center;font-size:11px;margin-top:3px}
 </style></head><body>
 <div class="slip cols-3">
 <div class="header">
@@ -88,18 +85,12 @@ td{padding:5px 2px;vertical-align:top;font-weight:400;font-size:12px}
 <div class="sig">
   <div class="name">Submitted By</div>
   <div>${escapeHtml(opts.cashier)}</div>
-  <div class="pad"><br>&nbsp;<br>&nbsp;<br>&nbsp;</div>
-  <div class="dots">&nbsp;</div>
-  <div class="cap">Submitted By Signature</div>
+  ${signatureWriteFieldHtml('Submitted By Signature')}
 </div>
 <div class="sig">
   <div class="name">Accepted By</div>
-  <div class="pad"><br>&nbsp;<br>&nbsp;<br>&nbsp;</div>
-  <div class="dots">&nbsp;</div>
-  <div class="cap">Accepted By Name</div>
-  <div class="pad"><br>&nbsp;<br>&nbsp;<br>&nbsp;</div>
-  <div class="dots">&nbsp;</div>
-  <div class="cap">Accepted By Signature</div>
+  ${signatureWriteFieldHtml('Accepted By Name')}
+  ${signatureWriteFieldHtml('Accepted By Signature')}
 </div>
 </div>
 </body></html>`

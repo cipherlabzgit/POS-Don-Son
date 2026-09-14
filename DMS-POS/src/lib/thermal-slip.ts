@@ -44,4 +44,51 @@ html,body{
 .slip.cols-3 .code{width:16mm}
 .slip.cols-3 .item{width:auto;padding-right:3px}
 .slip.cols-3 .qty{width:12mm;text-align:right}
+.slip table.sig-write{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:auto;
+  margin:1mm 0 0;
+}
+.slip table.sig-write td{
+  height:6mm !important;
+  min-height:6mm !important;
+  padding:0 !important;
+  border:none !important;
+  font-size:12px !important;
+  line-height:6mm !important;
+  vertical-align:middle;
+}
+.sig-dots{
+  border-bottom:1px dotted #000;
+  width:100%;
+  height:4mm;
+  line-height:4mm;
+  margin:0;
+}
+.sig-cap{
+  text-align:center;
+  font-size:11px;
+  margin:1mm 0 4mm;
+}
 `
+
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/** Four printed rows (~24mm) so a name/signature can be written on thermal paper. */
+export function signatureWriteFieldHtml(caption: string): string {
+  return `<table class="sig-write">
+  <tr><td>&nbsp;</td></tr>
+  <tr><td>&nbsp;</td></tr>
+  <tr><td>&nbsp;</td></tr>
+  <tr><td>&nbsp;</td></tr>
+</table>
+<div class="sig-dots">&nbsp;</div>
+<div class="sig-cap">${escapeHtml(caption)}</div>`
+}

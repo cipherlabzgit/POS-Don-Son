@@ -4,10 +4,6 @@ import { offlineDb, replaceOfflineCatalog } from './offline-db'
 import { useSettingsStore } from './settings-store'
 import type { CategoryRow, ProductRow } from './types'
 import { todayCalendarISO } from './calendar-date'
-import { formatSubmitError } from './api-errors'
-import { offlineDb, replaceOfflineCatalog } from './offline-db'
-import { useSettingsStore } from './settings-store'
-import type { CategoryRow, ProductRow } from './types'
 
 function mapProduct(p: Record<string, unknown>): ProductRow {
   const ros = p.requireOpenStock ?? p.RequireOpenStock

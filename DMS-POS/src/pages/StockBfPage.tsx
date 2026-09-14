@@ -130,6 +130,12 @@ export function StockBfPage({ onBack }: Props) {
             setSearch('')
             setLockStatus(String(blockingRaw[0]?.status ?? blockingRaw[0]?.Status ?? 'Pending'))
           } else if (!submittingRef.current) {
+            const localForDay = (await offlineDb.stockBf.toArray()).filter(
+              (r) => r.outletId === outletId && r.processDate === today,
+            )
+            for (const row of localForDay) {
+              await offlineDb.stockBf.delete(row.id)
+            }
             setFormLocked(false)
             setLockStatus('')
             setRows([])

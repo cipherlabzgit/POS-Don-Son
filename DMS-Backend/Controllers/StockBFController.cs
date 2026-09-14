@@ -3,6 +3,7 @@ using DMS_Backend.Models.DTOs.StockBF;
 using DMS_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace DMS_Backend.Controllers;
@@ -161,6 +162,11 @@ public class StockBFController : ControllerBase
         {
             return Conflict(ApiResponse<List<StockBFDetailDto>>.FailureResponse(
                 Error.Conflict(ex.Message)));
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(ApiResponse<List<StockBFDetailDto>>.FailureResponse(
+                Error.Conflict("Opening stock for this showroom and date could not be saved. If a previous entry was rejected, try Submit again.")));
         }
     }
 

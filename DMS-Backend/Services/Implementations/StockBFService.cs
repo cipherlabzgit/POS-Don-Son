@@ -48,7 +48,15 @@ public class StockBFService : IStockBFService
     private static bool IsStockBfUniqueViolation(DbUpdateException ex) =>
         ex.InnerException is PostgresException pg &&
         pg.SqlState == PostgresErrorCodes.UniqueViolation &&
-        pg.ConstraintName == "IX_stock_bf_outlet_id_bf_date_product_id";
+        (pg.ConstraintName == "IX_stock_bf_outlet_id_bf_date_product_id" ||
+         (pg.ConstraintName?.Contains("stock_bf", StringComparison.OrdinalIgnoreCase) == true &&
+          pg.ConstraintName.Contains("outlet", StringComparison.OrdinalIgnoreCase)));
+
+    private static (DateTime StartUtc, DateTime EndUtc) BfDayRangeUtc(DateTime bfDateUtc)
+    {
+        var start = EnsureUtc(bfDateUtc).Date;
+        return (start, start.AddDays(1));
+    }
 
     private IQueryable<StockBF> StockBFDetailQuery =>
         _context.StockBFs
@@ -69,9 +77,11 @@ public class StockBFService : IStockBFService
         if (ids.Count == 0)
             return [];
 
+        var (dayStart, dayEnd) = BfDayRangeUtc(bfDateUtc);
         return await StockBFDetailQuery
             .Where(s => s.OutletId == outletId &&
-                        s.BFDate == bfDateUtc &&
+                        s.BFDate >= dayStart &&
+                        s.BFDate < dayEnd &&
                         ids.Contains(s.ProductId) &&
                         s.IsActive &&
                         s.Status != StockBFStatus.Rejected)
@@ -86,12 +96,51 @@ public class StockBFService : IStockBFService
         DateTime bfDateUtc,
         CancellationToken cancellationToken)
     {
+        var (dayStart, dayEnd) = BfDayRangeUtc(bfDateUtc);
         return await StockBFDetailQuery
             .Where(s => s.IsActive &&
                         s.OutletId == outletId &&
-                        s.BFDate == bfDateUtc &&
+                        s.BFDate >= dayStart &&
+                        s.BFDate < dayEnd &&
                         s.Status != StockBFStatus.Rejected)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Rejected rows must not occupy (outlet, date, product) uniqueness so POS can submit again.
+    /// Some client databases still have a non-filtered unique index.
+    /// </summary>
+    private async Task ReleaseRejectedUniqueSlotsAsync(
+        Guid outletId,
+        DateTime bfDateUtc,
+        IEnumerable<Guid>? productIds,
+        CancellationToken cancellationToken)
+    {
+        var (dayStart, dayEnd) = BfDayRangeUtc(bfDateUtc);
+        var ids = productIds?.Distinct().ToList();
+        var query = _context.StockBFs.Where(s =>
+            s.OutletId == outletId &&
+            s.Status == StockBFStatus.Rejected &&
+            s.BFDate >= dayStart &&
+            s.BFDate < dayEnd);
+        if (ids is { Count: > 0 })
+            query = query.Where(s => ids.Contains(s.ProductId));
+
+        var rejected = await query.ToListAsync(cancellationToken);
+        if (rejected.Count == 0)
+            return;
+
+        var nowTicks = DateTime.UtcNow.Ticks;
+        for (var i = 0; i < rejected.Count; i++)
+        {
+            var offset = (nowTicks + i + 1) % (TimeSpan.TicksPerDay - 1);
+            if (offset == 0)
+                offset = 1;
+            rejected[i].BFDate = dayStart.AddTicks(offset);
+            rejected[i].UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<List<StockBFDetailDto>> TryReturnExistingBulkAsync(
@@ -362,6 +411,7 @@ public class StockBFService : IStockBFService
         var bfDateUtc = EnsureUtc(dto.BFDate);
         ValidateBfDateRules(bfDateUtc, relaxedBfDateRules);
 
+        await ReleaseRejectedUniqueSlotsAsync(dto.OutletId, bfDateUtc, new[] { dto.ProductId }, cancellationToken);
         var blocking = await GetBlockingStockBfsForOutletDateAsync(dto.OutletId, bfDateUtc, cancellationToken);
         var existingForProduct = blocking.FirstOrDefault(s => s.ProductId == dto.ProductId);
         if (existingForProduct != null)
@@ -411,10 +461,13 @@ public class StockBFService : IStockBFService
         {
             var replay = await GetActiveStockBFsByOutletDateProductsAsync(
                 dto.OutletId, bfDateUtc, new[] { dto.ProductId }, cancellationToken);
-            if (replay.Count == 0)
-                throw;
+            if (replay.Count > 0)
+                return _mapper.Map<StockBFDetailDto>(replay[0]);
 
-            return _mapper.Map<StockBFDetailDto>(replay[0]);
+            _context.Entry(stockBF).State = EntityState.Detached;
+            await ReleaseRejectedUniqueSlotsAsync(dto.OutletId, bfDateUtc, new[] { dto.ProductId }, cancellationToken);
+            _context.StockBFs.Add(stockBF);
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
         if (shouldAutoApprove)
@@ -474,6 +527,7 @@ public class StockBFService : IStockBFService
             throw new ArgumentException("Duplicate products found in the request");
 
         var productIds = dto.Items.Select(i => i.ProductId).ToList();
+        await ReleaseRejectedUniqueSlotsAsync(dto.OutletId, bfDateUtc, productIds, cancellationToken);
         var blocking = await GetBlockingStockBfsForOutletDateAsync(dto.OutletId, bfDateUtc, cancellationToken);
         if (blocking.Count > 0)
         {
@@ -528,10 +582,41 @@ public class StockBFService : IStockBFService
         {
             var replay = await TryReturnExistingBulkAsync(
                 dto.OutletId, bfDateUtc, productIds, cancellationToken);
-            if (replay.Count == 0)
-                throw;
+            if (replay.Count > 0)
+                return replay;
 
-            return replay;
+            foreach (var entry in _context.ChangeTracker.Entries<StockBF>().Where(e => e.State == EntityState.Added).ToList())
+                entry.State = EntityState.Detached;
+
+            await ReleaseRejectedUniqueSlotsAsync(dto.OutletId, bfDateUtc, productIds, cancellationToken);
+
+            createdIds.Clear();
+            foreach (var item in dto.Items)
+            {
+                var stockBF = new StockBF
+                {
+                    Id = Guid.NewGuid(),
+                    BFNo = sharedBFNo,
+                    BFDate = bfDateUtc,
+                    OutletId = dto.OutletId,
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    Status = shouldAutoApprove ? StockBFStatus.Approved : StockBFStatus.Pending,
+                    ClientMutationId = string.IsNullOrWhiteSpace(dto.ClientMutationId) ? null : dto.ClientMutationId.Trim(),
+                    CreatedById = userId,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+                if (shouldAutoApprove)
+                {
+                    stockBF.ApprovedById = userId;
+                    stockBF.ApprovedDate = now;
+                }
+                _context.StockBFs.Add(stockBF);
+                createdIds.Add(stockBF.Id);
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
         // Retrieve all created records
@@ -628,7 +713,8 @@ public class StockBFService : IStockBFService
         var existing = await _context.StockBFs
             .FirstOrDefaultAsync(s => s.Id != id &&
                                      s.OutletId == dto.OutletId &&
-                                     s.BFDate == bfDateUtc &&
+                                     s.BFDate >= EnsureUtc(dto.BFDate).Date &&
+                                     s.BFDate < EnsureUtc(dto.BFDate).Date.AddDays(1) &&
                                      s.ProductId == dto.ProductId &&
                                      s.IsActive &&
                                      s.Status != StockBFStatus.Rejected,
@@ -759,6 +845,12 @@ public class StockBFService : IStockBFService
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        await ReleaseRejectedUniqueSlotsAsync(
+            stockBF.OutletId,
+            stockBF.BFDate,
+            groupItems.Select(i => i.ProductId),
+            cancellationToken);
 
         return await GetByIdAsync(id, rejectorUserId, viewAllRecords: false, cancellationToken, ignoreOwnership: true);
     }

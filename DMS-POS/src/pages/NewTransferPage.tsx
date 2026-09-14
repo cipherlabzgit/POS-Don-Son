@@ -43,6 +43,7 @@ export function NewTransferPage({ onBack }: Props) {
   const submittingRef = useRef(false)
   const [kbField, setKbField] = useState<'comment' | 'search' | null>(null)
   const [pendingProduct, setPendingProduct] = useState<ProductRow | null>(null)
+  const [duplicateId, setDuplicateId] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const qtyRef = useRef<HTMLInputElement>(null)
 
@@ -124,7 +125,14 @@ export function NewTransferPage({ onBack }: Props) {
     setSearch(`${p.code} — ${p.name}`)
     setShowDrop(false)
     setKbField(null)
+    const already = rows.some((r) => r.productId === p.id)
+    setDuplicateId(already ? p.id : null)
     focusQtySelected()
+    if (already) {
+      window.setTimeout(() => {
+        document.getElementById(`transfer-line-${p.id}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }, 0)
+    }
   }
 
   function addRow(p?: ProductRow) {
@@ -134,10 +142,11 @@ export function NewTransferPage({ onBack }: Props) {
     if (!Number.isFinite(qn) || qn <= 0) { toast('Enter a valid quantity.', 'error'); return }
     setRows((prev) => {
       const existing = prev.find((x) => x.productId === target.id)
-      if (existing) return prev.map((x) => x.productId === target.id ? { ...x, qty: x.qty + qn } : x)
+      if (existing) return prev.map((x) => x.productId === target.id ? { ...x, qty: qn } : x)
       return [...prev, { productId: target.id, name: target.name, code: target.code, qty: qn }]
     })
     setPendingProduct(null)
+    setDuplicateId(null)
     setSearch('')
     setQty('1')
     setShowDrop(false)
@@ -336,7 +345,11 @@ export function NewTransferPage({ onBack }: Props) {
                 <tr><td colSpan={4} className="px-4 py-10 text-center text-sm text-[var(--neutral-400)]">No items added.</td></tr>
               ) : (
                 rows.map((r) => (
-                  <tr key={r.productId} className="hover:bg-[var(--neutral-50)]">
+                  <tr
+                    key={r.productId}
+                    id={`transfer-line-${r.productId}`}
+                    className={`hover:bg-[var(--neutral-50)] ${duplicateId === r.productId ? 'bg-amber-50' : ''}`}
+                  >
                     <td className="px-4 py-3 font-mono text-xs text-[var(--muted-foreground)]">{r.code}</td>
                     <td className="px-4 py-3 font-medium text-[var(--foreground)]">{r.name}</td>
                     <td className="px-4 py-3 text-right">

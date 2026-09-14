@@ -53,7 +53,8 @@ function commentText(opts: ReturnNoteOpts): string {
 
 function dottedLine(caption: string): string {
   return `<div class="sig">
-  <div class="dots"></div>
+  <div class="sig-pad"><br>&nbsp;<br>&nbsp;<br>&nbsp;</div>
+  <div class="dots">&nbsp;</div>
   <div class="sig-caption">${escapeHtml(caption)}</div>
 </div>`
 }
@@ -109,9 +110,10 @@ td{font-weight:400}
 td.code,th.code{text-align:left;white-space:nowrap}
 td.item,th.item{text-align:left;white-space:normal}
 td.qty,th.qty{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.sig-section{margin-top:8px}
-.sig-k{margin-bottom:2px}
-.dots{border-bottom:1px dotted #000;height:12mm;width:100%;margin-top:3mm}
+.sig-section{margin-top:6px}
+.sig-k{margin-bottom:0}
+.sig-pad{font-size:13px;line-height:1.5}
+.dots{border-bottom:1px dotted #000;width:100%;height:auto;line-height:2px;margin:0}
 .sig-caption{text-align:center;font-size:11px;margin-top:3px}
 .cut-feed{height:5mm}
 </style></head><body>

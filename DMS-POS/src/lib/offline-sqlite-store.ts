@@ -110,6 +110,7 @@ export class SqliteOfflineDatabase {
     update: (id: string, patch: Partial<LocalStockBf>): Promise<void> =>
       sqliteOp('stockBfUpdate', { id, patch }).then(() => undefined),
     toArray: (): Promise<LocalStockBf[]> => sqliteOp<LocalStockBf[]>('stockBfGetAll'),
+    delete: (id: string): Promise<void> => sqliteOp('stockBfDelete', id).then(() => undefined),
   }
 
   droppedMutations = {

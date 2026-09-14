@@ -150,6 +150,7 @@ const ALLOWED = new Set([
   'stockBfPut',
   'stockBfUpdate',
   'stockBfGetAll',
+  'stockBfDelete',
   'droppedMutationsPut',
   'seedFromMigration',
 ])
@@ -350,6 +351,12 @@ function dispatch(d, op, payload) {
     case 'stockBfGetAll': {
       const rows = d.prepare('SELECT * FROM stock_bf ORDER BY created_at DESC').all()
       return rows.map(mapStockBfRow)
+    }
+
+    case 'stockBfDelete': {
+      const id = String(payload ?? '')
+      if (id) d.prepare('DELETE FROM stock_bf WHERE id = ?').run(id)
+      return null
     }
 
     case 'stockBfPut': {

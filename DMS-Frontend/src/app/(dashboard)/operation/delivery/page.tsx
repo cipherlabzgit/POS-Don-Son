@@ -19,6 +19,7 @@ import toast from 'react-hot-toast';
 import { ProtectedPage } from '@/components/auth';
 import { Modal, ModalFooter } from '@/components/ui/modal';
 import { formatSlDate, formatSlDateTime } from '@/lib/sri-lanka-time';
+import { useInitialListLoading } from '@/hooks/use-initial-list-loading';
 
 const PRINT_CATALOG_MAX = 10_000;
 
@@ -82,7 +83,7 @@ function DeliveryPageContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
+  const { loading: isLoading, beginListLoad, endListLoad } = useInitialListLoading(true);
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
   const [showPreviousRecords, setShowPreviousRecords] = useState(false);
   
@@ -209,8 +210,9 @@ function DeliveryPageContent() {
   };
 
   const fetchDeliveries = async () => {
+    const keepSearchFocus = document.activeElement === searchInputRef.current;
     try {
-      setIsLoading(true);
+      beginListLoad();
       const filters: Record<string, string> = {};
       if (statusFilter) filters.status = statusFilter;
 
@@ -227,7 +229,8 @@ function DeliveryPageContent() {
       );
       setDeliveries([]);
     } finally {
-      setIsLoading(false);
+      endListLoad();
+      if (keepSearchFocus) requestAnimationFrame(() => searchInputRef.current?.focus());
     }
   };
 

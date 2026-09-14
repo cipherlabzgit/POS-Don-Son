@@ -58,8 +58,12 @@ function AddStockBFPageContent() {
   useEffect(() => {
     if (!_hasHydrated) return;
     void fetchOutlets();
-    void fetchProducts();
   }, [_hasHydrated]);
+
+  useEffect(() => {
+    if (!_hasHydrated) return;
+    void fetchProducts(formData.bfDate);
+  }, [_hasHydrated, formData.bfDate]);
 
   useEffect(() => {
     if (!formData.bfDate || !formData.showroomId) {
@@ -126,7 +130,7 @@ function AddStockBFPageContent() {
 
   const fetchProducts = async () => {
     try {
-      const response = await productsApi.getAll(1, 5000, undefined, undefined, true);
+      const response = await productsApi.getAll(1, 5000, undefined, undefined, true, formData.bfDate);
       const list = Array.isArray(response.products) ? response.products : [];
       setProducts(
         list.filter((p) => p.isActive !== false && p.displayInPOS !== false),

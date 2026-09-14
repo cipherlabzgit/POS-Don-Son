@@ -44,10 +44,13 @@ export default function EditDailyProductionPage() {
 
   useEffect(() => {
     fetchProduction();
-    fetchProducts();
     fetchShifts();
     fetchProductionSections();
   }, [productionId]);
+
+  useEffect(() => {
+    void fetchProducts();
+  }, [formData.productionDate]);
 
   const fetchProduction = async () => {
     try {
@@ -76,7 +79,7 @@ export default function EditDailyProductionPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await productsApi.getAll(1, 1000);
+      const response = await productsApi.getAll(1, 1000, undefined, undefined, undefined, formData.productionDate || undefined);
       const productsList = Array.isArray(response.products) ? response.products : [];
       setProducts(productsList.filter((p: Product) => p.isActive));
     } catch (error) {

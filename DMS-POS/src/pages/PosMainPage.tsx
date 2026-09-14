@@ -95,6 +95,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const remove   = useCartStore((s) => s.remove)
   const subtotal = useCartStore((s) => s.subtotal)
   const clear    = useCartStore((s) => s.clear)
+  const applyCatalogPrices = useCartStore((s) => s.applyCatalogPrices)
 
   const toggleFav = useFavoriteStore((s) => s.toggle)
   const isFav     = useFavoriteStore((s) => s.isFav)
@@ -158,6 +159,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       const c = await offlineDb.categories.toArray()
       setProducts(p)
       setCategories(c)
+      applyCatalogPrices(p.map((row) => ({ productId: row.id, unitPrice: row.unitPrice })))
       if (p.length === 0) {
         setLoadErr(
           online
@@ -171,8 +173,9 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       const c = await offlineDb.categories.toArray()
       setProducts(p)
       setCategories(c)
+      applyCatalogPrices(p.map((row) => ({ productId: row.id, unitPrice: row.unitPrice })))
     }
-  }, [online, accessToken])
+  }, [online, accessToken, businessDay, applyCatalogPrices])
 
   useEffect(() => { void loadData() }, [loadData])
 

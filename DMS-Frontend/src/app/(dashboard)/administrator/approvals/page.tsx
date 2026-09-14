@@ -6,7 +6,7 @@ import Button from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
 import { Modal, ModalFooter } from '@/components/ui/modal';
 import Input from '@/components/ui/input';
-import { CheckCircle, XCircle, Search, Check, X, Loader2, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, Search, Check, X, Loader2, Clock, ChevronDown, CheckCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   operationApprovalsApi,
@@ -38,7 +38,7 @@ type SubsectionKey =
   | 'deliveries' | 'transfers' | 'disposals' | 'cancellations' | 'labelPrintRequests'
   | 'stockBFs' | 'deliveryReturns' | 'posSales' | 'posCancellationRequests' | 'showroomLabelRequests'
   | 'dailyProductions' | 'productionCancels' | 'stockAdjustments' | 'dailyProductionPlans'
-  | 'immediateOrders' | 'cashierBalances' | 'adminApprovals';
+  | 'immediateOrders' | 'cashierBalances' | 'priceChanges' | 'adminApprovals';
 
 interface Subsection {
   key: SubsectionKey;
@@ -91,6 +91,7 @@ const SECTIONS: Section[] = [
     label: 'Administrator',
     subsections: [
       { key: 'cashierBalances', label: 'Cash Submission', approvalType: 'Cashier Balance' },
+      { key: 'priceChanges', label: 'Price Change', approvalType: 'Price Change' },
       { key: 'adminApprovals', label: 'Admin / Generic', approvalType: 'Generic' },
     ],
   },
@@ -113,8 +114,32 @@ const APPROVAL_TYPE_PERMISSIONS: Record<string, { approve: string; reject?: stri
   'Production Plan':   { approve: 'production:plan:approve' },
   'Immediate Order':   { approve: 'order:approve',                      reject: 'order:reject' },
   'Cashier Balance':   { approve: 'approval:approve',                   reject: 'approval:reject' },
+  'Price Change':      { approve: 'approval:approve',                 reject: 'approval:reject' },
   Generic:             { approve: 'approval:approve',                    reject: 'approval:reject' },
 };
+
+function userCanApprove(
+  type: string,
+  can: (code: string) => boolean,
+  canAny: (codes: string[]) => boolean,
+): boolean {
+  if (type === 'POS Cancellation Request') return canAny(['approval:approve', 'pos:sale:approve']);
+  if (type === 'Price Change') return canAny(['pricing:approve', 'approval:approve']);
+  const perms = APPROVAL_TYPE_PERMISSIONS[type];
+  return perms ? can(perms.approve) : false;
+}
+
+function userCanReject(
+  type: string,
+  can: (code: string) => boolean,
+  canAny: (codes: string[]) => boolean,
+): boolean {
+  if (type === 'Production Plan') return false;
+  if (type === 'POS Cancellation Request') return canAny(['approval:reject', 'pos:sale:reject']);
+  if (type === 'Price Change') return canAny(['pricing:reject', 'approval:reject']);
+  const perms = APPROVAL_TYPE_PERMISSIONS[type];
+  return perms?.reject ? can(perms.reject) : false;
+}
 
 // Helper – sum counts for a section
 function sectionCount(summary: OperationApprovalsSummary | null, section: Section) {
@@ -138,6 +163,8 @@ export default function ApprovalsPage() {
   // Section / subsection selection. null sectionId = "All"
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [selectedSubsectionKey, setSelectedSubsectionKey] = useState<SubsectionKey | null>(null);
+  const [openSectionId, setOpenSectionId] = useState<string | null>(null);
+  const [approvingAllKey, setApprovingAllKey] = useState<string | null>(null);
 
   // Search filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -221,10 +248,29 @@ export default function ApprovalsPage() {
   const selectSection = (sectionId: string | null) => {
     setSelectedSectionId(sectionId);
     setSelectedSubsectionKey(null);
+    setOpenSectionId(sectionId);
     setExpandedItemId(null);
     setSelectedApproval(null);
     setDetailsData(null);
     setSearchTerm('');
+  };
+
+  const toggleSectionBar = (sectionId: string) => {
+    if (openSectionId === sectionId) {
+      setOpenSectionId(null);
+      setSelectedSectionId(null);
+      setSelectedSubsectionKey(null);
+      setExpandedItemId(null);
+      setSelectedApproval(null);
+      setDetailsData(null);
+      return;
+    }
+    setOpenSectionId(sectionId);
+    setSelectedSectionId(sectionId);
+    setSelectedSubsectionKey(null);
+    setExpandedItemId(null);
+    setSelectedApproval(null);
+    setDetailsData(null);
   };
 
   const selectSubsection = (key: SubsectionKey) => {
@@ -283,6 +329,7 @@ export default function ApprovalsPage() {
         case 'Generic':
         case 'Admin':
         case 'Cashier Balance':
+        case 'Price Change':
           data = await approvalsApi.getById(item.id); break;
         case 'Showroom Label':
           setDetailsData(item);
@@ -306,42 +353,45 @@ export default function ApprovalsPage() {
 
   // ── Approve / Reject ──────────────────────────────────────────────────────
 
+  const executeApprove = async (type: string, id: string) => {
+    switch (type) {
+      case 'Delivery':          await deliveriesApi.approve(id); break;
+      case 'Transfer':          await transfersApi.approve(id); break;
+      case 'Disposal':          await disposalsApi.approve(id); break;
+      case 'Cancellation':      await cancellationsApi.approve(id); break;
+      case 'Label Print':       await labelPrintingApi.approve(id); break;
+      case 'Stock BF':          await stockBfApi.approve(id); break;
+      case 'Delivery Return':   await deliveryReturnsApi.approve(id); break;
+      case 'POS Sale':          await posSalesApi.approve(id); break;
+      case 'POS Cancellation Request':
+        if (can('approval:approve')) {
+          await approvalsApi.approve(id, { notes: '' });
+        } else {
+          await posSalesApi.approveCancelRequest(id);
+        }
+        break;
+      case 'Showroom Label':    await operationApprovalsApi.approveShowroomLabel(id); break;
+      case 'Immediate Order':   await immediateOrdersApi.approve(id); break;
+      case 'Daily Production':  await dailyProductionsApi.approve(id); break;
+      case 'Production Cancel': await productionCancelsApi.approve(id); break;
+      case 'Stock Adjustment':  await stockAdjustmentsApi.approve(id); break;
+      case 'Production Plan':   await productionPlansApi.approve(id); break;
+      case 'Generic':
+      case 'Admin':
+      case 'Cashier Balance':
+      case 'Price Change':
+        await approvalsApi.approve(id, { notes: '' });
+        break;
+      default:
+        throw new Error('Unknown approval type');
+    }
+  };
+
   const handleApprove = async (type: string, id: string) => {
     try {
       setSubmittingIds(prev => new Set(prev).add(id));
-      switch (type) {
-        case 'Delivery':          await deliveriesApi.approve(id); break;
-        case 'Transfer':          await transfersApi.approve(id); break;
-        case 'Disposal':          await disposalsApi.approve(id); break;
-        case 'Cancellation':      await cancellationsApi.approve(id); break;
-        case 'Label Print':       await labelPrintingApi.approve(id); break;
-        case 'Stock BF':          await stockBfApi.approve(id); break;
-        case 'Delivery Return':   await deliveryReturnsApi.approve(id); break;
-        case 'POS Sale':          await posSalesApi.approve(id); break;
-        case 'POS Cancellation Request':
-          if (can('approval:approve')) {
-            await approvalsApi.approve(id, { notes: '' });
-          } else {
-            await posSalesApi.approveCancelRequest(id);
-          }
-          break;
-        case 'Showroom Label':    await operationApprovalsApi.approveShowroomLabel(id); break;
-        case 'Immediate Order':   await immediateOrdersApi.approve(id); break;
-        case 'Daily Production':  await dailyProductionsApi.approve(id); break;
-        case 'Production Cancel': await productionCancelsApi.approve(id); break;
-        case 'Stock Adjustment':  await stockAdjustmentsApi.approve(id); break;
-        case 'Production Plan':   await productionPlansApi.approve(id); break;
-        case 'Generic':
-        case 'Admin':
-        case 'Cashier Balance':
-          // open modal for notes
-          setModalApproval(selectedApproval);
-          setShowApproveModal(true);
-          return;
-        default:
-          throw new Error('Unknown approval type');
-      }
-      toast.success(`${type} approved successfully`);
+      await executeApprove(type, id);
+      toast.success(`${type} approved`);
       clearDetail();
       fetchAll();
     } catch (error: any) {
@@ -349,6 +399,34 @@ export default function ApprovalsPage() {
     } finally {
       setSubmittingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
     }
+  };
+
+  const handleApproveAll = async (items: OperationApprovalItem[], label: string, bulkKey: string) => {
+    const eligible = items.filter((i) => userCanApprove(i.approvalType, can, canAny));
+    if (eligible.length === 0) {
+      toast.error(`No ${label} items you can approve.`);
+      return;
+    }
+    if (!confirm(`Approve ${eligible.length} ${label} request${eligible.length === 1 ? '' : 's'}?`)) return;
+    setApprovingAllKey(bulkKey);
+    let ok = 0;
+    let fail = 0;
+    for (const item of eligible) {
+      try {
+        setSubmittingIds(prev => new Set(prev).add(item.id));
+        await executeApprove(item.approvalType, item.id);
+        ok += 1;
+      } catch {
+        fail += 1;
+      } finally {
+        setSubmittingIds(prev => { const n = new Set(prev); n.delete(item.id); return n; });
+      }
+    }
+    setApprovingAllKey(null);
+    if (ok) toast.success(`Approved ${ok} ${label} request${ok === 1 ? '' : 's'}`);
+    if (fail) toast.error(`${fail} ${label} request${fail === 1 ? '' : 's'} failed`);
+    clearDetail();
+    fetchAll();
   };
 
   const submitAdminApprove = async () => {
@@ -381,7 +459,7 @@ export default function ApprovalsPage() {
       setPosRejectOpen(true);
       return;
     }
-    if (type === 'Generic' || type === 'Admin' || type === 'POS Cancellation Request' || type === 'Cashier Balance') {
+    if (type === 'Generic' || type === 'Admin' || type === 'POS Cancellation Request' || type === 'Cashier Balance' || type === 'Price Change') {
       setModalApproval(selectedApproval);
       setShowRejectModal(true);
       return;
@@ -482,17 +560,15 @@ export default function ApprovalsPage() {
       render: (item: OperationApprovalItem) => {
         const isExpanded = expandedItemId === item.id;
         return (
-          <button
-            onClick={() => handleViewDetails(item)}
-            className="font-mono font-semibold hover:underline cursor-pointer text-left flex items-center gap-2 px-2 py-1 rounded transition-all"
-            style={{
-              color: isExpanded ? '#dc2626' : '#C8102E',
-              backgroundColor: isExpanded ? '#fee2e2' : 'transparent',
-            }}
+          <span
+            className="font-mono font-semibold inline-flex items-center gap-2"
+            style={{ color: isExpanded ? '#dc2626' : '#C8102E' }}
           >
-            <span style={{ color: isExpanded ? '#dc2626' : 'transparent' }}>▼</span>
+            <ChevronDown
+              className={`w-4 h-4 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : '-rotate-90'}`}
+            />
             {item.referenceNo}
-          </button>
+          </span>
         );
       },
     },
@@ -532,6 +608,49 @@ export default function ApprovalsPage() {
         </Badge>
       ),
     },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (item: OperationApprovalItem) => {
+        const busy = submittingIds.has(item.id);
+        const allowApprove = userCanApprove(item.approvalType, can, canAny);
+        const allowReject = userCanReject(item.approvalType, can, canAny);
+        return (
+          <div className="flex items-center gap-1.5" data-no-row-click>
+            {allowReject && (
+              <button
+                type="button"
+                title="Reject"
+                disabled={busy}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleReject(item.approvalType, item.id);
+                }}
+                className="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold disabled:opacity-50"
+                style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}
+              >
+                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+              </button>
+            )}
+            {allowApprove && (
+              <button
+                type="button"
+                title="Approve"
+                disabled={busy}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleApprove(item.approvalType, item.id);
+                }}
+                className="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                style={{ backgroundColor: '#16a34a' }}
+              >
+                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
+        );
+      },
+    },
   ];
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -551,109 +670,161 @@ export default function ApprovalsPage() {
             Approvals
           </h1>
           <p className="mt-1" style={{ color: 'var(--muted-foreground)' }}>
-            Unified queue for Operation, Production, DMS, and Administrator — {totalPending} pending
+            Click a category to open it. Approve from the list, or Approve All for the whole group.
           </p>
         </div>
+        {totalPending > 0 && (
+          <span
+            className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold"
+            style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}
+          >
+            <Clock className="w-4 h-4" />
+            {totalPending} pending
+          </span>
+        )}
       </div>
 
-      {/* Section tabs */}
-      <div className="flex flex-wrap gap-2 p-1 bg-muted rounded-xl w-fit">
-        {/* All tab */}
+      {/* Category accordion */}
+      <div className="space-y-2">
         <button
+          type="button"
           onClick={() => selectSection(null)}
-          className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2 ${
-            selectedSectionId === null
-              ? 'bg-white shadow-md transform scale-105'
-              : 'text-muted-foreground hover:bg-white/50'
-          }`}
-          style={{ color: selectedSectionId === null ? '#C8102E' : undefined }}
+          className="flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors"
+          style={{
+            borderColor: selectedSectionId === null && openSectionId === null ? '#C8102E' : 'var(--border)',
+            backgroundColor: selectedSectionId === null && openSectionId === null ? '#FEF2F2' : 'var(--card)',
+          }}
         >
-          All
-          {totalPending > 0 && (
-            <span
-              className="px-2 py-0.5 rounded-full text-[10px]"
-              style={{
-                backgroundColor: selectedSectionId === null ? '#C8102E' : undefined,
-                color: selectedSectionId === null ? 'white' : undefined,
-                ...(selectedSectionId !== null ? { backgroundColor: 'rgba(0,0,0,0.1)' } : {}),
-              }}
-            >
-              {totalPending}
-            </span>
-          )}
+          <span className="flex-1 text-sm font-bold" style={{ color: 'var(--foreground)' }}>
+            All pending
+          </span>
+          <span
+            className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+            style={{ backgroundColor: '#C8102E', color: 'white' }}
+          >
+            {totalPending}
+          </span>
         </button>
 
-        {SECTIONS.map(section => {
-          const isActive = selectedSectionId === section.id;
+        {SECTIONS.map((section) => {
+          const isOpen = openSectionId === section.id;
           const count = sectionCount(summary, section);
+          const sectionItems = section.subsections.flatMap((s) => summary?.[s.key] ?? []);
+          const canBulk = sectionItems.some((i) => userCanApprove(i.approvalType, can, canAny));
+          const bulkBusy = approvingAllKey === section.id;
           return (
-            <button
+            <div
               key={section.id}
-              onClick={() => selectSection(section.id)}
-              className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2 ${
-                isActive
-                  ? 'bg-white shadow-md transform scale-105'
-                  : 'text-muted-foreground hover:bg-white/50'
-              }`}
-              style={{ color: isActive ? '#C8102E' : undefined }}
+              className="overflow-hidden rounded-xl border"
+              style={{ borderColor: isOpen ? '#C8102E' : 'var(--border)', backgroundColor: 'var(--card)' }}
             >
-              {section.label}
-              {count > 0 && (
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleSectionBar(section.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleSectionBar(section.id);
+                  }
+                }}
+                className="flex w-full cursor-pointer items-center gap-3 px-4 py-3"
+              >
+                <ChevronDown
+                  className={`h-5 w-5 shrink-0 transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`}
+                  style={{ color: isOpen ? '#C8102E' : 'var(--muted-foreground)' }}
+                />
+                <span className="flex-1 text-sm font-bold" style={{ color: 'var(--foreground)' }}>
+                  {section.label}
+                </span>
                 <span
-                  className="px-2 py-0.5 rounded-full text-[10px]"
+                  className="rounded-full px-2 py-0.5 text-[11px] font-bold"
                   style={{
-                    backgroundColor: isActive ? '#C8102E' : 'rgba(0,0,0,0.1)',
-                    color: isActive ? 'white' : undefined,
+                    backgroundColor: count > 0 ? '#C8102E' : 'var(--muted)',
+                    color: count > 0 ? 'white' : 'var(--muted-foreground)',
                   }}
                 >
                   {count}
                 </span>
+                {count > 0 && canBulk && (
+                  <button
+                    type="button"
+                    disabled={bulkBusy}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleApproveAll(sectionItems, section.label, section.id);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                    style={{ backgroundColor: '#16a34a' }}
+                  >
+                    {bulkBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCheck className="h-3.5 w-3.5" />}
+                    Approve All
+                  </button>
+                )}
+              </div>
+              {isOpen && (
+                <div
+                  className="space-y-1 border-t px-3 py-2"
+                  style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}
+                >
+                  {section.subsections.map((sub) => {
+                    const subItems = summary?.[sub.key] ?? [];
+                    const subCount = subItems.length;
+                    const isActive = selectedSubsectionKey === sub.key;
+                    const subCanBulk = subItems.some((i) => userCanApprove(i.approvalType, can, canAny));
+                    const subBusy = approvingAllKey === sub.key;
+                    return (
+                      <div
+                        key={sub.key}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          setSelectedSectionId(section.id);
+                          selectSubsection(sub.key);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedSectionId(section.id);
+                            selectSubsection(sub.key);
+                          }
+                        }}
+                        className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2"
+                        style={{
+                          backgroundColor: isActive ? 'var(--card)' : 'transparent',
+                          boxShadow: isActive ? 'inset 3px 0 0 #C8102E' : undefined,
+                        }}
+                      >
+                        <span className="flex-1 text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+                          {sub.label}
+                        </span>
+                        <span className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
+                          {subCount}
+                        </span>
+                        {subCount > 0 && subCanBulk && (
+                          <button
+                            type="button"
+                            disabled={subBusy}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleApproveAll(subItems, sub.label, sub.key);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+                            style={{ backgroundColor: '#16a34a' }}
+                          >
+                            {subBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCheck className="h-3 w-3" />}
+                            Approve All
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
-
-      {/* Subsection selector (visible when a section is selected) */}
-      {currentSection && (
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setSelectedSubsectionKey(null)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-              selectedSubsectionKey === null
-                ? 'text-white border-transparent'
-                : 'border-current text-current hover:opacity-80'
-            }`}
-            style={{
-              backgroundColor: selectedSubsectionKey === null ? '#C8102E' : 'transparent',
-              borderColor: selectedSubsectionKey === null ? '#C8102E' : undefined,
-              color: selectedSubsectionKey === null ? 'white' : '#C8102E',
-            }}
-          >
-            All {currentSection.label} ({sectionCount(summary, currentSection)})
-          </button>
-          {currentSection.subsections.map(sub => {
-            const count = summary?.[sub.key]?.length ?? 0;
-            const isActive = selectedSubsectionKey === sub.key;
-            return (
-              <button
-                key={sub.key}
-                onClick={() => selectSubsection(sub.key)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                  isActive ? 'text-white border-transparent' : 'hover:opacity-80'
-                }`}
-                style={{
-                  backgroundColor: isActive ? '#C8102E' : 'transparent',
-                  borderColor: '#C8102E',
-                  color: isActive ? 'white' : '#C8102E',
-                }}
-              >
-                {sub.label} {count > 0 ? `(${count})` : '(0)'}
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* Main card */}
       <Card>
@@ -675,7 +846,32 @@ export default function ApprovalsPage() {
                   </Badge>
                 )}
               </div>
-              <div className="relative w-full sm:w-auto">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                {tableItems.length > 0 && tableItems.some((i) => userCanApprove(i.approvalType, can, canAny)) && (
+                  <button
+                    type="button"
+                    disabled={approvingAllKey === 'list'}
+                    onClick={() =>
+                      void handleApproveAll(
+                        tableItems,
+                        selectedSubsectionKey
+                          ? currentSection?.subsections.find((s) => s.key === selectedSubsectionKey)?.label || 'requests'
+                          : currentSection?.label || 'pending',
+                        'list',
+                      )
+                    }
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                    style={{ backgroundColor: '#16a34a' }}
+                  >
+                    {approvingAllKey === 'list' ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <CheckCheck className="h-3.5 w-3.5" />
+                    )}
+                    Approve All on this list
+                  </button>
+                )}
+                <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--muted-foreground)' }} />
                 <input
                   type="text"
@@ -686,6 +882,7 @@ export default function ApprovalsPage() {
                   className="w-full sm:w-64 pl-10 pr-4 py-2 rounded-lg text-sm"
                   style={{ border: '1px solid var(--input)' }}
                 />
+                </div>
               </div>
             </div>
           </div>
@@ -714,8 +911,11 @@ export default function ApprovalsPage() {
               pageSize={tableItems.length}
               onPageChange={() => {}}
               onPageSizeChange={() => {}}
+              hideRowsPerPage
+              embedded
               expandedRowKey={expandedItemId}
               getRowKey={row => row.id}
+              onRowClick={(item) => void handleViewDetails(item)}
               renderExpandedRow={item =>
                 expandedItemId === item.id ? (
                   <div
@@ -727,20 +927,50 @@ export default function ApprovalsPage() {
                   >
                     <Card className="rounded-[10px] border-0 shadow-md" padding="md">
                     <CardHeader>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <CardTitle>
                           {selectedApproval
-                            ? `${selectedApproval.approvalType} Details — ${selectedApproval.referenceNo}`
+                            ? `${selectedApproval.approvalType} — ${selectedApproval.referenceNo}`
                             : 'Details'}
                         </CardTitle>
-                        <button
-                          type="button"
-                          onClick={clearDetail}
-                          className="text-sm px-3 py-1 rounded hover:bg-gray-100"
-                          style={{ color: 'var(--muted-foreground)' }}
-                        >
-                          Close
-                        </button>
+                        {selectedApproval && !isLoadingDetails && (
+                          <div className="flex flex-wrap items-center gap-2">
+                            {userCanReject(selectedApproval.approvalType, can, canAny) && (
+                              <Button
+                                variant="danger"
+                                onClick={() => void handleReject(selectedApproval.approvalType, selectedApproval.id)}
+                                disabled={submittingIds.has(selectedApproval.id)}
+                              >
+                                {submittingIds.has(selectedApproval.id)
+                                  ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  : <XCircle className="w-4 h-4 mr-2" />}
+                                Reject
+                              </Button>
+                            )}
+                            {userCanApprove(selectedApproval.approvalType, can, canAny) && (
+                              <button
+                                type="button"
+                                onClick={() => void handleApprove(selectedApproval.approvalType, selectedApproval.id)}
+                                disabled={submittingIds.has(selectedApproval.id)}
+                                className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-white hover:opacity-90"
+                                style={{ backgroundColor: '#16a34a' }}
+                              >
+                                {submittingIds.has(selectedApproval.id)
+                                  ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  : <CheckCircle className="w-4 h-4 mr-2" />}
+                                Approve
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={clearDetail}
+                              className="text-sm px-3 py-1 rounded hover:bg-gray-100"
+                              style={{ color: 'var(--muted-foreground)' }}
+                            >
+                              Close
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -791,63 +1021,10 @@ export default function ApprovalsPage() {
                               selectedApproval.approvalType === 'Cashier Balance') && (
                               <AdminApprovalDetailsView approval={detailsData} />
                             )}
+                            {selectedApproval.approvalType === 'Price Change' && (
+                              <PriceChangeApprovalDetailsView approval={detailsData} />
+                            )}
                           </div>
-
-                          {/* Approve / Reject buttons */}
-                          {(() => {
-                            const perms = APPROVAL_TYPE_PERMISSIONS[selectedApproval.approvalType];
-                            const isPosCancel = selectedApproval.approvalType === 'POS Cancellation Request';
-                            const canApprove = isPosCancel
-                              ? canAny(['approval:approve', 'pos:sale:approve'])
-                              : (perms ? can(perms.approve) : false);
-                            const canReject  = isPosCancel
-                              ? canAny(['approval:reject', 'pos:sale:reject'])
-                              : (perms?.reject ? can(perms.reject) : false);
-
-                            if (!canApprove && !canReject) {
-                              return (
-                                <div className="flex items-center justify-center gap-3 pt-6 mt-6 border-t">
-                                  <div className="flex items-center gap-2 px-4 py-3 rounded-lg" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
-                                    <XCircle className="w-5 h-5" style={{ color: '#b45309' }} />
-                                    <p className="text-sm font-semibold" style={{ color: '#b45309' }}>
-                                      You do not have permission to approve or reject this {selectedApproval.approvalType.toLowerCase()}
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            return (
-                              <div className="flex justify-end gap-3 pt-6 mt-6 border-t">
-                                {canReject && (
-                                  <Button
-                                    variant="danger"
-                                    onClick={() => void handleReject(selectedApproval.approvalType, selectedApproval.id)}
-                                    disabled={submittingIds.has(selectedApproval.id)}
-                                  >
-                                    {submittingIds.has(selectedApproval.id)
-                                      ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                      : <XCircle className="w-4 h-4 mr-2" />}
-                                    Reject
-                                  </Button>
-                                )}
-                                {canApprove && (
-                                  <button
-                                    type="button"
-                                    onClick={() => void handleApprove(selectedApproval.approvalType, selectedApproval.id)}
-                                    disabled={submittingIds.has(selectedApproval.id)}
-                                    className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-white hover:opacity-90"
-                                    style={{ backgroundColor: '#16a34a' }}
-                                  >
-                                    {submittingIds.has(selectedApproval.id)
-                                      ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                      : <CheckCircle className="w-4 h-4 mr-2" />}
-                                    Approve
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })()}
                         </>
                       ) : null}
                     </CardContent>
@@ -1713,6 +1890,9 @@ function AdminApprovalDetailsView({ approval }: { approval: any }) {
   if (type === 'Cashier Balance') {
     return <CashierBalanceApprovalDetailsView approval={approval} />;
   }
+  if (type === 'Price Change') {
+    return <PriceChangeApprovalDetailsView approval={approval} />;
+  }
   return (
     <DetailPanel>
       <div className="space-y-6">
@@ -1734,6 +1914,116 @@ function AdminApprovalDetailsView({ approval }: { approval: any }) {
             </p>
           </div>
         )}
+      </div>
+    </DetailPanel>
+  );
+}
+
+function PriceChangeApprovalDetailsView({ approval }: { approval: any }) {
+  if (!approval) return null;
+  const data = parseApprovalJson(approval.requestData ?? approval.RequestData);
+  const comment = String(jsonPick(data, 'comment', 'Comment') ?? approval.notes ?? '').trim();
+  const effectiveFrom = String(jsonPick(data, 'effectiveFrom', 'EffectiveFrom') ?? '').slice(0, 10);
+  const rawItems = jsonPick(data, 'items', 'Items');
+  const items = Array.isArray(rawItems)
+    ? rawItems.map((row) => {
+        const item = (row && typeof row === 'object' ? row : {}) as Record<string, unknown>;
+        return {
+          code: String(jsonPick(item, 'productCode', 'ProductCode') ?? ''),
+          name: String(jsonPick(item, 'productName', 'ProductName') ?? ''),
+          previous: jsonMoney(item, 'previousPrice', 'PreviousPrice') ?? 0,
+          next: jsonMoney(item, 'newPrice', 'NewPrice') ?? 0,
+        };
+      })
+    : [];
+
+  return (
+    <DetailPanel>
+      <div className="space-y-6">
+        <DetailSectionTint title="Price change">
+          <InfoGrid plain>
+            <InfoField label="Reference" value={approval.entityReference || approval.entityId} highlight />
+            <InfoField
+              label="Effective Date"
+              value={effectiveFrom ? formatSlDate(effectiveFrom) : formatSlDateTime(approval.requestedAt)}
+            />
+            <InfoField label="Requested By" value={approval.requestedByName || approval.RequestedByName || '—'} />
+          </InfoGrid>
+        </DetailSectionTint>
+        {comment && (
+          <div className="rounded-lg border border-dashed p-3" style={{ borderColor: 'var(--border)' }}>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+              Comment
+            </p>
+            <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>
+              {comment}
+            </p>
+          </div>
+        )}
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+            Previous price vs new price
+          </p>
+          {items.length === 0 ? (
+            <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+              No line items in this request.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {items.map((item, idx) => {
+                const up = item.next > item.previous;
+                const down = item.next < item.previous;
+                const delta = item.next - item.previous;
+                return (
+                  <div
+                    key={`${item.code}-${idx}`}
+                    className="rounded-xl border p-3"
+                    style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="font-semibold" style={{ color: 'var(--foreground)' }}>
+                          {item.name || '—'}
+                        </p>
+                        <p className="font-mono text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                          {item.code}
+                        </p>
+                      </div>
+                      <span
+                        className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                        style={{
+                          backgroundColor: up ? '#DCFCE7' : down ? '#FEE2E2' : 'var(--muted)',
+                          color: up ? '#166534' : down ? '#991B1B' : 'var(--muted-foreground)',
+                        }}
+                      >
+                        {up ? 'Increase' : down ? 'Decrease' : 'No change'}{' '}
+                        {delta === 0 ? '' : `(${delta > 0 ? '+' : ''}${formatApprovalRs(delta)})`}
+                      </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      <div className="rounded-lg px-3 py-2" style={{ backgroundColor: 'var(--muted)' }}>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+                          Previous Price
+                        </p>
+                        <p className="mt-1 text-lg font-bold line-through decoration-1" style={{ color: 'var(--muted-foreground)' }}>
+                          {formatApprovalRs(item.previous)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg px-3 py-2" style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA' }}>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: '#991B1B' }}>
+                          New Price
+                        </p>
+                        <p className="mt-1 text-lg font-bold" style={{ color: '#C8102E' }}>
+                          {formatApprovalRs(item.next)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </DetailPanel>
   );

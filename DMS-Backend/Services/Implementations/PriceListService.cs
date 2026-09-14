@@ -1,4 +1,6 @@
+using System.Text.Json;
 using AutoMapper;
+using DMS_Backend.Common;
 using DMS_Backend.Data;
 using DMS_Backend.Models.DTOs.PriceLists;
 using DMS_Backend.Models.Entities;
@@ -9,19 +11,35 @@ namespace DMS_Backend.Services.Implementations;
 
 public class PriceListService : IPriceListService
 {
+    public const string PriceChangeApprovalType = "Price Change";
+    public const string StatusPending = "Pending";
+    public const string StatusApproved = "Approved";
+    public const string StatusRejected = "Rejected";
+
+    private static readonly JsonSerializerOptions JsonOpts = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
     private readonly ISystemLogService _systemLogService;
+    private readonly IProductPriceResolver _priceResolver;
 
     public PriceListService(
         ApplicationDbContext context,
         IMapper mapper,
-        ISystemLogService systemLogService)
+        ISystemLogService systemLogService,
+        IProductPriceResolver priceResolver)
     {
         _context = context;
         _mapper = mapper;
         _systemLogService = systemLogService;
+        _priceResolver = priceResolver;
     }
+
+    public static bool IsPriceChangeApprovalType(string? approvalType) =>
+        string.Equals(approvalType, PriceChangeApprovalType, StringComparison.Ordinal);
 
     public async Task<(List<PriceListListDto> priceLists, int totalCount)> GetAllAsync(
         int page,
@@ -51,8 +69,7 @@ public class PriceListService : IPriceListService
         var totalCount = await query.CountAsync(cancellationToken);
 
         var priceLists = await query
-            .OrderBy(pl => pl.Priority)
-            .ThenBy(pl => pl.Code)
+            .OrderByDescending(pl => pl.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -65,7 +82,9 @@ public class PriceListService : IPriceListService
     public async Task<PriceListDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var priceList = await _context.PriceLists
-            .Include(pl => pl.PriceListItems)
+            .Include(pl => pl.CreatedBy)
+            .Include(pl => pl.PriceListItems!)
+                .ThenInclude(i => i.Product)
             .FirstOrDefaultAsync(pl => pl.Id == id, cancellationToken);
 
         if (priceList == null)
@@ -86,16 +105,51 @@ public class PriceListService : IPriceListService
             throw new InvalidOperationException($"Price list with code '{dto.Code}' already exists");
         }
 
+        var lines = NormalizeLines(dto.Items);
+        var products = await LoadProductsAsync(lines.Select(i => i.ProductId), cancellationToken);
+        var previousPrices = await ResolvePreviousPricesAsync(dto.EffectiveFrom, lines.Select(i => i.ProductId), cancellationToken);
+
+        var now = DateTime.UtcNow;
         var priceList = _mapper.Map<PriceList>(dto);
+        priceList.Id = Guid.NewGuid();
+        priceList.EffectiveTo = null;
+        priceList.PriceListType = StatusPending;
+        priceList.Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "LKR" : dto.Currency;
         priceList.CreatedById = userId;
         priceList.UpdatedById = userId;
+        priceList.CreatedAt = now;
+        priceList.UpdatedAt = now;
+        priceList.PriceListItems = BuildItems(lines, products, previousPrices, userId, now);
 
         _context.PriceLists.Add(priceList);
+
+        var requestPayload = BuildRequestPayload(priceList, products);
+        _context.ApprovalQueues.Add(new ApprovalQueue
+        {
+            Id = Guid.NewGuid(),
+            ApprovalType = PriceChangeApprovalType,
+            EntityId = priceList.Id,
+            EntityReference = priceList.Code,
+            RequestedById = userId,
+            RequestedAt = now,
+            Status = StatusPending,
+            Priority = 0,
+            Notes = priceList.Description ?? priceList.Name,
+            RequestData = JsonSerializer.Serialize(requestPayload, JsonOpts),
+            IsActive = true,
+            CreatedById = userId,
+            UpdatedById = userId,
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+
         await _context.SaveChangesAsync(cancellationToken);
 
-        await _systemLogService.LogInfoAsync("PriceListService", $"Price list created: {priceList.Code} by user {userId}");
+        await _systemLogService.LogInfoAsync(
+            "PriceListService",
+            $"Price change submitted for approval: {priceList.Code} ({lines.Count} items) by user {userId}");
 
-        return _mapper.Map<PriceListDetailDto>(priceList);
+        return (await GetByIdAsync(priceList.Id, cancellationToken))!;
     }
 
     public async Task<PriceListDetailDto> UpdateAsync(
@@ -104,10 +158,19 @@ public class PriceListService : IPriceListService
         Guid userId,
         CancellationToken cancellationToken = default)
     {
-        var priceList = await _context.PriceLists.FindAsync(new object[] { id }, cancellationToken);
+        var priceList = await _context.PriceLists
+            .Include(pl => pl.PriceListItems)
+            .FirstOrDefaultAsync(pl => pl.Id == id, cancellationToken);
         if (priceList == null)
         {
             throw new InvalidOperationException("Price list not found");
+        }
+
+        if (!string.Equals(priceList.PriceListType, StatusPending, StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrWhiteSpace(priceList.PriceListType)
+            && !string.Equals(priceList.PriceListType, "Standard", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Only pending price changes can be edited.");
         }
 
         if (priceList.Code != dto.Code && await CodeExistsAsync(dto.Code, id, cancellationToken))
@@ -115,24 +178,75 @@ public class PriceListService : IPriceListService
             throw new InvalidOperationException($"Price list with code '{dto.Code}' already exists");
         }
 
+        var lines = NormalizeLines(dto.Items);
+        var products = await LoadProductsAsync(lines.Select(i => i.ProductId), cancellationToken);
+        var previousPrices = await ResolvePreviousPricesAsync(dto.EffectiveFrom, lines.Select(i => i.ProductId), cancellationToken);
+        var now = DateTime.UtcNow;
+
         priceList.Code = dto.Code;
         priceList.Name = dto.Name;
         priceList.Description = dto.Description;
-        priceList.PriceListType = dto.PriceListType;
-        priceList.Currency = dto.Currency;
+        priceList.PriceListType = StatusPending;
+        priceList.Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "LKR" : dto.Currency;
         priceList.EffectiveFrom = dto.EffectiveFrom;
-        priceList.EffectiveTo = dto.EffectiveTo;
+        priceList.EffectiveTo = null;
         priceList.IsDefault = dto.IsDefault;
         priceList.Priority = dto.Priority;
         priceList.IsActive = dto.IsActive;
         priceList.UpdatedById = userId;
-        priceList.UpdatedAt = DateTime.UtcNow;
+        priceList.UpdatedAt = now;
+
+        if (priceList.PriceListItems is { Count: > 0 })
+        {
+            _context.PriceListItems.RemoveRange(priceList.PriceListItems);
+        }
+
+        priceList.PriceListItems = BuildItems(lines, products, previousPrices, userId, now);
+
+        var pending = await _context.ApprovalQueues.FirstOrDefaultAsync(
+            q => q.EntityId == id
+                 && q.ApprovalType == PriceChangeApprovalType
+                 && q.Status == StatusPending
+                 && q.IsActive,
+            cancellationToken);
+
+        var payload = BuildRequestPayload(priceList, products);
+        var json = JsonSerializer.Serialize(payload, JsonOpts);
+        if (pending != null)
+        {
+            pending.RequestData = json;
+            pending.Notes = priceList.Description ?? priceList.Name;
+            pending.EntityReference = priceList.Code;
+            pending.UpdatedById = userId;
+            pending.UpdatedAt = now;
+        }
+        else
+        {
+            _context.ApprovalQueues.Add(new ApprovalQueue
+            {
+                Id = Guid.NewGuid(),
+                ApprovalType = PriceChangeApprovalType,
+                EntityId = priceList.Id,
+                EntityReference = priceList.Code,
+                RequestedById = userId,
+                RequestedAt = now,
+                Status = StatusPending,
+                Priority = 0,
+                Notes = priceList.Description ?? priceList.Name,
+                RequestData = json,
+                IsActive = true,
+                CreatedById = userId,
+                UpdatedById = userId,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+        }
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        await _systemLogService.LogInfoAsync("PriceListService", $"Price list updated: {priceList.Code} by user {userId}");
+        await _systemLogService.LogInfoAsync("PriceListService", $"Price change updated: {priceList.Code} by user {userId}");
 
-        return _mapper.Map<PriceListDetailDto>(priceList);
+        return (await GetByIdAsync(id, cancellationToken))!;
     }
 
     public async Task DeleteAsync(Guid id, Guid userId, CancellationToken cancellationToken = default)
@@ -168,5 +282,100 @@ public class PriceListService : IPriceListService
         }
 
         return await query.AnyAsync(cancellationToken);
+    }
+
+    private static List<PriceListItemLineDto> NormalizeLines(IEnumerable<PriceListItemLineDto>? items)
+    {
+        var list = (items ?? Enumerable.Empty<PriceListItemLineDto>())
+            .Where(i => i.ProductId != Guid.Empty)
+            .GroupBy(i => i.ProductId)
+            .Select(g => g.Last())
+            .ToList();
+
+        if (list.Count == 0)
+        {
+            throw new InvalidOperationException("At least one product price change is required.");
+        }
+
+        return list;
+    }
+
+    private async Task<Dictionary<Guid, Product>> LoadProductsAsync(
+        IEnumerable<Guid> productIds,
+        CancellationToken cancellationToken)
+    {
+        var ids = productIds.Distinct().ToList();
+        var products = await _context.Products
+            .Where(p => ids.Contains(p.Id))
+            .ToListAsync(cancellationToken);
+
+        if (products.Count != ids.Count)
+        {
+            throw new InvalidOperationException("One or more products were not found.");
+        }
+
+        return products.ToDictionary(p => p.Id);
+    }
+
+    private async Task<Dictionary<Guid, decimal>> ResolvePreviousPricesAsync(
+        DateTime effectiveFrom,
+        IEnumerable<Guid> productIds,
+        CancellationToken cancellationToken)
+    {
+        var effectiveDate = DeliveryPlanPreloadRules.ResolvePlanBusinessDateSriLanka(effectiveFrom);
+        var asOf = effectiveDate.AddDays(-1);
+        return await _priceResolver.ResolveAsync(productIds, asOf, cancellationToken);
+    }
+
+    private static List<PriceListItem> BuildItems(
+        List<PriceListItemLineDto> lines,
+        Dictionary<Guid, Product> products,
+        Dictionary<Guid, decimal> previousPrices,
+        Guid userId,
+        DateTime now)
+    {
+        return lines.Select(line =>
+        {
+            var product = products[line.ProductId];
+            previousPrices.TryGetValue(product.Id, out var resolvedPrevious);
+            var previous = previousPrices.ContainsKey(product.Id) ? resolvedPrevious : product.UnitPrice;
+            return new PriceListItem
+            {
+                Id = Guid.NewGuid(),
+                ProductId = product.Id,
+                UnitPrice = line.UnitPrice,
+                PreviousUnitPrice = previous,
+                IsActive = true,
+                CreatedById = userId,
+                UpdatedById = userId,
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+        }).ToList();
+    }
+
+    private static object BuildRequestPayload(PriceList priceList, Dictionary<Guid, Product> products)
+    {
+        var items = (priceList.PriceListItems ?? Enumerable.Empty<PriceListItem>()).Select(item =>
+        {
+            products.TryGetValue(item.ProductId, out var product);
+            return new
+            {
+                productId = item.ProductId,
+                productCode = product?.Code ?? string.Empty,
+                productName = product?.Name ?? string.Empty,
+                previousPrice = item.PreviousUnitPrice,
+                newPrice = item.UnitPrice,
+            };
+        }).ToList();
+
+        return new
+        {
+            code = priceList.Code,
+            comment = priceList.Description ?? priceList.Name,
+            effectiveFrom = priceList.EffectiveFrom,
+            itemCount = items.Count,
+            items,
+        };
     }
 }

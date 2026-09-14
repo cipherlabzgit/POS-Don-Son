@@ -33,8 +33,11 @@ export default function EditProductionPlanPage() {
 
   useEffect(() => {
     fetchPlan();
-    fetchProducts();
   }, [planId]);
+
+  useEffect(() => {
+    void fetchProducts();
+  }, [formData.planDate]);
 
   const fetchPlan = async () => {
     try {
@@ -61,7 +64,7 @@ export default function EditProductionPlanPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await productsApi.getAll(1, 1000);
+      const response = await productsApi.getAll(1, 1000, undefined, undefined, undefined, formData.planDate || undefined);
       const productsList = Array.isArray(response.products) ? response.products : [];
       setProducts(productsList.filter((p: Product) => p.isActive));
     } catch (error) {

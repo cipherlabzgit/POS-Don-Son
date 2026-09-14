@@ -30,8 +30,13 @@ public class PriceListCreateDtoValidator : AbstractValidator<PriceListCreateDto>
         RuleFor(x => x.EffectiveFrom)
             .NotEmpty().WithMessage("EffectiveFrom is required");
 
-        RuleFor(x => x.EffectiveTo)
-            .GreaterThan(x => x.EffectiveFrom).WithMessage("EffectiveTo must be after EffectiveFrom")
-            .When(x => x.EffectiveTo.HasValue);
+        RuleFor(x => x.Items)
+            .NotEmpty().WithMessage("At least one product price change is required");
+
+        RuleForEach(x => x.Items).ChildRules(item =>
+        {
+            item.RuleFor(i => i.ProductId).NotEmpty().WithMessage("Product is required");
+            item.RuleFor(i => i.UnitPrice).GreaterThanOrEqualTo(0).WithMessage("New price must be 0 or greater");
+        });
     }
 }

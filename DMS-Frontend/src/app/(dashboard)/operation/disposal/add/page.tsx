@@ -54,8 +54,11 @@ function AddDisposalPageContent() {
 
   useEffect(() => {
     void fetchOutlets();
-    void fetchProducts();
   }, []);
+
+  useEffect(() => {
+    void fetchProducts(formData.disposalDate);
+  }, [formData.disposalDate]);
 
   const fetchOutlets = async () => {
     try {
@@ -66,9 +69,9 @@ function AddDisposalPageContent() {
     }
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (asOf: string) => {
     try {
-      const response = await productsApi.getAll(1, 5000, undefined, undefined, true);
+      const response = await productsApi.getAll(1, 5000, undefined, undefined, true, asOf);
       setProducts(response.products.filter((p) => p.isActive));
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to load products');

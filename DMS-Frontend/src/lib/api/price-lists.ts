@@ -1,5 +1,13 @@
 import { apiClient } from './api-client';
 
+export interface PriceListItem {
+  productId: string;
+  productCode: string;
+  productName: string;
+  previousPrice: number;
+  newPrice: number;
+}
+
 export interface PriceList {
   id: string;
   code: string;
@@ -14,8 +22,14 @@ export interface PriceList {
   isActive: boolean;
   itemCount: number;
   createdByName?: string;
+  items?: PriceListItem[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PriceListItemLineDto {
+  productId: string;
+  unitPrice: number;
 }
 
 export interface CreatePriceListDto {
@@ -29,6 +43,7 @@ export interface CreatePriceListDto {
   isDefault: boolean;
   priority: number;
   isActive: boolean;
+  items: PriceListItemLineDto[];
 }
 
 export interface UpdatePriceListDto extends CreatePriceListDto {}
@@ -41,8 +56,20 @@ export interface PriceListsResponse {
   totalPages: number;
 }
 
+function normalizeItem(raw: any): PriceListItem {
+  const n = (k: string) => raw[k] ?? raw[k.charAt(0).toUpperCase() + k.slice(1)];
+  return {
+    productId: n('productId'),
+    productCode: n('productCode') ?? '',
+    productName: n('productName') ?? '',
+    previousPrice: Number(n('previousPrice') ?? 0),
+    newPrice: Number(n('newPrice') ?? n('unitPrice') ?? 0),
+  };
+}
+
 function normalizePriceList(raw: any): PriceList {
   const n = (k: string) => raw[k] ?? raw[k.charAt(0).toUpperCase() + k.slice(1)];
+  const itemsRaw = n('items') ?? n('Items');
   return {
     id: n('id'),
     code: n('code') ?? '',
@@ -55,8 +82,9 @@ function normalizePriceList(raw: any): PriceList {
     isDefault: n('isDefault') ?? false,
     priority: n('priority') ?? 0,
     isActive: n('isActive') ?? true,
-    itemCount: n('itemCount') ?? 0,
+    itemCount: n('itemCount') ?? (Array.isArray(itemsRaw) ? itemsRaw.length : 0),
     createdByName: n('createdByName'),
+    items: Array.isArray(itemsRaw) ? itemsRaw.map(normalizeItem) : [],
     createdAt: n('createdAt') ?? '',
     updatedAt: n('updatedAt') ?? '',
   };

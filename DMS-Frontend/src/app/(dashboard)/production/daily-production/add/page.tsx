@@ -44,14 +44,17 @@ export default function AddDailyProductionPage() {
   const [lineItems, setLineItems] = useState<ProductionLineItem[]>([]);
 
   useEffect(() => {
-    void fetchProducts();
     void fetchShifts();
     void fetchProductionSections();
   }, []);
 
+  useEffect(() => {
+    void fetchProducts();
+  }, [formData.productionDate]);
+
   const fetchProducts = async () => {
     try {
-      const response = await productsApi.getAll(1, 1000, undefined, undefined, true);
+      const response = await productsApi.getAll(1, 1000, undefined, undefined, true, formData.productionDate);
       const productsList = Array.isArray(response.products) ? response.products : [];
       const activeProducts = productsList.filter((p: Product) => p.isActive);
       setProducts(activeProducts);

@@ -1,4 +1,5 @@
 using AutoMapper;
+using DMS_Backend.Common;
 using DMS_Backend.Data;
 using DMS_Backend.Models.DTOs.Products;
 using DMS_Backend.Models.Entities;
@@ -12,15 +13,18 @@ public class ProductService : IProductService
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
     private readonly ISystemLogService _systemLogService;
+    private readonly IProductPriceResolver _priceResolver;
 
     public ProductService(
         ApplicationDbContext context,
         IMapper mapper,
-        ISystemLogService systemLogService)
+        ISystemLogService systemLogService,
+        IProductPriceResolver priceResolver)
     {
         _context = context;
         _mapper = mapper;
         _systemLogService = systemLogService;
+        _priceResolver = priceResolver;
     }
 
     public async Task<(List<ProductListItemDto> products, int totalCount)> GetAllAsync(
@@ -30,6 +34,7 @@ public class ProductService : IProductService
         Guid? categoryId = null,
         bool? activeOnly = null,
         bool? displayInPosOnly = null,
+        DateOnly? asOf = null,
         CancellationToken cancellationToken = default)
     {
         var query = _context.Products
@@ -99,6 +104,7 @@ public class ProductService : IProductService
             .ToListAsync(cancellationToken);
 
         var productDtos = _mapper.Map<List<ProductListItemDto>>(products);
+        await OverlayEffectivePricesAsync(productDtos, asOf, cancellationToken);
 
         return (productDtos, totalCount);
     }
@@ -369,6 +375,27 @@ public class ProductService : IProductService
         if (!exists)
         {
             throw new InvalidOperationException("Label template not found");
+        }
+    }
+
+    private async Task OverlayEffectivePricesAsync(
+        List<ProductListItemDto> products,
+        DateOnly? asOf,
+        CancellationToken cancellationToken)
+    {
+        if (products.Count == 0)
+        {
+            return;
+        }
+
+        var day = asOf ?? DeliveryPlanPreloadRules.TodaySriLanka();
+        var resolved = await _priceResolver.ResolveAsync(products.Select(p => p.Id), day, cancellationToken);
+        foreach (var dto in products)
+        {
+            if (resolved.TryGetValue(dto.Id, out var price))
+            {
+                dto.UnitPrice = price;
+            }
         }
     }
 }

@@ -32,11 +32,11 @@ export default function AddStockAdjustmentPage() {
 
   useEffect(() => {
     void fetchProducts();
-  }, []);
+  }, [formData.adjustmentDate]);
 
   const fetchProducts = async () => {
     try {
-      const response = await productsApi.getAll(1, 1000, undefined, undefined, true);
+      const response = await productsApi.getAll(1, 1000, undefined, undefined, true, formData.adjustmentDate);
       const productsList = Array.isArray(response.products) ? response.products : [];
       setProducts(productsList.filter((p: Product) => p.isActive));
     } catch (error) {

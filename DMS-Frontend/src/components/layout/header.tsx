@@ -5,9 +5,12 @@ import { useAuthStore } from '@/lib/stores/auth-store';
 import { authApi } from '@/lib/api/auth';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/lib/theme/theme-context';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ThemeToggle from '@/components/theme/theme-toggle';
 import { formatSlDate, formatSlTime } from '@/lib/sri-lanka-time';
+import { usePermissions } from '@/hooks/usePermissions';
+import { operationApprovalsApi } from '@/lib/api/operation-approvals';
+import { approvalsApi } from '@/lib/api/approvals';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -15,10 +18,50 @@ interface HeaderProps {
 
 export default function Header({ onMenuClick }: HeaderProps) {
   const { user, refreshToken, logout } = useAuthStore();
+  const { canAny, isSuperAdmin } = usePermissions();
   const router = useRouter();
   const { pageColor } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
+
+  const canSeeApprovals = canAny([
+    'approval:view',
+    'operation:approvals:view',
+    'production:approvals:view',
+  ]);
+
+  const loadPendingApprovals = useCallback(async () => {
+    if (!canSeeApprovals && !isSuperAdmin) {
+      setPendingApprovalCount(0);
+      return;
+    }
+    let count = 0;
+    try {
+      const summary = await operationApprovalsApi.getPending();
+      count = Math.max(count, Number(summary.totalPendingCount) || 0);
+    } catch {
+      /* no operation-approvals access */
+    }
+    try {
+      const queue = await approvalsApi.getPending(1, 1);
+      count = Math.max(count, Number(queue.totalCount) || 0);
+    } catch {
+      /* no approval-queue access */
+    }
+    setPendingApprovalCount(count);
+  }, [canSeeApprovals, isSuperAdmin]);
+
+  useEffect(() => {
+    void loadPendingApprovals();
+    const id = window.setInterval(() => void loadPendingApprovals(), 45_000);
+    const onFocus = () => void loadPendingApprovals();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [loadPendingApprovals]);
   
   // Mock news ticker data - will be replaced with real data later
   const [newsItems] = useState([
@@ -183,25 +226,32 @@ export default function Header({ onMenuClick }: HeaderProps) {
           {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* Notifications */}
-          <button 
-            className="relative p-2 rounded-lg transition-colors"
-            style={{ color: 'var(--muted-foreground)' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--foreground)';
-              e.currentTarget.style.backgroundColor = 'var(--muted)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--muted-foreground)';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <Bell className="w-5 h-5" />
-            <span
-              className="absolute top-1 right-1 w-2 h-2 rounded-full"
-              style={{ backgroundColor: pageColor }}
-            ></span>
-          </button>
+          {/* Notifications — only when pending approvals exist */}
+          {pendingApprovalCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => router.push('/administrator/approvals')}
+              className="relative p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--muted-foreground)' }}
+              title={`${pendingApprovalCount} pending approval${pendingApprovalCount === 1 ? '' : 's'}`}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--foreground)';
+                e.currentTarget.style.backgroundColor = 'var(--muted)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--muted-foreground)';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <Bell className="w-5 h-5" />
+              <span
+                className="absolute -top-0.5 -right-0.5 min-w-[1.15rem] rounded-full px-1 py-0.5 text-center text-[10px] font-bold leading-none text-white"
+                style={{ backgroundColor: pageColor }}
+              >
+                {pendingApprovalCount > 99 ? '99+' : pendingApprovalCount}
+              </span>
+            </button>
+          ) : null}
 
           {/* User Menu */}
           <div className="relative flex items-center space-x-2 sm:space-x-3 pl-2 sm:pl-4" style={{ borderLeft: '1px solid var(--border)' }}>

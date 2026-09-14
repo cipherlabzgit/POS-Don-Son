@@ -12,4 +12,5 @@ public class PriceListCreateDto
     public bool IsDefault { get; set; }
     public int Priority { get; set; }
     public bool IsActive { get; set; } = true;
+    public List<PriceListItemLineDto> Items { get; set; } = new();
 }

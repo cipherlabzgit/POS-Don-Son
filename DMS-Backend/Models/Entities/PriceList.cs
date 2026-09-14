@@ -90,6 +90,12 @@ public class PriceListItem : BaseEntity
     public decimal UnitPrice { get; set; }
 
     /// <summary>
+    /// Catalog unit price at the time this change was submitted (before approval).
+    /// </summary>
+    [Column("previous_unit_price", TypeName = "decimal(18,2)")]
+    public decimal PreviousUnitPrice { get; set; }
+
+    /// <summary>
     /// Discount percentage (optional)
     /// </summary>
     [Column("discount_percentage", TypeName = "decimal(5,2)")]

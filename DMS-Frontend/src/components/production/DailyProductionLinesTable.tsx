@@ -80,7 +80,6 @@ function ProductSearchCombobox({
   };
 
   const handleFocus = () => {
-    setQuery('');
     setOpen(true);
   };
 

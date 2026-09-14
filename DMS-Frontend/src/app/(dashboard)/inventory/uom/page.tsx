@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import CsvBulkUploadBar from '@/components/dms/CsvBulkUploadBar';
 import type { CsvRowRecord } from '@/lib/csv-utils';
 import { parseBool, req } from '@/lib/bulk-csv-field-parsers';
+import { useInitialListLoading } from '@/hooks/use-initial-list-loading';
 
 export default function UOMPage() {
   return (
@@ -54,7 +55,7 @@ function UOMPageContent() {
   const [searchInput, setSearchInput] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [loading, setLoading] = useState(true);
+  const { loading, beginListLoad, endListLoad } = useInitialListLoading(true);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -72,15 +73,17 @@ function UOMPageContent() {
   }, [currentPage, pageSize, searchTerm]);
 
   const loadUOMs = async () => {
+    const keepSearchFocus = document.activeElement === searchInputRef.current;
     try {
-      setLoading(true);
+      beginListLoad();
       const response = await uomsApi.getAll(currentPage, pageSize, searchTerm, undefined);
       setUoms(response.unitOfMeasures);
       setTotalCount(response.totalCount);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to load unit of measures');
     } finally {
-      setLoading(false);
+      endListLoad();
+      if (keepSearchFocus) requestAnimationFrame(() => searchInputRef.current?.focus());
     }
   };
 

@@ -389,7 +389,7 @@ export default function ProductionCancelItemsEntry({
                         color: 'var(--muted-foreground)',
                       }}
                     >
-                      Loading products...
+                      No products found matching &quot;{query}&quot;
                     </div>
                   )}
                   {openSuggest && query.trim() && products.length > 0 && filtered.length === 0 && (

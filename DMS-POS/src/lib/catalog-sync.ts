@@ -3,6 +3,11 @@ import { formatSubmitError } from './api-errors'
 import { offlineDb, replaceOfflineCatalog } from './offline-db'
 import { useSettingsStore } from './settings-store'
 import type { CategoryRow, ProductRow } from './types'
+import { todayCalendarISO } from './calendar-date'
+import { formatSubmitError } from './api-errors'
+import { offlineDb, replaceOfflineCatalog } from './offline-db'
+import { useSettingsStore } from './settings-store'
+import type { CategoryRow, ProductRow } from './types'
 
 function mapProduct(p: Record<string, unknown>): ProductRow {
   const ros = p.requireOpenStock ?? p.RequireOpenStock
@@ -44,7 +49,7 @@ export async function syncCatalogFromServer(): Promise<void> {
   const prods: ProductRow[] = []
   try {
     do {
-      const res = await fetchProductsPage(page, pageSize)
+      const res = await fetchProductsPage(page, pageSize, { asOf: todayCalendarISO() })
       totalCount = Number(res.totalCount ?? 0)
       const batch = (res.products as Record<string, unknown>[]).map(mapProduct)
       const rawCount = Number(res.rawCount ?? batch.length)
@@ -127,7 +132,7 @@ export async function loadAllActiveProducts(): Promise<ProductRow[]> {
     let fetchedRaw = 0
     const prods: ProductRow[] = []
     do {
-      const res = await fetchProductsPage(page, pageSize, { posVisibleOnly: false })
+      const res = await fetchProductsPage(page, pageSize, { posVisibleOnly: false, asOf: todayCalendarISO() })
       totalCount = Number(res.totalCount ?? 0)
       const batch = (res.products as Record<string, unknown>[]).map(mapProduct)
       const rawCount = Number(res.rawCount ?? batch.length)

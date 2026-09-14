@@ -222,7 +222,8 @@ export const productsApi = {
     pageSize: number = 50,
     search?: string,
     categoryId?: string,
-    activeOnly?: boolean
+    activeOnly?: boolean,
+    asOf?: string
   ): Promise<ProductsResponse> {
     const params = new URLSearchParams();
     params.append('page', page.toString());
@@ -230,6 +231,7 @@ export const productsApi = {
     if (search) params.append('search', search);
     if (categoryId) params.append('categoryId', categoryId);
     if (activeOnly !== undefined) params.append('activeOnly', activeOnly.toString());
+    if (asOf) params.append('asOf', asOf);
 
     try {
       const response = await apiClient.get<any>(`/api/Products?${params}`);

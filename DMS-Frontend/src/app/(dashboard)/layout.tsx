@@ -75,12 +75,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Sidebar mobileOpen={mobileMenuOpen} setMobileOpen={setMobileMenuOpen} />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden w-full">
+        <div className="flex-1 flex flex-col overflow-hidden w-full min-w-0">
           {/* Fixed Header */}
           <Header onMenuClick={() => setMobileMenuOpen(true)} />
 
           {/* Scrollable Page Content */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden">
+          <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
             <div className="h-full">
               {children}
             </div>

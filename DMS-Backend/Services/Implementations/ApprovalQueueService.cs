@@ -196,6 +196,11 @@ public sealed class ApprovalQueueService : IApprovalQueueService
                 await _context.SaveChangesAsync(cancellationToken);
             }
         }
+        else if (PriceListService.IsPriceChangeApprovalType(approval.ApprovalType))
+        {
+            await ApplyApprovedPriceChangeAsync(approval.EntityId, approvedByUserId, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
         else
         {
             await _context.SaveChangesAsync(cancellationToken);
@@ -246,6 +251,17 @@ public sealed class ApprovalQueueService : IApprovalQueueService
                     day.ApprovedAt = null;
                     day.UpdatedAt = DateTime.UtcNow;
                 }
+            }
+        }
+
+        if (PriceListService.IsPriceChangeApprovalType(approval.ApprovalType))
+        {
+            var priceList = await _context.PriceLists.FirstOrDefaultAsync(pl => pl.Id == approval.EntityId, cancellationToken);
+            if (priceList != null)
+            {
+                priceList.PriceListType = PriceListService.StatusRejected;
+                priceList.UpdatedById = rejectedByUserId;
+                priceList.UpdatedAt = DateTime.UtcNow;
             }
         }
 
@@ -315,5 +331,27 @@ public sealed class ApprovalQueueService : IApprovalQueueService
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         });
+    }
+
+    private async Task ApplyApprovedPriceChangeAsync(Guid priceListId, Guid approvedByUserId, CancellationToken cancellationToken)
+    {
+        var priceList = await _context.PriceLists
+            .Include(pl => pl.PriceListItems)
+            .FirstOrDefaultAsync(pl => pl.Id == priceListId, cancellationToken);
+
+        if (priceList == null)
+        {
+            throw new InvalidOperationException("Price change record was not found.");
+        }
+
+        if (string.Equals(priceList.PriceListType, PriceListService.StatusApproved, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        priceList.PriceListType = PriceListService.StatusApproved;
+        priceList.UpdatedById = approvedByUserId;
+        priceList.UpdatedAt = now;
     }
 }

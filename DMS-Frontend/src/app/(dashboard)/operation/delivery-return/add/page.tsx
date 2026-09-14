@@ -69,18 +69,30 @@ function AddDeliveryReturnPageContent() {
   useEffect(() => {
     void (async () => {
       try {
-        const [oRes, pRes] = await Promise.all([
-          outletsApi.getAll(),
-          productsApi.getAll(1, 5000, undefined, undefined, true),
-        ]);
+        const oRes = await outletsApi.getAll();
         setOutlets(oRes.outlets.filter((o) => o.isActive));
-        setProducts(pRes.products.filter((p) => p.isActive));
       } catch (error: unknown) {
         const err = error as { response?: { data?: { message?: string } } };
         toast.error(err.response?.data?.message || 'Failed to load form data');
       }
     })();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const pRes = await productsApi.getAll(1, 5000, undefined, undefined, true, formData.returnDate);
+        if (!cancelled) setProducts(pRes.products.filter((p) => p.isActive));
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
+        if (!cancelled) toast.error(err.response?.data?.message || 'Failed to load products');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.returnDate]);
 
   useEffect(() => {
     if (!formData.deliveryNo) {

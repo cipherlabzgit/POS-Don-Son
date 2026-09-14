@@ -140,7 +140,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 // Inventory services
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IUnitOfMeasureService, UnitOfMeasureService>();
-builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IProductPriceResolver, ProductPriceResolver>();
+        builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IIngredientService, IngredientService>();
 
 // Phase 4: Admin Master Data services

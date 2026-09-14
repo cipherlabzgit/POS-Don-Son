@@ -30,6 +30,7 @@ export interface OperationApprovalsSummary {
   dailyProductionPlans: OperationApprovalItem[];
   immediateOrders: OperationApprovalItem[];
   cashierBalances: OperationApprovalItem[];
+  priceChanges: OperationApprovalItem[];
   adminApprovals: OperationApprovalItem[];
   totalPendingCount: number;
 }
@@ -66,6 +67,7 @@ export const operationApprovalsApi = {
       dailyProductionPlans: raw.dailyProductionPlans ?? raw.DailyProductionPlans ?? [],
       immediateOrders: raw.immediateOrders ?? raw.ImmediateOrders ?? [],
       cashierBalances: raw.cashierBalances ?? raw.CashierBalances ?? [],
+      priceChanges: raw.priceChanges ?? raw.PriceChanges ?? [],
       adminApprovals: raw.adminApprovals ?? raw.AdminApprovals ?? [],
       totalPendingCount: raw.totalPendingCount ?? raw.TotalPendingCount ?? 0,
     } as OperationApprovalsSummary;

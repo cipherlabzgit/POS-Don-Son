@@ -52,6 +52,21 @@ export default function AddImmediateOrderPage() {
     loadInitialData();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const productsRes = await productsApi.getAll(1, 500, undefined, undefined, true, orderDate);
+        if (!cancelled) setProducts(productsRes.products);
+      } catch {
+        /* keep previous catalog */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orderDate]);
+
   const outletLocked =
     Boolean(user?.assignedOutletId) && !isSuperAdmin;
 
@@ -73,7 +88,7 @@ export default function AddImmediateOrderPage() {
     try {
       setIsLoading(true);
       const [productsRes, outletsRes, turnsRes] = await Promise.all([
-        productsApi.getAll(1, 500, undefined, undefined, true),
+        productsApi.getAll(1, 500, undefined, undefined, true, orderDate),
         outletsApi.getAll(1, 100, undefined, undefined, true),
         deliveryTurnsApi.getAll(1, 100, undefined, true),
       ]);

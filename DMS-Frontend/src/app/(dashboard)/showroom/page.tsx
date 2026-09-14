@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import CsvBulkUploadBar from '@/components/dms/CsvBulkUploadBar';
 import type { CsvRowRecord } from '@/lib/csv-utils';
 import { parseBool, parseDecimal, parseIntField, req } from '@/lib/bulk-csv-field-parsers';
+import { useInitialListLoading } from '@/hooks/use-initial-list-loading';
 
 export default function ShowroomPage() {
   return (
@@ -66,7 +67,7 @@ function ShowroomPageContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const { loading, beginListLoad, endListLoad } = useInitialListLoading(false);
 
   useEffect(() => {
     loadShowrooms();
@@ -74,7 +75,7 @@ function ShowroomPageContent() {
 
   const loadShowrooms = async () => {
     try {
-      setLoading(true);
+      beginListLoad();
       // Explicitly pass false to include BOTH active and inactive showrooms
       const response = await outletsApi.getAll(currentPage, pageSize, searchTerm, undefined, false);
       setShowrooms(response.outlets);
@@ -82,7 +83,7 @@ function ShowroomPageContent() {
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to load showrooms');
     } finally {
-      setLoading(false);
+      endListLoad();
     }
   };
 

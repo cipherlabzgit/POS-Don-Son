@@ -28,9 +28,16 @@ public class ProductsController : ControllerBase
         [FromQuery] Guid? categoryId = null,
         [FromQuery] bool? activeOnly = null,
         [FromQuery] bool? displayInPosOnly = null,
+        [FromQuery] string? asOf = null,
         CancellationToken cancellationToken = default)
     {
-        var (products, totalCount) = await _productService.GetAllAsync(page, pageSize, search, categoryId, activeOnly, displayInPosOnly, cancellationToken);
+        DateOnly? asOfDate = null;
+        if (!string.IsNullOrWhiteSpace(asOf) && DateOnly.TryParse(asOf, out var parsed))
+        {
+            asOfDate = parsed;
+        }
+
+        var (products, totalCount) = await _productService.GetAllAsync(page, pageSize, search, categoryId, activeOnly, displayInPosOnly, asOfDate, cancellationToken);
 
         return Ok(ApiResponse<object>.SuccessResponse(new
         {

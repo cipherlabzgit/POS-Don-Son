@@ -95,7 +95,6 @@ function ProductSearchField({
   };
 
   const handleFocus = () => {
-    setQuery('');
     setOpen(true);
   };
 
@@ -235,13 +234,16 @@ function AddLabelPrintingPageContent() {
   const [selectedCommentIds, setSelectedCommentIds] = useState<string[]>([]);
 
   useEffect(() => {
-    void fetchProducts();
     void fetchComments();
   }, []);
 
+  useEffect(() => {
+    void fetchProducts();
+  }, [formData.manufactureDate]);
+
   const fetchProducts = async () => {
     try {
-      const response = await productsApi.getAll(1, 1000);
+      const response = await productsApi.getAll(1, 1000, undefined, undefined, undefined, formData.manufactureDate);
       const labelPrintProducts = (response.products || []).filter(
         (p: Product) => p.isActive && p.enableLabelPrint,
       );

@@ -59,22 +59,34 @@ function AddDeliveryPageContent() {
     }
   }, [dateBounds.lockToNow, user?.id]);
 
+  const selectedDatePart = formData.deliveryDateTime.slice(0, 10);
+
   useEffect(() => {
     (async () => {
       try {
-        const [oRes, pRes] = await Promise.all([
-          outletsApi.getAll(),
-          productsApi.getAll(1, 5000, undefined, undefined, true),
-        ]);
+        const oRes = await outletsApi.getAll();
         setOutlets(oRes.outlets.filter((x) => x.isActive));
-        setProducts(pRes.products.filter((p) => p.isActive));
       } catch (e: any) {
         toast.error(e.response?.data?.message || 'Failed to load form data');
       }
     })();
   }, []);
 
-  const selectedDatePart = formData.deliveryDateTime.slice(0, 10);
+  useEffect(() => {
+    if (!selectedDatePart) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const pRes = await productsApi.getAll(1, 5000, undefined, undefined, true, selectedDatePart);
+        if (!cancelled) setProducts(pRes.products.filter((p) => p.isActive));
+      } catch (e: any) {
+        if (!cancelled) toast.error(e.response?.data?.message || 'Failed to load products');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDatePart]);
 
   const dateInAllowedRange =
     dateBounds.lockToNow ||

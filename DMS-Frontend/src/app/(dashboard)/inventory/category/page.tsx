@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import CsvBulkUploadBar from '@/components/dms/CsvBulkUploadBar';
 import type { CsvRowRecord } from '@/lib/csv-utils';
 import { parseBool, parseIntField, req } from '@/lib/bulk-csv-field-parsers';
+import { useInitialListLoading } from '@/hooks/use-initial-list-loading';
 
 export default function CategoryPage() {
   return (
@@ -57,7 +58,7 @@ function CategoryPageContent() {
   const [searchInput, setSearchInput] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [loading, setLoading] = useState(true);
+  const { loading, beginListLoad, endListLoad } = useInitialListLoading(true);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -75,15 +76,17 @@ function CategoryPageContent() {
   }, [currentPage, pageSize, searchTerm]);
 
   const loadCategories = async () => {
+    const keepSearchFocus = document.activeElement === searchInputRef.current;
     try {
-      setLoading(true);
+      beginListLoad();
       const response = await categoriesApi.getAll(currentPage, pageSize, searchTerm, undefined);
       setCategories(response.categories);
       setTotalCount(response.totalCount);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to load categories');
     } finally {
-      setLoading(false);
+      endListLoad();
+      if (keepSearchFocus) requestAnimationFrame(() => searchInputRef.current?.focus());
     }
   };
 

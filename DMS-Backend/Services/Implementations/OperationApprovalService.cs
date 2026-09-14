@@ -236,10 +236,14 @@ public class OperationApprovalService : IOperationApprovalService
         var cashierRows = adminApprovals
             .Where(a => CashierBalanceService.IsCashierBalanceApprovalType(a.ApprovalType))
             .ToList();
+        var priceChangeRows = adminApprovals
+            .Where(a => PriceListService.IsPriceChangeApprovalType(a.ApprovalType))
+            .ToList();
         var otherAdmin = adminApprovals
             .Where(a =>
                 !string.Equals(a.ApprovalType, PosSaleService.CancellationApprovalType, StringComparison.Ordinal)
-                && !CashierBalanceService.IsCashierBalanceApprovalType(a.ApprovalType))
+                && !CashierBalanceService.IsCashierBalanceApprovalType(a.ApprovalType)
+                && !PriceListService.IsPriceChangeApprovalType(a.ApprovalType))
             .ToList();
 
         var cancelSaleIds = posCancelRows.Select(a => a.EntityId).Distinct().ToList();
@@ -341,6 +345,39 @@ public class OperationApprovalService : IOperationApprovalService
                 RequestedByName = a.RequestedByName,
                 Description = description,
                 TotalValue = total,
+            };
+        }).ToList();
+
+        summary.PriceChanges = priceChangeRows.Select(a =>
+        {
+            var itemCount = (int?)null;
+            if (!string.IsNullOrWhiteSpace(a.RequestData))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(a.RequestData);
+                    if (doc.RootElement.TryGetProperty("itemCount", out var countEl) && countEl.ValueKind == JsonValueKind.Number)
+                        itemCount = countEl.GetInt32();
+                    else if (doc.RootElement.TryGetProperty("items", out var itemsEl) && itemsEl.ValueKind == JsonValueKind.Array)
+                        itemCount = itemsEl.GetArrayLength();
+                }
+                catch (JsonException)
+                {
+                    /* ignore */
+                }
+            }
+
+            return new OperationApprovalItemDto
+            {
+                Id = a.Id,
+                ApprovalType = PriceListService.PriceChangeApprovalType,
+                ReferenceNo = a.EntityReference ?? a.EntityId.ToString(),
+                RequestDate = a.RequestedAt,
+                OutletName = "Catalog",
+                Status = a.Status,
+                RequestedByName = a.RequestedByName,
+                Description = a.Notes,
+                ItemCount = itemCount,
             };
         }).ToList();
 

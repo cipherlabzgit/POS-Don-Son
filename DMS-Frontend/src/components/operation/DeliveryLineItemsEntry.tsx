@@ -143,6 +143,22 @@ export default function DeliveryLineItemsEntry({
   const qtyInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   const pendingQtyFocusProductId = useRef<string | null>(null);
   const dropdownItemRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const productPriceKey = products.map((p) => `${p.id}:${p.unitPrice ?? 0}`).join('|');
+
+  useEffect(() => {
+    if (!showPricing) return;
+    const priceById = new Map(products.map((p) => [p.id, p.unitPrice]));
+    let changed = false;
+    const next = items.map((row) => {
+      const price = priceById.get(row.productId);
+      if (price == null || price === row.unitPrice) return row;
+      changed = true;
+      return { ...row, unitPrice: price };
+    });
+    if (changed) onItemsChange(next);
+    // productsKey is the price snapshot; items/onItemsChange omitted to avoid loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productPriceKey, showPricing]);
 
   const focusSearchInput = useCallback(() => {
     requestAnimationFrame(() => {

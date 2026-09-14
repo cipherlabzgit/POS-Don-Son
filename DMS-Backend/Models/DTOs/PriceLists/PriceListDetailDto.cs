@@ -14,6 +14,8 @@ public class PriceListDetailDto
     public int Priority { get; set; }
     public bool IsActive { get; set; }
     public int ItemCount { get; set; }
+    public string? CreatedByName { get; set; }
+    public List<PriceListItemDetailDto> Items { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

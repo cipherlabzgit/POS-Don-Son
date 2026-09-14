@@ -93,7 +93,7 @@ export default function EditStockBFPage() {
 
   const fetchProducts = async (includeProductId?: string) => {
     try {
-      const response = await productsApi.getAll(1, 1000, undefined, undefined, true);
+      const response = await productsApi.getAll(1, 1000, undefined, undefined, true, formData.bfDate || undefined);
       const list = Array.isArray(response.products) ? response.products : [];
       setProducts(
         list.filter(

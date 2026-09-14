@@ -18,7 +18,7 @@ import { ProtectedPage, PermissionButton } from '@/components/auth';
 import { usePermissions } from '@/hooks/usePermissions';
 import CsvBulkUploadBar from '@/components/dms/CsvBulkUploadBar';
 import type { CsvRowRecord } from '@/lib/csv-utils';
-import { parseBool, parseDecimal, parseIntField, parseIntList, req } from '@/lib/bulk-csv-field-parsers';
+import { useInitialListLoading } from '@/hooks/use-initial-list-loading';
 
 function formatLoadProductsError(err: unknown): string {
   const e = err as {
@@ -220,8 +220,8 @@ function ProductsPageContent() {
   const [uoms, setUoms] = useState<UnitOfMeasure[]>([]);
   
   // Loading and error states
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { loading, beginListLoad, endListLoad } = useInitialListLoading(true);
   
   // Pagination and search
   const [searchTerm, setSearchTerm] = useState('');
@@ -277,8 +277,9 @@ function ProductsPageContent() {
   };
 
   const fetchProducts = async () => {
+    const keepSearchFocus = document.activeElement === searchInputRef.current;
     try {
-      setLoading(true);
+      beginListLoad();
       setError(null);
       
       // Apply category filter if selected
@@ -327,7 +328,10 @@ function ProductsPageContent() {
         toast.error(errorMsg);
       }
     } finally {
-      setLoading(false);
+      endListLoad();
+      if (keepSearchFocus) {
+        requestAnimationFrame(() => searchInputRef.current?.focus());
+      }
     }
   };
 
@@ -693,7 +697,7 @@ function ProductsPageContent() {
             <div className="text-center py-12">
               <Package className="mx-auto mb-4 h-12 w-12" style={{ color: 'var(--muted-foreground)' }} />
               <p style={{ color: 'var(--muted-foreground)' }}>
-                No products found. Create your first product!
+                {searchInput.trim() ? 'No products found' : 'No products found. Create your first product!'}
               </p>
             </div>
           ) : (

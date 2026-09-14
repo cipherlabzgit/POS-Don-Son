@@ -19,6 +19,23 @@ interface Column<T> {
   className?: string;
 }
 
+function isActionColumn<T>(column: Column<T>, index: number, total: number): boolean {
+  const key = column.key.toLowerCase();
+  const label = column.label.toLowerCase();
+  if (key === 'actions' || key === 'action') return true;
+  if (label === 'actions' || label === 'action') return true;
+  return index === total - 1 && (key.includes('action') || label.includes('action'));
+}
+
+function actionStickyClass(isAction: boolean, extra = '') {
+  return [
+    extra,
+    isAction ? 'sticky right-0 z-[2] shadow-[-8px_0_10px_-8px_rgba(0,0,0,0.18)]' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
 interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
@@ -43,6 +60,8 @@ interface DataTableProps<T> {
   /** Defaults to `item.id ?? index` when `expandedRowKey` / `renderExpandedRow` are used. */
   getRowKey?: (item: T, index: number) => string | number;
   renderExpandedRow?: (item: T) => ReactNode;
+  /** Click anywhere on the row (except buttons/links/inputs) to open details. */
+  onRowClick?: (item: T) => void;
 }
 
 export function DataTable<T extends { id?: string | number }>({
@@ -62,8 +81,30 @@ export function DataTable<T extends { id?: string | number }>({
   expandedRowKey = null,
   getRowKey,
   renderExpandedRow,
+  onRowClick,
 }: DataTableProps<T>) {
   const { pageColor } = useTheme();
+  const colCount = columns.length;
+
+  const headerRow = (
+    <tr style={{ backgroundColor: pageColor }}>
+      {columns.map((column, index) => {
+        const action = isActionColumn(column, index, colCount);
+        return (
+          <th
+            key={column.key}
+            className={actionStickyClass(
+              action,
+              `px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white ${column.className || ''}`,
+            )}
+            style={action ? { backgroundColor: pageColor } : undefined}
+          >
+            {column.label}
+          </th>
+        );
+      })}
+    </tr>
+  );
 
   const renderPagination = () => {
     const pages = [];
@@ -224,20 +265,9 @@ export function DataTable<T extends { id?: string | number }>({
   if (isLoading) {
     return (
       <div className={frameClass} style={frameStyle}>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y" style={{ borderColor: 'var(--border)' }}>
-            <thead>
-              <tr style={{ backgroundColor: pageColor }}>
-                {columns.map((column) => (
-                  <th
-                    key={column.key}
-                    className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white"
-                  >
-                    {column.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+        <div className="max-w-full overflow-x-auto">
+          <table className="w-full min-w-0 table-auto divide-y" style={{ borderColor: 'var(--border)' }}>
+            <thead>{headerRow}</thead>
           </table>
         </div>
         <div className="flex items-center justify-center py-12">
@@ -253,20 +283,9 @@ export function DataTable<T extends { id?: string | number }>({
   if (data.length === 0) {
     return (
       <div className={frameClass} style={frameStyle}>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y" style={{ borderColor: 'var(--border)' }}>
-            <thead>
-              <tr style={{ backgroundColor: pageColor }}>
-                {columns.map((column) => (
-                  <th
-                    key={column.key}
-                    className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white"
-                  >
-                    {column.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+        <div className="max-w-full overflow-x-auto">
+          <table className="w-full min-w-0 table-auto divide-y" style={{ borderColor: 'var(--border)' }}>
+            <thead>{headerRow}</thead>
           </table>
         </div>
         <div className="text-center py-12">
@@ -278,54 +297,68 @@ export function DataTable<T extends { id?: string | number }>({
 
   return (
     <div className={frameClass} style={frameStyle}>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y" style={{ borderColor: 'var(--border)' }}>
-          <thead>
-            <tr style={{ backgroundColor: pageColor }}>
-              {columns.map((column) => (
-                <th
-                  key={column.key}
-                  className={`px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white ${column.className || ''}`}
-                >
-                  {column.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
+      <div className="max-w-full overflow-x-auto">
+        <table className="w-full min-w-0 table-auto divide-y" style={{ borderColor: 'var(--border)' }}>
+          <thead>{headerRow}</thead>
           <tbody className="divide-y" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
             {data.map((item, index) => {
               const rowKey = getRowKey ? getRowKey(item, index) : item.id ?? index;
               const isExpanded =
                 !!renderExpandedRow && expandedKeysMatch(expandedRowKey, rowKey);
               const stripeBg = index % 2 === 0 ? 'var(--card)' : 'var(--muted)';
+              const hoverBg = 'var(--muted)';
+              const rowBg = isExpanded
+                ? `color-mix(in srgb, ${pageColor} 12%, var(--muted))`
+                : stripeBg;
               return (
                 <Fragment key={String(rowKey)}>
                   <tr
-                    className={`transition-colors ${rowClassName?.(item, index) ?? ''}`}
+                    className={`transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${rowClassName?.(item, index) ?? ''}`}
                     style={{
-                      backgroundColor: isExpanded
-                        ? `color-mix(in srgb, ${pageColor} 12%, var(--muted))`
-                        : stripeBg,
+                      backgroundColor: rowBg,
                       boxShadow: isExpanded ? `inset 4px 0 0 ${pageColor}` : undefined,
                     }}
+                    onClick={
+                      onRowClick
+                        ? (e) => {
+                            const target = e.target as HTMLElement;
+                            if (target.closest('button, a, input, textarea, select, [data-no-row-click]')) return;
+                            onRowClick(item);
+                          }
+                        : undefined
+                    }
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--muted)';
+                      e.currentTarget.style.backgroundColor = hoverBg;
+                      e.currentTarget.querySelectorAll<HTMLElement>('[data-sticky-action]').forEach((el) => {
+                        el.style.backgroundColor = hoverBg;
+                      });
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isExpanded
-                        ? `color-mix(in srgb, ${pageColor} 12%, var(--muted))`
-                        : stripeBg;
+                      e.currentTarget.style.backgroundColor = rowBg;
+                      e.currentTarget.querySelectorAll<HTMLElement>('[data-sticky-action]').forEach((el) => {
+                        el.style.backgroundColor = rowBg;
+                      });
                     }}
                   >
-                    {columns.map((column) => (
-                      <td
-                        key={column.key}
-                        className={`px-6 py-5 whitespace-nowrap text-sm ${column.className || ''}`}
-                        style={{ color: 'var(--foreground)' }}
-                      >
-                        {column.render ? column.render(item) : (item as any)[column.key]}
-                      </td>
-                    ))}
+                    {columns.map((column, colIndex) => {
+                      const action = isActionColumn(column, colIndex, colCount);
+                      return (
+                        <td
+                          key={column.key}
+                          data-sticky-action={action ? '' : undefined}
+                          className={actionStickyClass(
+                            action,
+                            `px-3 py-3.5 text-sm ${action ? 'whitespace-nowrap' : 'whitespace-normal break-words'} ${column.className || ''}`,
+                          )}
+                          style={{
+                            color: 'var(--foreground)',
+                            backgroundColor: action ? rowBg : undefined,
+                          }}
+                        >
+                          {column.render ? column.render(item) : (item as any)[column.key]}
+                        </td>
+                      );
+                    })}
                   </tr>
                   {isExpanded && renderExpandedRow ? (
                     <tr>

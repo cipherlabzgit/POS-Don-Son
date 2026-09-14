@@ -8,6 +8,7 @@ interface CartState {
   dec: (productId: string) => void
   remove: (productId: string) => void
   clear: () => void
+  applyCatalogPrices: (products: { productId: string; unitPrice: number }[]) => void
   subtotal: () => number
 }
 
@@ -61,6 +62,17 @@ export const useCartStore = create<CartState>((set, get) => ({
     })),
 
   clear: () => set({ lines: [] }),
+
+  applyCatalogPrices: (products) =>
+    set((s) => {
+      const priceById = new Map(products.map((p) => [p.productId, p.unitPrice]))
+      return {
+        lines: s.lines.map((l) => {
+          const next = priceById.get(l.productId)
+          return next == null || next === l.unitPrice ? l : { ...l, unitPrice: next }
+        }),
+      }
+    }),
 
   subtotal: () => {
     const lines = get().lines

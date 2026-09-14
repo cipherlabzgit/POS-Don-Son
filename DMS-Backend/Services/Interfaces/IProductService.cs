@@ -11,6 +11,7 @@ public interface IProductService
         Guid? categoryId = null,
         bool? activeOnly = null,
         bool? displayInPosOnly = null,
+        DateOnly? asOf = null,
         CancellationToken cancellationToken = default);
 
     Task<ProductDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);

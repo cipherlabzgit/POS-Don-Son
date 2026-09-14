@@ -123,11 +123,11 @@ export async function loginRequest(email: string, password: string): Promise<Log
 export async function fetchProductsPage(
   page: number,
   pageSize: number,
-  opts?: { posVisibleOnly?: boolean },
+  opts?: { posVisibleOnly?: boolean; asOf?: string },
 ) {
   const posVisibleOnly = opts?.posVisibleOnly !== false
   const { data } = await api.get('/api/products', {
-    params: { page, pageSize, activeOnly: true },
+    params: { page, pageSize, activeOnly: true, asOf: opts?.asOf },
   })
   const { items, totalCount } = readPagedPayload(data, ['products', 'Products'], [
     'totalCount',

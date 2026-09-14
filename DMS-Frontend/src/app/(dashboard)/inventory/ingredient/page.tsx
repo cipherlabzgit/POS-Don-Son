@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import CsvBulkUploadBar from '@/components/dms/CsvBulkUploadBar';
 import type { CsvRowRecord } from '@/lib/csv-utils';
 import { parseBool, parseDecimal, parseIntField, req } from '@/lib/bulk-csv-field-parsers';
+import { useInitialListLoading } from '@/hooks/use-initial-list-loading';
 
 export default function IngredientPage() {
   return (
@@ -91,7 +92,7 @@ function IngredientPageContent() {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   
   // Loading and error states
-  const [loading, setLoading] = useState(true);
+  const { loading, beginListLoad, endListLoad } = useInitialListLoading(true);
   const [error, setError] = useState<string | null>(null);
   
   // Pagination and search
@@ -119,8 +120,9 @@ function IngredientPageContent() {
   }, [currentPage, pageSize, searchTerm]);
 
   const fetchIngredients = async () => {
+    const keepSearchFocus = document.activeElement === searchInputRef.current;
     try {
-      setLoading(true);
+      beginListLoad();
       setError(null);
       
       const response = await ingredientsApi.getAll(
@@ -140,7 +142,8 @@ function IngredientPageContent() {
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
-      setLoading(false);
+      endListLoad();
+      if (keepSearchFocus) requestAnimationFrame(() => searchInputRef.current?.focus());
     }
   };
 

@@ -22,6 +22,7 @@ public sealed class OperationApprovalsSummaryDto
     // DMS Sections
     public List<OperationApprovalItemDto> ImmediateOrders { get; set; } = new();
     public List<OperationApprovalItemDto> CashierBalances { get; set; } = new();
+    public List<OperationApprovalItemDto> PriceChanges { get; set; } = new();
 
     // Administrator Sections
     public List<OperationApprovalItemDto> AdminApprovals { get; set; } = new();
@@ -43,5 +44,6 @@ public sealed class OperationApprovalsSummaryDto
         DailyProductionPlans.Count +
         ImmediateOrders.Count +
         CashierBalances.Count +
+        PriceChanges.Count +
         AdminApprovals.Count;
 }

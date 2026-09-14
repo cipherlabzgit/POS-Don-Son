@@ -3603,6 +3603,10 @@ namespace DMS_Backend.Migrations
                         .HasColumnType("decimal(18,2)")
                         .HasColumnName("unit_price");
 
+                    b.Property<decimal>("PreviousUnitPrice")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("previous_unit_price");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 

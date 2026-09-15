@@ -44,32 +44,37 @@ html,body{
 .slip.cols-3 .code{width:16mm}
 .slip.cols-3 .item{width:auto;padding-right:3px}
 .slip.cols-3 .qty{width:12mm;text-align:right}
-.slip table.sig-write{
+.sig-field{width:100%;margin:2mm 0 1mm}
+.slip table.sig-pad{
   width:100%;
   border-collapse:collapse;
-  table-layout:auto;
-  margin:1mm 0 0;
+  table-layout:fixed;
+  margin:0;
 }
-.slip table.sig-write td{
-  height:6mm !important;
-  min-height:6mm !important;
+.slip table.sig-pad td{
   padding:0 !important;
   border:none !important;
-  font-size:12px !important;
-  line-height:6mm !important;
-  vertical-align:middle;
+  font-size:8mm !important;
+  line-height:8mm !important;
+  height:8mm !important;
+  vertical-align:top;
+}
+.slip table.sig-pad td.bar{
+  width:3px;
+  overflow:hidden;
 }
 .sig-dots{
   border-bottom:1px dotted #000;
   width:100%;
-  height:4mm;
+  font-size:10px;
   line-height:4mm;
+  height:4mm;
   margin:0;
 }
 .sig-cap{
   text-align:center;
   font-size:11px;
-  margin:1mm 0 4mm;
+  margin:1.5mm 0 7mm;
 }
 `
 
@@ -81,14 +86,22 @@ function escapeHtml(s: string) {
     .replace(/"/g, '&quot;')
 }
 
-/** Four printed rows (~24mm) so a name/signature can be written on thermal paper. */
+/**
+ * Signature write-gap. XP-80C drops empty CSS / &lt;br&gt; / empty cells.
+ * Four ink glyphs (`|`) at 8mm keep ~32mm of paper for a name or signature.
+ */
 export function signatureWriteFieldHtml(caption: string): string {
-  return `<table class="sig-write">
-  <tr><td>&nbsp;</td></tr>
-  <tr><td>&nbsp;</td></tr>
-  <tr><td>&nbsp;</td></tr>
-  <tr><td>&nbsp;</td></tr>
-</table>
-<div class="sig-dots">&nbsp;</div>
-<div class="sig-cap">${escapeHtml(caption)}</div>`
+  const gapRows = Array.from(
+    { length: 4 },
+    () =>
+      `<tr><td class="bar" style="font-size:8mm;line-height:8mm;height:8mm">|</td><td class="gap" style="font-size:8mm;line-height:8mm;height:8mm">&nbsp;</td></tr>`,
+  ).join('')
+  return `<div class="sig-field">
+  <table class="sig-pad">
+    <colgroup><col style="width:3px"><col></colgroup>
+    ${gapRows}
+  </table>
+  <div class="sig-dots">&nbsp;</div>
+  <div class="sig-cap">${escapeHtml(caption)}</div>
+</div>`
 }

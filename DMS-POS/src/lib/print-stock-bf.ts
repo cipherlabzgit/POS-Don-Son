@@ -54,8 +54,9 @@ td{padding:5px 2px;vertical-align:top;font-weight:400;font-size:12px}
 .code{text-align:left;white-space:nowrap}
 .item{text-align:left;white-space:normal;padding-right:3px}
 .qty{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.sig{margin-top:12px;font-size:12px;font-weight:400;line-height:1.35}
-.sig .name{font-weight:700;margin-bottom:4px;text-align:center}
+.sig{margin-top:10px;font-size:12px;font-weight:400;line-height:1.35;text-align:center}
+.sig .name{font-weight:700;margin-bottom:2px;text-align:center}
+.sig .cashier{margin-bottom:2mm;text-align:center}
 </style></head><body>
 <div class="slip cols-3">
 <div class="header">
@@ -84,7 +85,7 @@ td{padding:5px 2px;vertical-align:top;font-weight:400;font-size:12px}
 <div class="divider"></div>
 <div class="sig">
   <div class="name">Submitted By</div>
-  <div>${escapeHtml(opts.cashier)}</div>
+  <div class="cashier">${escapeHtml(opts.cashier)}</div>
   ${signatureWriteFieldHtml('Submitted By Signature')}
 </div>
 <div class="sig">

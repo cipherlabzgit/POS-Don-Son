@@ -106,9 +106,9 @@ td{font-weight:400}
 td.code,th.code{text-align:left;white-space:nowrap}
 td.item,th.item{text-align:left;white-space:normal}
 td.qty,th.qty{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.sig-section{margin-top:6px}
-.sig-k{margin-bottom:0}
-.cut-feed{height:5mm}
+.sig-section{margin-top:8px}
+.sig-k{margin-bottom:1mm;font-weight:700}
+.cut-feed{height:8mm}
 </style></head><body>
 <div class="slip cols-3">
 <div class="title">Return Note</div>

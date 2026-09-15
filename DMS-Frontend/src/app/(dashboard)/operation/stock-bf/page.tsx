@@ -16,6 +16,7 @@ import { isAdminUser } from '@/lib/date-restrictions';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ProtectedPage } from '@/components/auth';
 import toast from 'react-hot-toast';
+import { appConfirm } from '@/lib/app-notify';
 import { formatSlDate, formatSlDateTime } from '@/lib/sri-lanka-time';
 
 export default function StockBFPage() {
@@ -99,7 +100,7 @@ function StockBFPageContent() {
   const paginatedStockBFGroups = filteredStockBFGroups;
 
   const handleDeleteGroup = async (group: StockBFGroup) => {
-    if (!confirm(`Are you sure you want to delete this stock BF with ${group.itemCount} item(s)?`)) return;
+    if (!(await appConfirm(`Are you sure you want to delete this stock BF with ${group.itemCount} item(s)?`))) return;
     
     try {
       await Promise.all(group.items.map(item => stockBfApi.delete(item.id)));

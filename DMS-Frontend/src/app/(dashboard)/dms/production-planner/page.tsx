@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
 import { Printer, ChevronDown, ChevronRight } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { productionSections, mockProductionItems, mockIngredientTotals, type ProductionSection } from '@/lib/mock-data/dms-production';
 
 export default function ProductionPlannerPage() {
@@ -33,7 +34,7 @@ export default function ProductionPlannerPage() {
 
   const handlePrint = () => {
     console.log('Printing production planner for:', selectedSection);
-    alert(`Printing ${selectedSection} production planner...`);
+    toast(`Printing ${selectedSection} production planner...`);
   };
 
   return (

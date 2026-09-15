@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
 import { Printer, FileDown } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { productionSections, mockIngredientTotals, type ProductionSection } from '@/lib/mock-data/dms-production';
 
 export default function StoresIssueNotePage() {
@@ -11,11 +12,11 @@ export default function StoresIssueNotePage() {
   const sectionIngredients = mockIngredientTotals;
 
   const handlePrint = () => {
-    alert(`Printing Stores Issue Note for ${selectedSection}...`);
+    toast(`Printing Stores Issue Note for ${selectedSection}...`);
   };
 
   const handleExport = (format: 'pdf' | 'excel') => {
-    alert(`Exporting Stores Issue Note as ${format.toUpperCase()}...`);
+    toast(`Exporting Stores Issue Note as ${format.toUpperCase()}...`);
   };
 
   return (

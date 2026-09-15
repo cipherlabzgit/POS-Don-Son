@@ -2,6 +2,7 @@
 
 import { useEffect, ReactNode } from 'react';
 import { useThemeStore } from '@/lib/stores/theme-store';
+import AppNotifications from '@/components/ui/app-notifications';
 
 interface ThemeProviderProps {
   children: ReactNode;
@@ -41,5 +42,10 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [mode, _hasHydrated]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <AppNotifications />
+    </>
+  );
 }

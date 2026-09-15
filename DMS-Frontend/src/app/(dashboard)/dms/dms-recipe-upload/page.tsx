@@ -6,6 +6,8 @@ import Button from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { Upload, FileText, CheckCircle2, AlertTriangle, XCircle, Download, RefreshCw, FileSpreadsheet, Database } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { appConfirm } from '@/lib/app-notify';
 
 type RowStatus = 'valid' | 'warning' | 'error';
 type UploadStage = 'idle' | 'uploading' | 'parsing' | 'preview' | 'committing' | 'committed';
@@ -71,9 +73,12 @@ export default function DmsRecipeUploadPage() {
     }, 80);
   };
 
-  const handleCommit = () => {
+  const handleCommit = async () => {
     if (errorCount > 0) {
-      const ok = confirm(`There are ${errorCount} errors. Only valid rows will be imported. Continue?`);
+      const ok = await appConfirm(
+        `There are ${errorCount} errors. Only valid rows will be imported. Continue?`,
+        { confirmLabel: 'Continue', variant: 'primary' },
+      );
       if (!ok) return;
     }
     setStage('committing');
@@ -91,7 +96,7 @@ export default function DmsRecipeUploadPage() {
   };
 
   const downloadTemplate = () => {
-    alert('Recipe template (recipe_upload_template.xlsx) would download here.');
+    toast('Recipe template (recipe_upload_template.xlsx) would download here.');
   };
 
   const statusBadge = (status: RowStatus) => {

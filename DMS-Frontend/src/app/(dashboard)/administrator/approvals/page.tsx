@@ -30,6 +30,7 @@ import { approvalsApi, type ApproveApprovalDto, type RejectApprovalDto } from '@
 import { usePermissions } from '@/hooks/usePermissions';
 import { ProtectedPage } from '@/components/auth';
 import toast from 'react-hot-toast';
+import { appConfirm } from '@/lib/app-notify';
 import { formatSlDate, formatSlDateTime } from '@/lib/sri-lanka-time';
 
 // ─── Section / subsection config ──────────────────────────────────────────────
@@ -407,7 +408,10 @@ export default function ApprovalsPage() {
       toast.error(`No ${label} items you can approve.`);
       return;
     }
-    if (!confirm(`Approve ${eligible.length} ${label} request${eligible.length === 1 ? '' : 's'}?`)) return;
+    if (!(await appConfirm(
+      `Approve ${eligible.length} ${label} request${eligible.length === 1 ? '' : 's'}?`,
+      { confirmLabel: 'Approve', variant: 'primary' },
+    ))) return;
     setApprovingAllKey(bulkKey);
     let ok = 0;
     let fail = 0;
@@ -464,7 +468,7 @@ export default function ApprovalsPage() {
       setShowRejectModal(true);
       return;
     }
-    if (!confirm(`Are you sure you want to reject this ${type.toLowerCase()}?`)) return;
+    if (!(await appConfirm(`Are you sure you want to reject this ${type.toLowerCase()}?`))) return;
     try {
       setSubmittingIds(prev => new Set(prev).add(id));
       switch (type) {
@@ -709,9 +713,11 @@ export default function ApprovalsPage() {
         {SECTIONS.map((section) => {
           const isOpen = openSectionId === section.id;
           const count = sectionCount(summary, section);
+          if (count === 0) return null;
           const sectionItems = section.subsections.flatMap((s) => summary?.[s.key] ?? []);
           const canBulk = sectionItems.some((i) => userCanApprove(i.approvalType, can, canAny));
           const bulkBusy = approvingAllKey === section.id;
+          const visibleSubs = section.subsections.filter((sub) => (summary?.[sub.key]?.length ?? 0) > 0);
           return (
             <div
               key={section.id}
@@ -767,7 +773,7 @@ export default function ApprovalsPage() {
                   className="space-y-1 border-t px-3 py-2"
                   style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}
                 >
-                  {section.subsections.map((sub) => {
+                  {visibleSubs.map((sub) => {
                     const subItems = summary?.[sub.key] ?? [];
                     const subCount = subItems.length;
                     const isActive = selectedSubsectionKey === sub.key;

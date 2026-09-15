@@ -106,13 +106,14 @@ public class PriceListService : IPriceListService
         }
 
         var lines = NormalizeLines(dto.Items);
+        var effectiveFromUtc = NormalizeEffectiveFromUtc(dto.EffectiveFrom);
         var products = await LoadProductsAsync(lines.Select(i => i.ProductId), cancellationToken);
-        var previousPrices = await ResolvePreviousPricesAsync(dto.EffectiveFrom, lines.Select(i => i.ProductId), cancellationToken);
+        var previousPrices = await ResolvePreviousPricesAsync(effectiveFromUtc, lines.Select(i => i.ProductId), cancellationToken);
 
         var now = DateTime.UtcNow;
         var priceList = _mapper.Map<PriceList>(dto);
         priceList.Id = Guid.NewGuid();
-        priceList.EffectiveFrom = DateTime.SpecifyKind(dto.EffectiveFrom.Date, DateTimeKind.Utc);
+        priceList.EffectiveFrom = effectiveFromUtc;
         priceList.EffectiveTo = null;
         priceList.PriceListType = StatusPending;
         priceList.Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "LKR" : dto.Currency;
@@ -120,7 +121,7 @@ public class PriceListService : IPriceListService
         priceList.UpdatedById = userId;
         priceList.CreatedAt = now;
         priceList.UpdatedAt = now;
-        priceList.PriceListItems = BuildItems(lines, products, previousPrices, userId, now, priceList.Id);
+        priceList.PriceListItems = BuildItems(lines, products, previousPrices, userId, now);
 
         _context.PriceLists.Add(priceList);
 
@@ -180,8 +181,9 @@ public class PriceListService : IPriceListService
         }
 
         var lines = NormalizeLines(dto.Items);
+        var effectiveFromUtc = NormalizeEffectiveFromUtc(dto.EffectiveFrom);
         var products = await LoadProductsAsync(lines.Select(i => i.ProductId), cancellationToken);
-        var previousPrices = await ResolvePreviousPricesAsync(dto.EffectiveFrom, lines.Select(i => i.ProductId), cancellationToken);
+        var previousPrices = await ResolvePreviousPricesAsync(effectiveFromUtc, lines.Select(i => i.ProductId), cancellationToken);
         var now = DateTime.UtcNow;
 
         priceList.Code = dto.Code;
@@ -189,7 +191,7 @@ public class PriceListService : IPriceListService
         priceList.Description = dto.Description;
         priceList.PriceListType = StatusPending;
         priceList.Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "LKR" : dto.Currency;
-        priceList.EffectiveFrom = DateTime.SpecifyKind(dto.EffectiveFrom.Date, DateTimeKind.Utc);
+        priceList.EffectiveFrom = effectiveFromUtc;
         priceList.EffectiveTo = null;
         priceList.IsDefault = dto.IsDefault;
         priceList.Priority = dto.Priority;
@@ -197,51 +199,7 @@ public class PriceListService : IPriceListService
         priceList.UpdatedById = userId;
         priceList.UpdatedAt = now;
 
-        var existingByProduct = (priceList.PriceListItems ?? [])
-            .GroupBy(i => i.ProductId)
-            .ToDictionary(g => g.Key, g => g.First());
-        var kept = new List<PriceListItem>();
-        foreach (var line in lines)
-        {
-            var product = products[line.ProductId];
-            previousPrices.TryGetValue(product.Id, out var resolvedPrevious);
-            var previous = previousPrices.ContainsKey(product.Id) ? resolvedPrevious : product.UnitPrice;
-            if (existingByProduct.TryGetValue(line.ProductId, out var item))
-            {
-                item.UnitPrice = line.UnitPrice;
-                item.PreviousUnitPrice = previous;
-                item.IsActive = true;
-                item.UpdatedById = userId;
-                item.UpdatedAt = now;
-                kept.Add(item);
-                existingByProduct.Remove(line.ProductId);
-            }
-            else
-            {
-                var created = new PriceListItem
-                {
-                    Id = Guid.NewGuid(),
-                    PriceListId = priceList.Id,
-                    ProductId = product.Id,
-                    UnitPrice = line.UnitPrice,
-                    PreviousUnitPrice = previous,
-                    IsActive = true,
-                    CreatedById = userId,
-                    UpdatedById = userId,
-                    CreatedAt = now,
-                    UpdatedAt = now,
-                };
-                _context.PriceListItems.Add(created);
-                kept.Add(created);
-            }
-        }
-
-        if (existingByProduct.Count > 0)
-        {
-            _context.PriceListItems.RemoveRange(existingByProduct.Values);
-        }
-
-        priceList.PriceListItems = kept;
+        SyncItems(priceList, lines, products, previousPrices, userId, now);
 
         var pending = await _context.ApprovalQueues.FirstOrDefaultAsync(
             q => q.EntityId == id
@@ -284,14 +242,7 @@ public class PriceListService : IPriceListService
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        try
-        {
-            await _systemLogService.LogInfoAsync("PriceListService", $"Price change updated: {priceList.Code} by user {userId}");
-        }
-        catch
-        {
-            /* Save already succeeded. */
-        }
+        await _systemLogService.LogInfoAsync("PriceListService", $"Price change updated: {priceList.Code} by user {userId}");
 
         return (await GetByIdAsync(id, cancellationToken))!;
     }
@@ -374,13 +325,75 @@ public class PriceListService : IPriceListService
         return await _priceResolver.ResolveAsync(productIds, asOf, cancellationToken);
     }
 
+    private static DateTime NormalizeEffectiveFromUtc(DateTime value)
+    {
+        var slDate = DeliveryPlanPreloadRules.ResolvePlanBusinessDateSriLanka(value);
+        return DeliveryPlanPreloadRules.SlDateToUtcMidnight(slDate);
+    }
+
+    private void SyncItems(
+        PriceList priceList,
+        List<PriceListItemLineDto> lines,
+        Dictionary<Guid, Product> products,
+        Dictionary<Guid, decimal> previousPrices,
+        Guid userId,
+        DateTime now)
+    {
+        var existing = (priceList.PriceListItems ?? new List<PriceListItem>()).ToList();
+        var incomingIds = lines.Select(l => l.ProductId).ToHashSet();
+
+        foreach (var stale in existing.Where(i => !incomingIds.Contains(i.ProductId)))
+        {
+            _context.PriceListItems.Remove(stale);
+        }
+
+        var byProduct = existing
+            .Where(i => incomingIds.Contains(i.ProductId))
+            .GroupBy(i => i.ProductId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var next = new List<PriceListItem>();
+        foreach (var line in lines)
+        {
+            var product = products[line.ProductId];
+            previousPrices.TryGetValue(product.Id, out var resolvedPrevious);
+            var previous = previousPrices.ContainsKey(product.Id) ? resolvedPrevious : product.UnitPrice;
+
+            if (byProduct.TryGetValue(line.ProductId, out var row))
+            {
+                row.UnitPrice = line.UnitPrice;
+                row.PreviousUnitPrice = previous;
+                row.IsActive = true;
+                row.UpdatedById = userId;
+                row.UpdatedAt = now;
+                next.Add(row);
+                continue;
+            }
+
+            next.Add(new PriceListItem
+            {
+                Id = Guid.NewGuid(),
+                PriceListId = priceList.Id,
+                ProductId = product.Id,
+                UnitPrice = line.UnitPrice,
+                PreviousUnitPrice = previous,
+                IsActive = true,
+                CreatedById = userId,
+                UpdatedById = userId,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+        }
+
+        priceList.PriceListItems = next;
+    }
+
     private static List<PriceListItem> BuildItems(
         List<PriceListItemLineDto> lines,
         Dictionary<Guid, Product> products,
         Dictionary<Guid, decimal> previousPrices,
         Guid userId,
-        DateTime now,
-        Guid priceListId)
+        DateTime now)
     {
         return lines.Select(line =>
         {
@@ -390,7 +403,6 @@ public class PriceListService : IPriceListService
             return new PriceListItem
             {
                 Id = Guid.NewGuid(),
-                PriceListId = priceListId,
                 ProductId = product.Id,
                 UnitPrice = line.UnitPrice,
                 PreviousUnitPrice = previous,
@@ -422,7 +434,7 @@ public class PriceListService : IPriceListService
         {
             code = priceList.Code,
             comment = priceList.Description ?? priceList.Name,
-            effectiveFrom = priceList.EffectiveFrom.ToString("yyyy-MM-dd"),
+            effectiveFrom = priceList.EffectiveFrom,
             itemCount = items.Count,
             items,
         };

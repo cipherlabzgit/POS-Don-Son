@@ -9,6 +9,7 @@ import { Clock, Plus, Search, Edit, X, Check, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { shiftsApi, type Shift, type UpdateShiftDto } from '@/lib/api/shifts';
 import toast from 'react-hot-toast';
+import { appConfirm } from '@/lib/app-notify';
 
 export default function ShiftsPage() {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function ShiftsPage() {
   };
 
   const handleDelete = async (shift: Shift) => {
-    if (!confirm(`Are you sure you want to delete "${shift.name}"?`)) {
+    if (!(await appConfirm(`Are you sure you want to delete "${shift.name}"?`))) {
       return;
     }
 

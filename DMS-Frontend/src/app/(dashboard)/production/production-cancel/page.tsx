@@ -17,6 +17,7 @@ import { isAdminUser } from '@/lib/date-restrictions';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ProtectedPage } from '@/components/auth';
 import toast from 'react-hot-toast';
+import { appConfirm } from '@/lib/app-notify';
 import { formatSlDate, formatSlDateTime } from '@/lib/sri-lanka-time';
 
 export default function ProductionCancelPage() {
@@ -104,7 +105,7 @@ function ProductionCancelPageContent() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this production cancellation?')) return;
+    if (!(await appConfirm('Are you sure you want to delete this production cancellation?'))) return;
 
     try {
       await productionCancelsApi.delete(id);

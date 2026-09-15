@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { posThemeApi, type PosThemeConfig, type CreatePosThemeDto } from '@/lib/api/pos-theme';
 import toast from 'react-hot-toast';
+import { appConfirm } from '@/lib/app-notify';
 
 // Color input component
 function ColorInput({ 
@@ -324,7 +325,7 @@ export default function PosThemePage() {
       toast.error('Cannot delete the active theme');
       return;
     }
-    if (!confirm('Delete this theme?')) return;
+    if (!(await appConfirm('Delete this theme?'))) return;
     try {
       await posThemeApi.delete(id);
       toast.success('Theme deleted');

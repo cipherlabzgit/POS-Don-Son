@@ -9,6 +9,7 @@ import { productsApi, type Product } from '@/lib/api/products';
 import { outletsApi, type Outlet } from '@/lib/api/outlets';
 import { dayTypesApi, type DayType } from '@/lib/api/day-types';
 import { toast } from 'sonner';
+import { appConfirm } from '@/lib/app-notify';
 
 export default function DefaultQuantitiesPage() {
   const [dayTypes, setDayTypes] = useState<DayType[]>([]);
@@ -137,18 +138,19 @@ export default function DefaultQuantitiesPage() {
     }
   };
 
-  const handleReset = () => {
-    if (window.confirm('Are you sure you want to reset all quantities to zero?')) {
-      const resetQtys: { [productId: string]: { [outletId: string]: { full: number; mini: number; id?: string } } } = {};
-      products.forEach(product => {
-        resetQtys[product.id] = {};
-        outlets.forEach(outlet => {
-          const existingId = quantities[product.id]?.[outlet.id]?.id;
-          resetQtys[product.id][outlet.id] = { full: 0, mini: 0, id: existingId };
-        });
-      });
-      setQuantities(resetQtys);
+  const handleReset = async () => {
+    if (!(await appConfirm('Are you sure you want to reset all quantities to zero?'))) {
+      return;
     }
+    const resetQtys: { [productId: string]: { [outletId: string]: { full: number; mini: number; id?: string } } } = {};
+    products.forEach(product => {
+      resetQtys[product.id] = {};
+      outlets.forEach(outlet => {
+        const existingId = quantities[product.id]?.[outlet.id]?.id;
+        resetQtys[product.id][outlet.id] = { full: 0, mini: 0, id: existingId };
+      });
+    });
+    setQuantities(resetQtys);
   };
 
   if (isLoading) {

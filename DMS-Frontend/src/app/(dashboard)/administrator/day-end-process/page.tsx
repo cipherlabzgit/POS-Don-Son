@@ -7,6 +7,7 @@ import Input from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Bell, CheckCircle, Lock, AlertTriangle, ShieldAlert, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { appConfirm } from '@/lib/app-notify';
 import { previousCalendarDayUtcISO } from '@/lib/date-restrictions';
 import { useDayEndStore } from '@/lib/stores/day-end-store';
 import { ProtectedPage, PermissionButton } from '@/components/auth';
@@ -211,7 +212,7 @@ function DayEndProcessContent() {
 
   const handleResetCashierBalance = async () => {
     if (dayLocked) return;
-    const ok = window.confirm(
+    const ok = await appConfirm(
       'Reset approved cashier balances for this date? Showrooms will be able to submit again. Day-end for this date will stay incomplete until balances are re-approved.',
     );
     if (!ok) return;
@@ -287,8 +288,9 @@ function DayEndProcessContent() {
     const already = notifyTargets.filter((t) => ids.includes(t.outletId) && t.alreadyNotified);
     let confirmRenotify = false;
     if (already.length > 0) {
-      confirmRenotify = window.confirm(
-        'Already notified showrooms can be notified again. Send again to the selected showrooms?'
+      confirmRenotify = await appConfirm(
+        'Already notified showrooms can be notified again. Send again to the selected showrooms?',
+        { confirmLabel: 'Send again', variant: 'primary' },
       );
       if (!confirmRenotify) return;
     }
@@ -305,7 +307,7 @@ function DayEndProcessContent() {
     } catch (e) {
       const msg = getDayEndApiErrorMessage(e);
       if (/already notified/i.test(msg)) {
-        const ok = window.confirm(`${msg} Notify them again?`);
+        const ok = await appConfirm(`${msg} Notify them again?`, { confirmLabel: 'Notify again', variant: 'primary' });
         if (ok) {
           try {
             await dayEndApi.notifyCashiers({

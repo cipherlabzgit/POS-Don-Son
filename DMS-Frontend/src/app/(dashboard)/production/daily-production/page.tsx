@@ -16,6 +16,7 @@ import { useThemeStore } from '@/lib/stores/theme-store';
 import { isAdminUser } from '@/lib/date-restrictions';
 import { formatSlDate, formatSlDateTime } from '@/lib/sri-lanka-time';
 import toast from 'react-hot-toast';
+import { appConfirm } from '@/lib/app-notify';
 import { ProtectedPage, PermissionButton } from '@/components/auth';
 
 function formatShortDate(iso: string | undefined) {
@@ -88,7 +89,7 @@ function DailyProductionPageContent() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this production?')) return;
+    if (!(await appConfirm('Are you sure you want to delete this production?'))) return;
 
     try {
       await dailyProductionsApi.delete(id);

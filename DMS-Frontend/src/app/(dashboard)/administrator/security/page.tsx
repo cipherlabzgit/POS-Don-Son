@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { ProtectedPage } from '@/components/auth';
 import { PermissionsManager } from '@/components/administrator/permissions-manager';
 import { usersApi, type User, type UpdateUserRequest } from '@/lib/api/users';
+import toast from 'react-hot-toast';
 
 type TabType = 'users' | 'permissions';
 
@@ -71,14 +72,14 @@ export default function SecurityPage() {
       await loadUsers();
     } catch (error) {
       console.error('Failed to toggle user status:', error);
-      alert('Failed to update user status');
+      toast.error('Failed to update user status');
     }
   };
 
   const handleResetPassword = async () => {
     if (!selectedUser) return;
     if (resetPasswordData.password !== resetPasswordData.confirmPassword) {
-      alert('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
 
@@ -88,11 +89,11 @@ export default function SecurityPage() {
       setShowResetPasswordModal(false);
       setSelectedUser(null);
       setResetPasswordData({ password: '', confirmPassword: '' });
-      alert('Password reset successfully');
+      toast.success('Password reset successfully');
     } catch (error: unknown) {
       console.error('Failed to reset password:', error);
       const err = error as { response?: { data?: { error?: { message?: string } } } };
-      alert(err.response?.data?.error?.message || 'Failed to reset password');
+      toast.error(err.response?.data?.error?.message || 'Failed to reset password');
     } finally {
       setUserSubmitting(false);
     }

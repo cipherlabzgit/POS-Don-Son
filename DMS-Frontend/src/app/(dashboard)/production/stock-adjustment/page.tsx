@@ -15,6 +15,7 @@ import ProtectedPage from '@/components/auth/ProtectedPage';
 import PermissionButton from '@/components/auth/PermissionButton';
 import WorkflowButtons from '@/components/auth/WorkflowButtons';
 import toast from 'react-hot-toast';
+import { appConfirm } from '@/lib/app-notify';
 import { formatSlDate, formatSlDateTime } from '@/lib/sri-lanka-time';
 
 function formatShortDate(iso: string | undefined) {
@@ -121,7 +122,7 @@ export default function StockAdjustmentPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this stock adjustment?')) return;
+    if (!(await appConfirm('Are you sure you want to delete this stock adjustment?'))) return;
 
     try {
       await stockAdjustmentsApi.delete(id);

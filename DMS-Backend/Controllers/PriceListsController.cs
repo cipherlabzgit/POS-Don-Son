@@ -77,6 +77,10 @@ public class PriceListsController : ControllerBase
         {
             return Conflict(ApiResponse<PriceListDetailDto>.FailureResponse(Error.Conflict(ex.Message)));
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponse<PriceListDetailDto>.FailureResponse(Error.Validation(ex.Message)));
+        }
     }
 
     [HttpPut("{id:guid}")]
@@ -101,6 +105,10 @@ public class PriceListsController : ControllerBase
                 return NotFound(ApiResponse<PriceListDetailDto>.FailureResponse(Error.NotFound("PriceList", id.ToString())));
             }
             return Conflict(ApiResponse<PriceListDetailDto>.FailureResponse(Error.Conflict(ex.Message)));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponse<PriceListDetailDto>.FailureResponse(Error.Validation(ex.Message)));
         }
         catch (DbUpdateException ex)
         {

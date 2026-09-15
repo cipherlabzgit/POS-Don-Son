@@ -276,6 +276,8 @@ export function StockBfPage({ onBack }: Props) {
         try {
           await postStockBfBulk(payload)
         } catch (firstErr) {
+          const msg = formatSubmitError(firstErr).toLowerCase()
+          if (msg.includes('already submitted')) throw firstErr
           if (!isConflictStatus(firstErr) && !isAlreadyRecordedError(firstErr)) throw firstErr
         }
         await offlineDb.stockBf.put({

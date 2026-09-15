@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
 import { Grid, Save, Download, Eye, EyeOff } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { mockOutlets, mockOrderProducts } from '@/lib/mock-data/dms-orders';
 
 export default function OrderEntryPage() {
@@ -135,7 +136,7 @@ export default function OrderEntryPage() {
 
   const handleSave = () => {
     console.log('Saving order data:', { orderData, extras });
-    alert('Order saved successfully!');
+    toast.success('Order saved successfully!');
   };
 
   return (

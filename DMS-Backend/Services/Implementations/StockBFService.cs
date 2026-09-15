@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
+using DMS_Backend.Common;
 using DMS_Backend.Data;
 using DMS_Backend.Models.Entities;
 using DMS_Backend.Models.DTOs.StockBF;
@@ -32,18 +33,22 @@ public class StockBFService : IStockBFService
         return utc.TimeOfDay == TimeSpan.Zero ? utc.AddDays(1).AddTicks(-1) : utc;
     }
 
-    private static void ValidateBfDateRules(DateTime bfDateUtc, bool relaxedBfDateRules)
+    private static void ValidateBfDateRules(DateTime bfDate, bool relaxedBfDateRules)
     {
         if (relaxedBfDateRules)
             return;
 
-        var utcDate = EnsureUtc(bfDateUtc).Date;
-        var today = DateTime.UtcNow.Date;
-        if (utcDate > today)
+        var slDate = DeliveryPlanPreloadRules.ResolvePlanBusinessDateSriLanka(bfDate);
+        var today = DeliveryPlanPreloadRules.TodaySriLanka();
+        if (slDate > today)
             throw new ArgumentException("BF date cannot be in the future.");
-        if (utcDate < today.AddDays(-3))
+        if (slDate < today.AddDays(-3))
             throw new ArgumentException("BF date cannot be more than 3 days in the past.");
     }
+
+    private static DateTime CanonicalBfDateUtc(DateTime bfDate) =>
+        DeliveryPlanPreloadRules.SlDateToUtcMidnight(
+            DeliveryPlanPreloadRules.ResolvePlanBusinessDateSriLanka(bfDate));
 
     private static bool IsStockBfUniqueViolation(DbUpdateException ex) =>
         ex.InnerException is PostgresException pg &&
@@ -52,10 +57,19 @@ public class StockBFService : IStockBFService
          (pg.ConstraintName?.Contains("stock_bf", StringComparison.OrdinalIgnoreCase) == true &&
           pg.ConstraintName.Contains("outlet", StringComparison.OrdinalIgnoreCase)));
 
-    private static (DateTime StartUtc, DateTime EndUtc) BfDayRangeUtc(DateTime bfDateUtc)
+    /// <summary>
+    /// Occupancy window covering both Colombo-midnight UTC rows and legacy UTC calendar-date rows.
+    /// </summary>
+    private static (DateTime StartUtc, DateTime EndUtc) BfDayRangeUtc(DateTime bfDate)
     {
-        var start = EnsureUtc(bfDateUtc).Date;
-        return (start, start.AddDays(1));
+        var sl = DeliveryPlanPreloadRules.ResolvePlanBusinessDateSriLanka(bfDate);
+        var slStart = DeliveryPlanPreloadRules.SlDateToUtcMidnight(sl);
+        var slEnd = DeliveryPlanPreloadRules.SlDateToUtcMidnight(sl.AddDays(1));
+        var utcStart = DateTime.SpecifyKind(new DateTime(sl.Year, sl.Month, sl.Day), DateTimeKind.Utc);
+        var utcEnd = utcStart.AddDays(1);
+        var start = slStart < utcStart ? slStart : utcStart;
+        var end = slEnd > utcEnd ? slEnd : utcEnd;
+        return (start, end);
     }
 
     private IQueryable<StockBF> StockBFDetailQuery =>
@@ -131,12 +145,10 @@ public class StockBFService : IStockBFService
             return;
 
         var nowTicks = DateTime.UtcNow.Ticks;
+        var (_, rangeEnd) = BfDayRangeUtc(bfDateUtc);
         for (var i = 0; i < rejected.Count; i++)
         {
-            var offset = (nowTicks + i + 1) % (TimeSpan.TicksPerDay - 1);
-            if (offset == 0)
-                offset = 1;
-            rejected[i].BFDate = dayStart.AddTicks(offset);
+            rejected[i].BFDate = rangeEnd.AddTicks(-(i + 1));
             rejected[i].UpdatedAt = DateTime.UtcNow;
         }
 
@@ -221,10 +233,16 @@ public class StockBFService : IStockBFService
         }
 
         if (fromDate.HasValue)
-            query = query.Where(s => s.BFDate >= EnsureUtc(fromDate.Value));
+        {
+            var (start, _) = BfDayRangeUtc(fromDate.Value);
+            query = query.Where(s => s.BFDate >= start);
+        }
 
         if (toDate.HasValue)
-            query = query.Where(s => s.BFDate <= InclusiveEndUtc(toDate.Value));
+        {
+            var (_, end) = BfDayRangeUtc(toDate.Value);
+            query = query.Where(s => s.BFDate < end);
+        }
 
         if (outletId.HasValue)
             query = query.Where(s => s.OutletId == outletId.Value);
@@ -276,10 +294,16 @@ public class StockBFService : IStockBFService
         }
 
         if (fromDate.HasValue)
-            query = query.Where(s => s.BFDate >= EnsureUtc(fromDate.Value));
+        {
+            var (start, _) = BfDayRangeUtc(fromDate.Value);
+            query = query.Where(s => s.BFDate >= start);
+        }
 
         if (toDate.HasValue)
-            query = query.Where(s => s.BFDate <= InclusiveEndUtc(toDate.Value));
+        {
+            var (_, end) = BfDayRangeUtc(toDate.Value);
+            query = query.Where(s => s.BFDate < end);
+        }
 
         if (outletId.HasValue)
             query = query.Where(s => s.OutletId == outletId.Value);
@@ -408,8 +432,8 @@ public class StockBFService : IStockBFService
         bool relaxedBfDateRules,
         CancellationToken cancellationToken = default)
     {
-        var bfDateUtc = EnsureUtc(dto.BFDate);
-        ValidateBfDateRules(bfDateUtc, relaxedBfDateRules);
+        var bfDateUtc = CanonicalBfDateUtc(dto.BFDate);
+        ValidateBfDateRules(dto.BFDate, relaxedBfDateRules);
 
         await ReleaseRejectedUniqueSlotsAsync(dto.OutletId, bfDateUtc, new[] { dto.ProductId }, cancellationToken);
         var blocking = await GetBlockingStockBfsForOutletDateAsync(dto.OutletId, bfDateUtc, cancellationToken);
@@ -487,8 +511,8 @@ public class StockBFService : IStockBFService
         if (dto.Items == null || dto.Items.Count == 0)
             throw new ArgumentException("At least one item is required");
 
-        var bfDateUtc = EnsureUtc(dto.BFDate);
-        ValidateBfDateRules(bfDateUtc, relaxedBfDateRules);
+        var bfDateUtc = CanonicalBfDateUtc(dto.BFDate);
+        ValidateBfDateRules(dto.BFDate, relaxedBfDateRules);
 
         var autoApprovalEnabled = await _autoApprovalConfigService.IsAutoApprovalEnabledAsync("operation:stock-bf", cancellationToken);
         var canAutoApprove = permissionCodes.Contains("*") || permissionCodes.Contains("operation:stock-bf:auto-approve");
@@ -707,8 +731,8 @@ public class StockBFService : IStockBFService
         if (stockBF.Status != StockBFStatus.Pending)
             throw new InvalidOperationException("Only pending Stock BF records can be updated");
 
-        var bfDateUtc = EnsureUtc(dto.BFDate);
-        ValidateBfDateRules(bfDateUtc, relaxedBfDateRules);
+        var bfDateUtc = CanonicalBfDateUtc(dto.BFDate);
+        ValidateBfDateRules(dto.BFDate, relaxedBfDateRules);
 
         var existing = await _context.StockBFs
             .FirstOrDefaultAsync(s => s.Id != id &&

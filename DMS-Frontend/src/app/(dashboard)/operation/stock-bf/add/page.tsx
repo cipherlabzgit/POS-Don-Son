@@ -176,7 +176,11 @@ function AddStockBFPageContent() {
       toast.success(`${stockBfItems.length} Stock BF record(s) created — pending approval`);
       router.push('/operation/stock-bf');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create stock BF');
+      toast.error(
+        error.response?.data?.error?.message ||
+          error.response?.data?.message ||
+          'Failed to create stock BF',
+      );
     } finally {
       setIsSubmitting(false);
     }

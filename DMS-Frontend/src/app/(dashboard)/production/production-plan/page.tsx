@@ -12,6 +12,7 @@ import Select from '@/components/ui/select';
 import { productionPlansApi, type ProductionPlan } from '@/lib/api/production-plans';
 import { ProtectedPage, PermissionButton } from '@/components/auth';
 import toast from 'react-hot-toast';
+import { appConfirm } from '@/lib/app-notify';
 import { formatSlDate, formatSlDateTime } from '@/lib/sri-lanka-time';
 
 function endOfYesterdayIso(): string {
@@ -165,7 +166,7 @@ function ProductionPlanPageContent() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this production plan?')) return;
+    if (!(await appConfirm('Are you sure you want to delete this production plan?'))) return;
 
     try {
       await productionPlansApi.delete(id);

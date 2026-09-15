@@ -6,6 +6,7 @@ import Button from '@/components/ui/button';
 import { Lock, Unlock, ChevronLeft, ChevronRight, Loader2, Calendar, ChevronDown } from 'lucide-react';
 import { ProtectedPage } from '@/components/auth';
 import toast from 'react-hot-toast';
+import { appConfirm } from '@/lib/app-notify';
 import { dayLockApi } from '@/lib/api/day-lock';
 
 const SL_OFFSET_MS = 5.5 * 60 * 60 * 1000;
@@ -88,7 +89,10 @@ export default function DayLockPage() {
     const isLocked = lockedDates.has(dateStr);
     const action = isLocked ? 'unlock' : 'lock';
 
-    if (!window.confirm(`${action === 'lock' ? 'Lock' : 'Unlock'} ${dateStr}? ${action === 'lock' ? 'No entries will be allowed for this date once locked.' : 'Entries will be allowed again for this date.'}`)) {
+    if (!(await appConfirm(
+      `${action === 'lock' ? 'Lock' : 'Unlock'} ${dateStr}? ${action === 'lock' ? 'No entries will be allowed for this date once locked.' : 'Entries will be allowed again for this date.'}`,
+      { confirmLabel: action === 'lock' ? 'Lock' : 'Unlock', variant: 'primary' },
+    ))) {
       return;
     }
 
@@ -114,7 +118,10 @@ export default function DayLockPage() {
     const today = todaySL();
     const todayDate = new Date(today.y, today.m - 1, today.d);
     
-    if (!window.confirm('Lock all previous days? This will lock all dates before today. No entries will be allowed for these dates.')) {
+    if (!(await appConfirm(
+      'Lock all previous days? This will lock all dates before today. No entries will be allowed for these dates.',
+      { confirmLabel: 'Lock previous days' },
+    ))) {
       return;
     }
 

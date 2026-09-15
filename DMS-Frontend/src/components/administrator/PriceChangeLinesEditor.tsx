@@ -32,7 +32,9 @@ function ProductSearchCombobox({
 }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownItemRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
 
   const selected = products.find((p) => p.id === value);
   const displayValue = selected ? `${selected.code} — ${selected.name}` : '';
@@ -40,6 +42,17 @@ function ProductSearchCombobox({
     () => filterByCodeOrName(products, query, { limit: 20, whenEmpty: 'none' }),
     [products, query],
   );
+
+  useEffect(() => {
+    setHighlight(0);
+  }, [query]);
+
+  useEffect(() => {
+    const el = dropdownItemRefs.current.get(highlight);
+    if (el && open) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [highlight, open]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -51,6 +64,13 @@ function ProductSearchCombobox({
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [value]);
+
+  const pickProduct = (p: Product) => {
+    onChange(p.id);
+    setQuery('');
+    setOpen(false);
+    setHighlight(0);
+  };
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -78,7 +98,29 @@ function ProductSearchCombobox({
             if (!e.target.value) onChange('');
           }}
           onFocus={() => setOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setOpen(true);
+              setHighlight((h) => (filtered.length ? Math.min(h + 1, filtered.length - 1) : 0));
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              setHighlight((h) => (filtered.length ? Math.max(h - 1, 0) : 0));
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              const pick =
+                filtered.length > 0
+                  ? filtered[Math.min(Math.max(highlight, 0), filtered.length - 1)]
+                  : undefined;
+              if (pick) pickProduct(pick);
+            } else if (e.key === 'Escape') {
+              setOpen(false);
+            }
+          }}
           autoComplete="off"
+          role="combobox"
+          aria-expanded={open}
+          aria-autocomplete="list"
         />
         <ChevronDown
           className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
@@ -89,6 +131,7 @@ function ProductSearchCombobox({
         <div
           className="absolute z-50 mt-1 w-full border rounded-md shadow-lg max-h-60 overflow-y-auto"
           style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
+          role="listbox"
         >
           {!query.trim() ? (
             <div className="px-3 py-2 text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -99,20 +142,30 @@ function ProductSearchCombobox({
               No products found
             </div>
           ) : (
-            filtered.map((p) => (
+            filtered.map((p, i) => (
               <button
                 key={p.id}
+                ref={(el) => {
+                  if (el) dropdownItemRefs.current.set(i, el);
+                  else dropdownItemRefs.current.delete(i);
+                }}
                 type="button"
-                className="w-full text-left px-3 py-2 text-sm hover:opacity-90"
+                role="option"
+                aria-selected={i === highlight}
+                className="w-full text-left px-3 py-2 text-sm"
                 style={{
-                  backgroundColor: p.id === value ? 'var(--accent)' : undefined,
+                  backgroundColor:
+                    i === highlight
+                      ? 'color-mix(in srgb, var(--accent) 70%, var(--muted))'
+                      : p.id === value
+                        ? 'var(--accent)'
+                        : undefined,
                   color: 'var(--foreground)',
                 }}
+                onMouseEnter={() => setHighlight(i)}
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  onChange(p.id);
-                  setQuery('');
-                  setOpen(false);
+                  pickProduct(p);
                 }}
               >
                 <span className="font-mono font-medium">{p.code}</span>

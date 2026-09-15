@@ -3,6 +3,7 @@ using DMS_Backend.Models.DTOs.PriceLists;
 using DMS_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace DMS_Backend.Controllers;
@@ -100,6 +101,12 @@ public class PriceListsController : ControllerBase
                 return NotFound(ApiResponse<PriceListDetailDto>.FailureResponse(Error.NotFound("PriceList", id.ToString())));
             }
             return Conflict(ApiResponse<PriceListDetailDto>.FailureResponse(Error.Conflict(ex.Message)));
+        }
+        catch (DbUpdateException ex)
+        {
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            return Conflict(ApiResponse<PriceListDetailDto>.FailureResponse(
+                Error.Conflict($"Could not save price change: {detail}")));
         }
     }
 

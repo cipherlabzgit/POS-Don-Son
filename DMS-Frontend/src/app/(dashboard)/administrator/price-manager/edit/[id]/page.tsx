@@ -109,7 +109,12 @@ export default function EditPriceRecordPage() {
       toast.success('Pending price change updated.');
       router.push('/administrator/price-manager');
     } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Failed to update price record.');
+      toast.error(
+        err?.response?.data?.error?.message ??
+          err?.response?.data?.detail ??
+          err?.response?.data?.message ??
+          'Failed to update price record.',
+      );
     } finally {
       setSubmitting(false);
     }

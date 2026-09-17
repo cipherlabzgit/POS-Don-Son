@@ -1,5 +1,5 @@
 import { isElectronPos } from './print-receipt'
-import { signatureWriteFieldHtml, THERMAL_SLIP_CSS, THERMAL_WIDTH_PX } from './thermal-slip'
+import { signatureWriteFieldHtml, extraLineFeedsHtml, THERMAL_SLIP_CSS, THERMAL_WIDTH_PX } from './thermal-slip'
 
 export type StockBfPrintLine = {
   code: string
@@ -93,6 +93,7 @@ td{padding:5px 2px;vertical-align:top;font-weight:400;font-size:12px}
   ${signatureWriteFieldHtml('Accepted By Name')}
   ${signatureWriteFieldHtml('Accepted By Signature')}
 </div>
+${extraLineFeedsHtml(2)}
 </div>
 </body></html>`
 }

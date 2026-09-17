@@ -86,6 +86,7 @@ export function ItemSearchField({
             if (e.key === 'Enter' && value.trim() && items[0]) {
               e.preventDefault()
               onSelect(items[0])
+              onOpenChange(false)
             }
           }}
         />
@@ -116,9 +117,11 @@ export function ItemSearchField({
                 <button
                   type="button"
                   className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--neutral-50)]"
-                  onMouseDown={(e) => {
+                  onPointerDown={(e) => {
                     e.preventDefault()
+                    e.stopPropagation()
                     onSelect(p)
+                    onOpenChange(false)
                   }}
                 >
                   <span className="font-mono text-xs text-[var(--neutral-400)]">{p.code}</span>

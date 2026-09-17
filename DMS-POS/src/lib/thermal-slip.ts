@@ -44,24 +44,17 @@ html,body{
 .slip.cols-3 .code{width:16mm}
 .slip.cols-3 .item{width:auto;padding-right:3px}
 .slip.cols-3 .qty{width:12mm;text-align:right}
-.sig-field{width:100%;margin:2mm 0 1mm}
-.slip table.sig-pad{
-  width:100%;
-  border-collapse:collapse;
-  table-layout:fixed;
+.sig-field{width:100%;margin:3mm 0 2mm}
+.sig-lf{
+  display:block;
   margin:0;
-}
-.slip table.sig-pad td{
-  padding:0 !important;
-  border:none !important;
-  font-size:8mm !important;
-  line-height:8mm !important;
-  height:8mm !important;
-  vertical-align:top;
-}
-.slip table.sig-pad td.bar{
-  width:3px;
-  overflow:hidden;
+  padding:0;
+  border:0;
+  font-family:'Courier New',Courier,monospace;
+  font-size:20px;
+  line-height:28px;
+  min-height:28px;
+  white-space:pre;
 }
 .sig-dots{
   border-bottom:1px dotted #000;
@@ -74,7 +67,7 @@ html,body{
 .sig-cap{
   text-align:center;
   font-size:11px;
-  margin:1.5mm 0 7mm;
+  margin:2mm 0 6mm;
 }
 `
 
@@ -86,21 +79,25 @@ function escapeHtml(s: string) {
     .replace(/"/g, '&quot;')
 }
 
+/** Printed line feed. Empty CSS / &lt;br&gt; / empty table cells are skipped by XP-80C. */
+export function lineFeedHtml(): string {
+  return `<div class="sig-lf">|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>`
+}
+
+export function extraLineFeedsHtml(count = 2): string {
+  return Array.from({ length: count }, () => lineFeedHtml()).join('')
+}
+
 /**
- * Signature write-gap. XP-80C drops empty CSS / &lt;br&gt; / empty cells.
- * Four ink glyphs (`|`) at 8mm keep ~32mm of paper for a name or signature.
+ * Signature write-gap. Two extra line feeds + two more printed rows (~28mm)
+ * so a name/signature can be written on Stock BF, transfer, and return.
  */
 export function signatureWriteFieldHtml(caption: string): string {
-  const gapRows = Array.from(
-    { length: 4 },
-    () =>
-      `<tr><td class="bar" style="font-size:8mm;line-height:8mm;height:8mm">|</td><td class="gap" style="font-size:8mm;line-height:8mm;height:8mm">&nbsp;</td></tr>`,
-  ).join('')
   return `<div class="sig-field">
-  <table class="sig-pad">
-    <colgroup><col style="width:3px"><col></colgroup>
-    ${gapRows}
-  </table>
+  ${lineFeedHtml()}
+  ${lineFeedHtml()}
+  ${lineFeedHtml()}
+  ${lineFeedHtml()}
   <div class="sig-dots">&nbsp;</div>
   <div class="sig-cap">${escapeHtml(caption)}</div>
 </div>`

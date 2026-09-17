@@ -363,6 +363,11 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
     return list
   }, [products, categoryId, search, favIds])
 
+  const searchHits = useMemo(
+    () => (search.trim() ? filterByCodeOrName(products, search, { limit: 12, whenEmpty: 'none' }) : []),
+    [products, search],
+  )
+
   // ── Category row ────────────────────────────────────────────────────────────
   const catRow = useMemo(() => {
     const cols: { id: string; name: string; colour: string }[] = [
@@ -600,12 +605,12 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   }
 
   function handleProductTap(p: ProductRow) {
+    clearItemSearch()
     if (!outletId) {
       toast('Set the POS Verification Code (Ctrl+Shift+A) to connect this till to a showroom.', 'error')
       return
     }
     add({ productId: p.id, code: p.code, name: p.name, unitPrice: p.unitPrice })
-    clearItemSearch()
   }
 
   function handleProductLongPressStart(p: ProductRow) {
@@ -969,7 +974,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
         <section className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-[var(--pos-catalog-surface)] p-3">
 
           {/* Search */}
-          <div className="relative mb-3">
+          <div className="relative z-[91] mb-3">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--neutral-400)]" />
             <input type="text" placeholder="Search item name or code" value={search}
               ref={searchInputRef}
@@ -980,9 +985,33 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
               className="w-full rounded-xl border border-[var(--border)] bg-white py-3 pl-11 pr-10 text-[var(--foreground)] placeholder:text-[var(--neutral-400)] shadow-sm focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20"
               autoComplete="off" />
             {search.trim() ? (
-              <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[var(--neutral-400)] hover:text-[var(--foreground)]" onClick={() => setSearch('')} aria-label="Clear search">
+              <button type="button" className="absolute right-3 top-1/2 z-[92] -translate-y-1/2 rounded-lg p-1.5 text-[var(--neutral-400)] hover:text-[var(--foreground)]" onClick={() => { setSearch(''); setSearchKbOpen(false) }} aria-label="Clear search">
                 <X className="h-4 w-4" />
               </button>
+            ) : null}
+            {search.trim() ? (
+              <ul className="absolute left-0 right-0 top-full z-[93] mt-1 max-h-56 overflow-auto rounded-xl border border-[var(--border)] bg-white shadow-xl">
+                {searchHits.length === 0 ? (
+                  <li className="px-4 py-3 text-sm text-[var(--neutral-400)]">No matching items.</li>
+                ) : (
+                  searchHits.map((p) => (
+                    <li key={p.id}>
+                      <button
+                        type="button"
+                        className="w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--neutral-50)]"
+                        onPointerDown={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleProductTap(p)
+                        }}
+                      >
+                        <span className="font-mono text-xs text-[var(--neutral-400)]">{p.code}</span>
+                        <span className="ml-2 font-medium text-[var(--foreground)]">{p.name}</span>
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
             ) : null}
           </div>
 
@@ -1078,17 +1107,21 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleProductTap(p) } }}
-                  onMouseDown={() => handleProductLongPressStart(p)}
-                  onMouseUp={() => handleProductLongPressEnd(p)}
-                  onMouseLeave={() => {
+                  onPointerDown={(e) => {
+                    if (e.button !== 0) return
+                    handleProductLongPressStart(p)
+                  }}
+                  onPointerUp={(e) => {
+                    if (e.button !== 0) return
+                    handleProductLongPressEnd(p)
+                  }}
+                  onPointerLeave={() => {
                     if (longPressTimerRef.current) {
                       clearTimeout(longPressTimerRef.current)
                       longPressTimerRef.current = null
                     }
                   }}
-                  onTouchStart={() => handleProductLongPressStart(p)}
-                  onTouchEnd={() => handleProductLongPressEnd(p)}
-                  onTouchCancel={() => {
+                  onPointerCancel={() => {
                     if (longPressTimerRef.current) {
                       clearTimeout(longPressTimerRef.current)
                       longPressTimerRef.current = null
@@ -1100,10 +1133,8 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                     type="button"
                     className="absolute left-1 top-1 flex h-7 w-7 items-center justify-center rounded-md text-[var(--brand-accent-dark)]"
                     onClick={(e) => { e.stopPropagation(); toggleFav(p.id) }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onMouseUp={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
-                    onTouchEnd={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onPointerUp={(e) => e.stopPropagation()}
                     aria-label={isFav(p.id) ? 'Remove from favourites' : 'Add to favourites'}
                   >
                     <Star className={`h-4 w-4 ${isFav(p.id) ? 'fill-[var(--brand-accent)] text-[var(--brand-accent-dark)]' : ''}`} />

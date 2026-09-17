@@ -1,5 +1,5 @@
 import { printCopyThenOriginal } from './print-receipt'
-import { signatureWriteFieldHtml, THERMAL_SLIP_CSS } from './thermal-slip'
+import { signatureWriteFieldHtml, extraLineFeedsHtml, THERMAL_SLIP_CSS } from './thermal-slip'
 export type TransferNoteLine = {
   code: string
   name: string
@@ -133,7 +133,7 @@ td.qty,th.qty{text-align:right;white-space:nowrap;font-variant-numeric:tabular-n
   <tbody>${rows}</tbody>
 </table>
 ${footer}
-<div class="cut-feed"></div>
+${extraLineFeedsHtml(2)}
 </div>
 </body></html>`
 }

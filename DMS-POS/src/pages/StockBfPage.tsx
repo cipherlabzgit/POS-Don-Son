@@ -200,7 +200,7 @@ export function StockBfPage({ onBack }: Props) {
       return
     }
     setPendingProduct(p)
-    setSearch(`${p.code} — ${p.name}`)
+    setSearch('')
     setShowDrop(false)
     setKbField(null)
     const already = rows.some((r) => r.productId === p.id)
@@ -409,6 +409,7 @@ export function StockBfPage({ onBack }: Props) {
               items={filtered}
               onSelect={selectProduct}
               onOpenKeyboard={() => setKbField('search')}
+              placeholder={pendingProduct ? `${pendingProduct.code} — ${pendingProduct.name}` : 'Search item code or name'}
             />
 
             <div>

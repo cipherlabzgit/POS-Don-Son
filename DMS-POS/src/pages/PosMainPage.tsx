@@ -594,12 +594,18 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   }
 
   // ── Product tile click → quick add or long press for numpad ────────────────
+  function clearItemSearch() {
+    setSearch('')
+    setSearchKbOpen(false)
+  }
+
   function handleProductTap(p: ProductRow) {
     if (!outletId) {
       toast('Set the POS Verification Code (Ctrl+Shift+A) to connect this till to a showroom.', 'error')
       return
     }
     add({ productId: p.id, code: p.code, name: p.name, unitPrice: p.unitPrice })
+    clearItemSearch()
   }
 
   function handleProductLongPressStart(p: ProductRow) {
@@ -625,6 +631,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   function openNumpad(p: ProductRow) {
     const existing = lines.find((l) => l.productId === p.id)
     setNumpad({ productId: p.id, name: p.name, currentQty: existing?.qty ?? 0 })
+    clearItemSearch()
   }
 
   function confirmNumpad(qty: number) {
@@ -642,6 +649,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       else if (diff < 0) for (let i = 0; i < -diff; i++) dec(p.id)
     }
     setNumpad(null)
+    clearItemSearch()
   }
 
   // ── Electron helpers ────────────────────────────────────────────────────────
@@ -1211,7 +1219,16 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
         <DiagnosticPage onClose={() => { setDiagnosticOpen(false); void loadData() }} />
       ) : null}
       {searchKbOpen ? (
-        <SearchKeyboard value={search} onChange={setSearch} onClose={() => setSearchKbOpen(false)} forItemCode />
+        <SearchKeyboard
+          value={search}
+          onChange={setSearch}
+          onClose={() => setSearchKbOpen(false)}
+          onEnter={() => {
+            const first = filteredProducts[0]
+            if (first) handleProductTap(first)
+          }}
+          forItemCode
+        />
       ) : null}
 
       {/* ── Operations drawer (slides from left) ── */}

@@ -122,7 +122,7 @@ export function NewTransferPage({ onBack }: Props) {
 
   function selectProduct(p: ProductRow) {
     setPendingProduct(p)
-    setSearch(`${p.code} — ${p.name}`)
+    setSearch('')
     setShowDrop(false)
     setKbField(null)
     const already = rows.some((r) => r.productId === p.id)
@@ -312,6 +312,7 @@ export function NewTransferPage({ onBack }: Props) {
             items={filtered}
             onSelect={selectProduct}
             onOpenKeyboard={() => setKbField('search')}
+            placeholder={pendingProduct ? `${pendingProduct.code} — ${pendingProduct.name}` : 'Search item code or name'}
           />
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">Qty</label>

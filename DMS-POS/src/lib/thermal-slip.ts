@@ -44,16 +44,16 @@ html,body{
 .slip.cols-3 .code{width:16mm}
 .slip.cols-3 .item{width:auto;padding-right:3px}
 .slip.cols-3 .qty{width:12mm;text-align:right}
-.sig-field{width:100%;margin:3mm 0 2mm}
+.sig-field{width:100%;margin:1.5mm 0 1mm}
 .sig-lf{
   display:block;
   margin:0;
   padding:0;
   border:0;
   font-family:'Courier New',Courier,monospace;
-  font-size:20px;
-  line-height:28px;
-  min-height:28px;
+  font-size:16px;
+  line-height:20px;
+  min-height:20px;
   white-space:pre;
 }
 .sig-dots{
@@ -67,7 +67,7 @@ html,body{
 .sig-cap{
   text-align:center;
   font-size:11px;
-  margin:2mm 0 6mm;
+  margin:1.5mm 0 3mm;
 }
 `
 
@@ -81,7 +81,7 @@ function escapeHtml(s: string) {
 
 /** Printed line feed. Empty CSS / &lt;br&gt; / empty table cells are skipped by XP-80C. */
 export function lineFeedHtml(): string {
-  return `<div class="sig-lf">|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>`
+  return `<div class="sig-lf">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>`
 }
 
 export function extraLineFeedsHtml(count = 2): string {
@@ -89,13 +89,10 @@ export function extraLineFeedsHtml(count = 2): string {
 }
 
 /**
- * Signature write-gap. Two extra line feeds + two more printed rows (~28mm)
- * so a name/signature can be written on Stock BF, transfer, and return.
+ * Signature write-gap. Two printed line feeds (~10mm), half the previous gap.
  */
 export function signatureWriteFieldHtml(caption: string): string {
   return `<div class="sig-field">
-  ${lineFeedHtml()}
-  ${lineFeedHtml()}
   ${lineFeedHtml()}
   ${lineFeedHtml()}
   <div class="sig-dots">&nbsp;</div>

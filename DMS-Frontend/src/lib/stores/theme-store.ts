@@ -37,7 +37,7 @@ export const DEFAULT_PAGE_COLORS: PageColorEntry[] = [
   { path: '/inventory/ingredient', label: 'Ingredient', section: 'Inventory', color: DEFAULT_BRAND_COLOR },
 
   // Showroom
-  { path: '/showroom', label: 'Show Room', section: 'Show Room', color: DEFAULT_BRAND_COLOR },
+  { path: '/showroom', label: 'Showrooms', section: 'Showrooms', color: DEFAULT_BRAND_COLOR },
 
   // Operation
   { path: '/operation/delivery', label: 'Delivery', section: 'Operation', color: DEFAULT_BRAND_COLOR },

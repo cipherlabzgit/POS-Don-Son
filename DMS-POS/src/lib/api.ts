@@ -197,6 +197,35 @@ export async function fetchOutletsPage(page: number, pageSize: number) {
   return { outlets: items, totalCount }
 }
 
+const POS_DEVICE_ID_KEY = 'dms-pos-device-id'
+
+export function getOrCreatePosDeviceId(): string {
+  try {
+    const existing = localStorage.getItem(POS_DEVICE_ID_KEY)
+    if (existing && existing.length > 8) return existing
+    const id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `pos-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+    localStorage.setItem(POS_DEVICE_ID_KEY, id)
+    return id
+  } catch {
+    return `pos-${Date.now()}`
+  }
+}
+
+export async function postPosDeviceHeartbeat(body: {
+  deviceId: string
+  outletId?: string | null
+  outletName?: string
+  deviceName?: string
+  machineName?: string
+  appVersion?: string
+}) {
+  const { data } = await api.post('/api/pos-devices/heartbeat', body)
+  return unwrap(data as ApiEnvelope<unknown>)
+}
+
 export async function postPosSale(body: object) {
   const { data } = await api.post<ApiEnvelope<unknown>>('/api/pos-sales', body)
   return unwrap(data)

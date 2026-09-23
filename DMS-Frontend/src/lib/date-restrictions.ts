@@ -11,9 +11,9 @@ import { DISPLAY_TIME_ZONE, formatCalendarDateInZone } from './sri-lanka-time';
  * Restriction profiles:
  *  - "delivery": Users without both back-date and future-date grants use the current
  *    date and time only on create; users with both grants (or admin) may pick any time.
- *  - "today-only": Today only (Disposal, Daily Production, Production Cancel)
+ *  - "today-only": Today only (Daily Production, Production Cancel)
  *  - "back-3-no-future": Back date up to 3 days, NO future date
- *    (Transfer, Stock BF, Cancellation, Delivery Return)
+ *    (Transfer, Stock BF, Cancellation, Delivery Return, Disposal)
  *  - "label-print": No back/future for normal users (Today only); If item allows
  *    Today+, show field as Yellow
  */
@@ -52,6 +52,11 @@ export function addDaysISO(days: number): string {
 /** Previous calendar day in Sri Lanka (Asia/Colombo), for day-end / cashier balance defaults. */
 export function previousCalendarDayUtcISO(): string {
   return addDaysISO(-1);
+}
+
+/** Alias: yesterday in Asia/Colombo (default for several operation entry forms). */
+export function yesterdayISO(): string {
+  return previousCalendarDayUtcISO();
 }
 
 export function isAdminUser(user: UserContext | null | undefined): boolean {

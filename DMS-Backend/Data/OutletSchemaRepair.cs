@@ -44,6 +44,16 @@ public static class OutletSchemaRepair
               WHERE pos_verification_code IS NOT NULL
                 AND btrim(pos_verification_code) <> '';
           END IF;
+
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = current_schema()
+              AND table_name = 'outlets'
+              AND column_name = 'show_in_pos'
+          ) THEN
+            ALTER TABLE outlets
+              ADD COLUMN show_in_pos boolean NOT NULL DEFAULT true;
+          END IF;
         END
         $EF$;
         """;

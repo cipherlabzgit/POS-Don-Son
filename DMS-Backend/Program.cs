@@ -193,6 +193,10 @@ builder.Services.AddScoped<IReconciliationService, ReconciliationService>();
 
 // Phase 6: Operations services
 builder.Services.AddScoped<IDeliveryService, DeliveryService>();
+builder.Services.AddScoped<IDnPrintJobService, DnPrintJobService>();
+builder.Services.AddScoped<IDnPrintAgentService, DnPrintAgentService>();
+builder.Services.AddScoped<ILabelPrintAgentService, LabelPrintAgentService>();
+builder.Services.AddScoped<IPosDeviceAgentService, PosDeviceAgentService>();
 builder.Services.AddScoped<IDisposalService, DisposalService>();
 builder.Services.AddScoped<ITransferService, TransferService>();
 builder.Services.AddScoped<IPosSaleService, PosSaleService>();

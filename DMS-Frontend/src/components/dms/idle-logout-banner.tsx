@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import Button from '@/components/ui/button';
 
@@ -11,69 +11,92 @@ interface IdleLogoutBannerProps {
   className?: string;
 }
 
-export function IdleLogoutBanner({ 
-  idleTimeoutMinutes = 15, 
+/**
+ * Client-side idle timeout: auto-logout after inactivity (mouse/keyboard/touch).
+ * Shows a warning banner shortly before logout.
+ */
+export function IdleLogoutBanner({
+  idleTimeoutMinutes = 15,
   warningBeforeMinutes = 2,
   onLogout,
-  className 
+  className,
 }: IdleLogoutBannerProps) {
-  const [isIdle, setIsIdle] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
-  const [lastActivity, setLastActivity] = useState(() => Date.now());
+  const lastActivityRef = useRef(Date.now());
+  const logoutCalledRef = useRef(false);
+  const onLogoutRef = useRef(onLogout);
+  onLogoutRef.current = onLogout;
+
+  const resetActivity = useCallback(() => {
+    lastActivityRef.current = Date.now();
+    logoutCalledRef.current = false;
+    setShowWarning(false);
+  }, []);
 
   useEffect(() => {
-    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'] as const;
+    let lastMoveHandled = 0;
 
-    const resetActivity = () => {
-      setLastActivity(Date.now());
-      setShowWarning(false);
-      setIsIdle(false);
+    const handleActivity = (event: Event) => {
+      if (event.type === 'mousemove') {
+        const now = Date.now();
+        if (now - lastMoveHandled < 1000) return;
+        lastMoveHandled = now;
+      }
+      resetActivity();
     };
 
-    events.forEach(event => {
-      document.addEventListener(event, resetActivity);
+    events.forEach((event) => {
+      document.addEventListener(event, handleActivity, { passive: true });
     });
 
+    const idleTimeoutMs = idleTimeoutMinutes * 60 * 1000;
+    const warningMs = Math.max(0, (idleTimeoutMinutes - warningBeforeMinutes) * 60 * 1000);
+
     const interval = setInterval(() => {
-      const idleTimeMs = Date.now() - lastActivity;
-      const idleTimeMinutes = idleTimeMs / (1000 * 60);
+      const idleTimeMs = Date.now() - lastActivityRef.current;
 
-      const warningThreshold = idleTimeoutMinutes - warningBeforeMinutes;
+      if (idleTimeMs >= idleTimeoutMs) {
+        if (!logoutCalledRef.current) {
+          logoutCalledRef.current = true;
+          onLogoutRef.current();
+        }
+        return;
+      }
 
-      if (idleTimeMinutes >= idleTimeoutMinutes) {
-        setIsIdle(true);
-        onLogout();
-      } else if (idleTimeMinutes >= warningThreshold) {
+      if (idleTimeMs >= warningMs) {
         setShowWarning(true);
-        const secondsRemaining = Math.floor((idleTimeoutMinutes * 60) - (idleTimeMs / 1000));
-        setSecondsLeft(secondsRemaining);
+        setSecondsLeft(Math.max(0, Math.ceil((idleTimeoutMs - idleTimeMs) / 1000)));
+      } else {
+        setShowWarning(false);
       }
     }, 1000);
 
     return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, resetActivity);
+      events.forEach((event) => {
+        document.removeEventListener(event, handleActivity);
       });
       clearInterval(interval);
     };
-  }, [lastActivity, idleTimeoutMinutes, warningBeforeMinutes, onLogout]);
+  }, [idleTimeoutMinutes, warningBeforeMinutes, resetActivity]);
 
   const handleDismiss = () => {
-    setShowWarning(false);
-    setLastActivity(Date.now());
+    resetActivity();
   };
 
-  if (!showWarning || isIdle) {
+  if (!showWarning) {
     return null;
   }
 
   return (
-    <div className={cn(
-      "fixed bottom-6 right-6 max-w-md bg-yellow-50 border-2 border-yellow-400 rounded-lg shadow-lg z-50",
-      "animate-in slide-in-from-bottom-4",
-      className
-    )}>
+    <div
+      className={cn(
+        'fixed bottom-6 right-6 max-w-md bg-yellow-50 border-2 border-yellow-400 rounded-lg shadow-lg z-50',
+        'animate-in slide-in-from-bottom-4',
+        className,
+      )}
+    >
       <div className="p-4">
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
@@ -93,7 +116,7 @@ export function IdleLogoutBanner({
                 Stay Logged In
               </Button>
               <Button
-                onClick={onLogout}
+                onClick={() => onLogoutRef.current()}
                 size="sm"
                 variant="outline"
                 className="border-yellow-600 text-yellow-800 hover:bg-yellow-100"
@@ -103,6 +126,7 @@ export function IdleLogoutBanner({
             </div>
           </div>
           <button
+            type="button"
             onClick={handleDismiss}
             className="text-yellow-600 hover:text-yellow-800 transition-colors"
           >

@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import { Toggle } from '@/components/ui/toggle';
-import { LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard, MonitorSmartphone } from 'lucide-react';
 import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
 import { outletsApi, generatePosVerificationCode, type CreateOutletDto } from '@/lib/api/outlets';
 import { usersApi, type User } from '@/lib/api/users';
@@ -47,6 +47,7 @@ export default function AddShowroomPage() {
     hasVariants: true,
     isDeliveryPoint: true,
     showInDashboard: true,
+    showInPos: true,
   });
 
   const [openingTime, setOpeningTime] = useState('');
@@ -98,6 +99,7 @@ export default function AddShowroomPage() {
         hasVariants: formData.hasVariants ?? true,
         isDeliveryPoint: formData.isDeliveryPoint ?? true,
         showInDashboard: formData.showInDashboard ?? true,
+        showInPos: formData.showInPos ?? true,
         isActive: true,
       };
       await outletsApi.create(createData);
@@ -258,6 +260,17 @@ export default function AddShowroomPage() {
                 checked={formData.showInDashboard ?? true}
                 onChange={(checked) => setFormData({ ...formData, showInDashboard: checked })}
                 label='If enabled, this showroom appears in the "Today Top Deliveries" dashboard widget'
+              />
+              <div className="flex items-center gap-2 mt-2">
+                <MonitorSmartphone className="w-4 h-4" style={{ color: 'var(--muted-foreground)' }} />
+                <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+                  Show in POS
+                </span>
+              </div>
+              <Toggle
+                checked={formData.showInPos ?? true}
+                onChange={(checked) => setFormData({ ...formData, showInPos: checked })}
+                label="If enabled, this showroom appears in the POS Transfer destination list"
               />
             </div>
 

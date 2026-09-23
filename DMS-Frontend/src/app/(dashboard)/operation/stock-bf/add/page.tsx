@@ -14,7 +14,7 @@ import DeliveryLineItemsEntry from '@/components/operation/DeliveryLineItemsEntr
 import type { ItemManagementItem } from '@/components/operation/ItemManagementTable';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { DEFAULT_BRAND_COLOR, useThemeStore } from '@/lib/stores/theme-store';
-import { getDateBounds, todayISO } from '@/lib/date-restrictions';
+import { getDateBounds, yesterdayISO } from '@/lib/date-restrictions';
 import { usePermissions } from '@/hooks/usePermissions';
 import toast from 'react-hot-toast';
 import ProtectedPage from '@/components/auth/ProtectedPage';
@@ -45,7 +45,7 @@ function AddStockBFPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    bfDate: todayISO(),
+    bfDate: yesterdayISO(),
     showroomId: '',
   });
 
@@ -259,6 +259,9 @@ function AddStockBFPageContent() {
               onItemsChange={setStockBfItems}
               primaryColor={accent}
               showPricing={false}
+              selectThenQty
+              enableExcelImport={false}
+              searchHelperText="Search item, press Enter — Qty focuses. Enter qty then Enter / Add to commit."
             />
           </div>
           </fieldset>

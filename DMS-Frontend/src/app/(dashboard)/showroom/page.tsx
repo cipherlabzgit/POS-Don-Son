@@ -167,6 +167,17 @@ function ShowroomPageContent() {
       ),
     },
     {
+      key: 'showInPos',
+      label: 'POS',
+      render: (item: Outlet) => (
+        item.showInPos ? (
+          <Badge variant="success" size="sm">Yes</Badge>
+        ) : (
+          <Badge variant="secondary" size="sm">No</Badge>
+        )
+      ),
+    },
+    {
       key: 'isActive',
       label: 'Status',
       render: (item: Outlet) => (

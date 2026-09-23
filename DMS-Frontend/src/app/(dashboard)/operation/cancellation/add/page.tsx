@@ -14,7 +14,7 @@ import { outletsApi, type Outlet } from '@/lib/api/outlets';
 import { deliveriesApi, type Delivery } from '@/lib/api/deliveries';
 import { productsApi, type Product } from '@/lib/api/products';
 import { useAuthStore } from '@/lib/stores/auth-store';
-import { getDateBounds, todayISO } from '@/lib/date-restrictions';
+import { getDateBounds, yesterdayISO } from '@/lib/date-restrictions';
 import { usePermissions } from '@/hooks/usePermissions';
 import { DEFAULT_BRAND_COLOR, useThemeStore } from '@/lib/stores/theme-store';
 import toast from 'react-hot-toast';
@@ -60,7 +60,7 @@ function AddCancellationPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    cancellationDate: todayISO(),
+    cancellationDate: yesterdayISO(),
     deliveryNo: '',
     deliveredDate: '',
     showroomId: '',

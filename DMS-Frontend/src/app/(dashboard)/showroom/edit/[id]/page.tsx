@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import { Toggle } from '@/components/ui/toggle';
-import { ArrowLeft, Save, Loader2, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, LayoutDashboard, MonitorSmartphone } from 'lucide-react';
 import { outletsApi, generatePosVerificationCode, type Outlet, type UpdateOutletDto } from '@/lib/api/outlets';
 import { usersApi, type User } from '@/lib/api/users';
 import toast from 'react-hot-toast';
@@ -84,6 +84,7 @@ export default function EditShowroomPage() {
     isDeliveryPoint: true,
     isActive: true,
     showInDashboard: true,
+    showInPos: true,
   });
 
   const [openingTime, setOpeningTime] = useState('');
@@ -130,6 +131,7 @@ export default function EditShowroomPage() {
         isDeliveryPoint: showroom.isDeliveryPoint,
         isActive: showroom.isActive,
         showInDashboard: showroom.showInDashboard ?? true,
+        showInPos: showroom.showInPos ?? true,
       });
       
       // Parse operating hours if it exists (handles both "8:00 AM - 10:00 PM" and "08:00 - 20:00" formats)
@@ -177,6 +179,7 @@ export default function EditShowroomPage() {
         isDeliveryPoint: formData.isDeliveryPoint ?? true,
         isActive: formData.isActive ?? true,
         showInDashboard: formData.showInDashboard ?? true,
+        showInPos: formData.showInPos ?? true,
       };
       await outletsApi.update(outletId, updateData);
       toast.success('Outlet updated successfully');
@@ -352,6 +355,17 @@ export default function EditShowroomPage() {
                 checked={formData.showInDashboard ?? true}
                 onChange={(checked) => setFormData({ ...formData, showInDashboard: checked })}
                 label='If enabled, this showroom appears in the "Today Top Deliveries" dashboard widget'
+              />
+              <div className="flex items-center gap-2 mt-2">
+                <MonitorSmartphone className="w-4 h-4" style={{ color: 'var(--muted-foreground)' }} />
+                <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+                  Show in POS
+                </span>
+              </div>
+              <Toggle
+                checked={formData.showInPos ?? true}
+                onChange={(checked) => setFormData({ ...formData, showInPos: checked })}
+                label="If enabled, this showroom appears in the POS Transfer destination list"
               />
             </div>
 

@@ -42,9 +42,10 @@ public class UnitOfMeasureService : IUnitOfMeasureService
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
+            var searchLower = searchTerm.Trim().ToLower();
             query = query.Where(u =>
-                u.Code.Contains(searchTerm) ||
-                u.Description.Contains(searchTerm));
+                u.Code.ToLower().Contains(searchLower) ||
+                u.Description.ToLower().Contains(searchLower));
         }
 
         var totalCount = await query.CountAsync(cancellationToken);

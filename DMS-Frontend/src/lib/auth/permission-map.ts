@@ -50,6 +50,7 @@ import {
   Package,
   Palette,
   Printer,
+  Terminal,
   Settings,
   Shield,
   ShoppingCart,
@@ -106,6 +107,8 @@ export interface SubsectionDef {
   actions: Partial<Record<ActionKey, string>>;
   /** Hide from sidebar (still used for permission management). */
   hideFromSidebar?: boolean;
+  /** Only Super Admins see this in the sidebar. */
+  superAdminOnly?: boolean;
   /** Optional badge for sidebar. */
   badge?: string | number;
 }
@@ -294,12 +297,12 @@ export const PERMISSION_SECTIONS: SectionDef[] = [
   // -------------------------------------------------------------------------
   {
     id: 'showroom',
-    name: 'Show Room',
+    name: 'Showrooms',
     icon: Store,
     subsections: [
       {
         id: 'showroom',
-        name: 'Show Room',
+        name: 'Showrooms',
         href: '/showroom',
         icon: Store,
         actions: fillCoreActions('showroom'),
@@ -988,6 +991,14 @@ export const PERMISSION_SECTIONS: SectionDef[] = [
         href: '/administrator/pos-backstage-key',
         icon: KeyRound,
         actions: fillCoreActions('setting'),
+      },
+      {
+        id: 'admin-developer',
+        name: 'Developer Mode',
+        href: '/administrator/developer',
+        icon: Terminal,
+        actions: fillCoreActions('setting'),
+        superAdminOnly: true,
       },
     ],
   },

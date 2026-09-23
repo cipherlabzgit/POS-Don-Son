@@ -29,8 +29,6 @@ export default function EditDeliveryReturnPage() {
   
   const [formData, setFormData] = useState({
     returnDate: '',
-    deliveryNo: '',
-    deliveredDate: '',
     showroomId: '',
     reason: '',
   });
@@ -49,8 +47,6 @@ export default function EditDeliveryReturnPage() {
       const fullData = detail.data || detail;
       setFormData({
         returnDate: fullData.returnDate,
-        deliveryNo: fullData.deliveryNo,
-        deliveredDate: fullData.deliveredDate || '',
         showroomId: fullData.outletId,
         reason: fullData.reason,
       });
@@ -72,8 +68,7 @@ export default function EditDeliveryReturnPage() {
   };
 
   const isFormValid = () => {
-    return formData.returnDate && formData.deliveryNo && formData.deliveredDate && 
-           formData.showroomId && formData.reason && formData.reason.trim();
+    return formData.returnDate && formData.showroomId && formData.reason && formData.reason.trim();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,8 +78,6 @@ export default function EditDeliveryReturnPage() {
       setIsSubmitting(true);
       await deliveryReturnsApi.update(id, {
         returnDate: formData.returnDate,
-        deliveryNo: formData.deliveryNo,
-        deliveredDate: formData.deliveredDate,
         outletId: formData.showroomId,
         reason: formData.reason,
         items: [],
@@ -145,29 +138,15 @@ export default function EditDeliveryReturnPage() {
                 fullWidth
                 required
               />
-              <Input
-                label="Delivered Date"
-                type="date"
-                value={formData.deliveredDate}
-                onChange={(e) => setFormData({ ...formData, deliveredDate: e.target.value })}
+              <Select
+                label="Showroom"
+                value={formData.showroomId}
+                onChange={(e) => setFormData({ ...formData, showroomId: e.target.value })}
+                options={outlets.map(o => ({ value: o.id, label: `${o.code} - ${o.name}` }))}
                 fullWidth
+                required
               />
             </div>
-            <Input
-              label="Delivery No"
-              value={formData.deliveryNo}
-              onChange={(e) => setFormData({ ...formData, deliveryNo: e.target.value })}
-              fullWidth
-              required
-            />
-            <Select
-              label="Showroom"
-              value={formData.showroomId}
-              onChange={(e) => setFormData({ ...formData, showroomId: e.target.value })}
-              options={outlets.map(o => ({ value: o.id, label: `${o.code} - ${o.name}` }))}
-              fullWidth
-              required
-            />
             <Input
               label="Reason"
               value={formData.reason}

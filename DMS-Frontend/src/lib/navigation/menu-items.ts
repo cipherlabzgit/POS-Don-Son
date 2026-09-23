@@ -20,6 +20,8 @@ export interface MenuItem {
   permission?: string;
   children?: MenuItem[];
   badge?: string | number;
+  /** Only Super Admins see this item. */
+  superAdminOnly?: boolean;
 }
 
 function subsectionToMenu(sub: SubsectionDef): MenuItem {
@@ -29,6 +31,7 @@ function subsectionToMenu(sub: SubsectionDef): MenuItem {
     icon: sub.icon,
     permission: sub.actions.view,
     badge: sub.badge,
+    superAdminOnly: sub.superAdminOnly,
   };
 }
 
@@ -67,6 +70,8 @@ export function filterMenuByPermissions(
 ): MenuItem[] {
   return menu
     .map((item): MenuItem | null => {
+      if (item.superAdminOnly && !isSuperAdmin) return null;
+
       const hasAccess = !item.permission || isSuperAdmin || hasPermission(item.permission);
 
       if (item.children) {

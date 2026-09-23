@@ -10,6 +10,8 @@ import { ArrowLeft, Loader2, Printer, Send } from 'lucide-react';
 import { deliveriesApi } from '@/lib/api/deliveries';
 import { outletsApi, type Outlet } from '@/lib/api/outlets';
 import { productsApi, type Product } from '@/lib/api/products';
+import { printDeliveryNotesHybrid } from '@/lib/print-delivery-hybrid';
+import { DnPrintStatusBadge } from '@/components/operation/DnPrintStatusBadge';
 import DeliveryLineItemsEntry from '@/components/operation/DeliveryLineItemsEntry';
 import type { ItemManagementItem } from '@/components/operation/ItemManagementTable';
 import { useAuthStore } from '@/lib/stores/auth-store';
@@ -136,10 +138,25 @@ function AddDeliveryPageContent() {
           unitPrice: item.unitPrice ?? 0,
         })),
       };
-      await deliveriesApi.create(payload);
+      const createdRaw = await deliveriesApi.create(payload);
+      const created = (createdRaw as any)?.data ?? createdRaw;
+      const createdId = created?.id ?? created?.Id;
       toast.success('Delivery created successfully');
-      if (alsoPrint) {
-        setTimeout(() => window.print(), 300);
+      if (alsoPrint && createdId) {
+        try {
+          const full = await deliveriesApi.getById(createdId);
+          const printedBy =
+            [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
+            user?.email ||
+            'System';
+          const result = await printDeliveryNotesHybrid([full], { printedBy });
+          if (result.mode === 'client') {
+            toast.success('Queued for DN Print Client');
+          }
+        } catch (printError: any) {
+          console.error('Delivery note print failed:', printError);
+          toast.error(printError.response?.data?.message || 'Delivery saved but printing failed');
+        }
       }
       router.push('/operation/delivery');
     } catch (error: any) {
@@ -160,6 +177,7 @@ function AddDeliveryPageContent() {
             New delivery entry
           </p>
         </div>
+        <DnPrintStatusBadge />
       </div>
 
       <Card>

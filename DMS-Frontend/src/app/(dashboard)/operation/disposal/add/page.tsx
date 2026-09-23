@@ -14,7 +14,7 @@ import DeliveryLineItemsEntry from '@/components/operation/DeliveryLineItemsEntr
 import type { ItemManagementItem } from '@/components/operation/ItemManagementTable';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { DEFAULT_BRAND_COLOR, useThemeStore } from '@/lib/stores/theme-store';
-import { getDateBounds, todayISO } from '@/lib/date-restrictions';
+import { getDateBounds, yesterdayISO } from '@/lib/date-restrictions';
 import { usePermissions } from '@/hooks/usePermissions';
 import toast from 'react-hot-toast';
 import ProtectedPage from '@/components/auth/ProtectedPage';
@@ -32,7 +32,10 @@ function AddDisposalPageContent() {
   const user = useAuthStore((s) => s.user);
   const { canAction } = usePermissions();
   const canCreate = canAction('/operation/disposal', 'create');
-  const dateBounds = getDateBounds('today-only', user as any);
+  const dateBounds = getDateBounds('back-3-no-future', user as any, {
+    allowBackDatePermission: 'operation:disposal:allow-back-date',
+    allowFutureDatePermission: 'operation:disposal:allow-future-date',
+  });
   const pageTheme = useThemeStore((s) => s.getPageTheme('disposal'));
   const accent =
     pageTheme?.secondaryColor ?? pageTheme?.primaryColor ?? DEFAULT_BRAND_COLOR;
@@ -42,7 +45,7 @@ function AddDisposalPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    disposalDate: todayISO(),
+    disposalDate: yesterdayISO(),
     showroomId: '',
     notes: '',
   });

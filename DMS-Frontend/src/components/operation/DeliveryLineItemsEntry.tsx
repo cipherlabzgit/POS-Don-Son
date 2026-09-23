@@ -14,6 +14,10 @@ import {
 } from '@/lib/delivery-import-excel';
 import { DEFAULT_BRAND_COLOR } from '@/lib/stores/theme-store';
 import { filterByCodeOrName, foldProductSearch } from '@/lib/product-search';
+import ProductLabelTemplateView, {
+  formatAssignedLabelTemplate,
+  hasAssignedLabelTemplate,
+} from '@/components/products/ProductLabelTemplateView';
 
 export interface DeliveryLineItemsEntryProps {
   products: Product[];
@@ -38,13 +42,18 @@ export interface DeliveryLineItemsEntryProps {
   searchHelperText?: string;
   /** Stronger primary tint on table header row. */
   accentTableHeader?: boolean;
+  /**
+   * POS Stock BF style: search Enter / pick selects the item and focuses Qty;
+   * Enter on Qty (or Add) commits the line, then returns focus to search.
+   */
+  selectThenQty?: boolean;
 }
 
 function upsertItem(
   items: ItemManagementItem[],
   product: Product,
   addQty: number,
-  opts?: { withReason?: boolean }
+  opts?: { withReason?: boolean; replaceQty?: boolean }
 ): ItemManagementItem[] {
   const unitPrice = product.unitPrice ?? 0;
   const idx = items.findIndex((i) => i.productId === product.id);
@@ -52,7 +61,7 @@ function upsertItem(
     const next = [...items];
     next[idx] = {
       ...next[idx],
-      quantity: next[idx].quantity + addQty,
+      quantity: opts?.replaceQty ? addQty : next[idx].quantity + addQty,
     };
     return next;
   }
@@ -126,6 +135,7 @@ export default function DeliveryLineItemsEntry({
   hideSearchLabel = false,
   searchHelperText,
   accentTableHeader = false,
+  selectThenQty = false,
 }: DeliveryLineItemsEntryProps) {
   const [query, setQuery] = useState('');
   const [openSuggest, setOpenSuggest] = useState(false);
@@ -138,8 +148,11 @@ export default function DeliveryLineItemsEntry({
   const [qtyDraft, setQtyDraft] = useState('');
   /** Quantity applied when adding the next product (not the search field). */
   const [addQtyInput, setAddQtyInput] = useState('1');
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [duplicateProductId, setDuplicateProductId] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const addQtyInputRef = useRef<HTMLInputElement>(null);
   const qtyInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   const pendingQtyFocusProductId = useRef<string | null>(null);
   const dropdownItemRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
@@ -176,6 +189,18 @@ export default function DeliveryLineItemsEntry({
     });
   }, []);
 
+  const focusAddQtyInput = useCallback(() => {
+    setAddQtyInput('1');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = addQtyInputRef.current;
+        if (!el) return;
+        el.focus({ preventScroll: true });
+        el.select();
+      });
+    });
+  }, []);
+
   const filtered = useMemo(
     () => filterByCodeOrName(products, query, { limit: 15, whenEmpty: 'none' }),
     [products, query],
@@ -185,7 +210,8 @@ export default function DeliveryLineItemsEntry({
     filtered.length > 0
       ? filtered[Math.min(Math.max(highlight, 0), filtered.length - 1)]
       : undefined;
-  const addQtyStep = getQtyStep(highlightedProduct);
+  const qtyTargetProduct = selectThenQty ? pendingProduct ?? highlightedProduct : highlightedProduct;
+  const addQtyStep = getQtyStep(qtyTargetProduct);
 
   useEffect(() => {
     setHighlight(0);
@@ -247,6 +273,24 @@ export default function DeliveryLineItemsEntry({
         toast.error('Quantity must be greater than 0');
         return;
       }
+      const already = items.some((i) => i.productId === product.id);
+      if (selectThenQty) {
+        onItemsChange(
+          upsertItem(items, product, clamped, {
+            withReason: showReason,
+            replaceQty: true,
+          })
+        );
+        setPendingProduct(null);
+        setDuplicateProductId(null);
+        setQuery('');
+        setOpenSuggest(false);
+        setQtyEditRow(null);
+        setAddQtyInput('1');
+        toast.success(already ? `${product.code} quantity updated` : `${product.code} added`);
+        focusSearchInput();
+        return;
+      }
       pendingQtyFocusProductId.current = product.id;
       onItemsChange(upsertItem(items, product, clamped, { withReason: showReason }));
       setQuery('');
@@ -255,7 +299,7 @@ export default function DeliveryLineItemsEntry({
       setAddQtyInput('1');
       toast.success(`${product.code} added`);
     },
-    [items, onItemsChange, showReason]
+    [focusSearchInput, items, onItemsChange, selectThenQty, showReason]
   );
 
   const parseTypedAddQty = useCallback(
@@ -268,7 +312,7 @@ export default function DeliveryLineItemsEntry({
   );
 
   const bumpAddQty = (deltaSteps: number) => {
-    const p = highlightedProduct;
+    const p = qtyTargetProduct;
     const step = addQtyStep;
     const raw = parseFloat(addQtyInput.trim().replace(/,/g, ''));
     const base =
@@ -277,12 +321,42 @@ export default function DeliveryLineItemsEntry({
     setAddQtyInput(formatQtyEditValue(next, p));
   };
 
-  const tryAddFromQuery = useCallback(() => {
-    const q = query.trim();
-    if (!q) {
-      toast.error('Enter a product code or name');
+  const selectProductForQty = useCallback(
+    (product: Product) => {
+      setPendingProduct(product);
+      setQuery('');
+      setOpenSuggest(false);
+      const already = items.some((i) => i.productId === product.id);
+      setDuplicateProductId(already ? product.id : null);
+      focusAddQtyInput();
+      if (already) {
+        requestAnimationFrame(() => {
+          document
+            .getElementById(`line-item-${product.id}`)
+            ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
+      }
+    },
+    [focusAddQtyInput, items]
+  );
+
+  const confirmPendingAdd = useCallback(() => {
+    if (!pendingProduct) {
+      toast.error('Select an item first');
+      focusSearchInput();
       return;
     }
+    const qty = parseTypedAddQty(pendingProduct);
+    if (qty == null) {
+      toast.error('Enter a valid quantity to add');
+      return;
+    }
+    addProduct(pendingProduct, qty);
+  }, [addProduct, focusSearchInput, parseTypedAddQty, pendingProduct]);
+
+  const resolveProductFromQuery = useCallback((): Product | undefined => {
+    const q = query.trim();
+    if (!q) return undefined;
     let product: Product | undefined = products.find(
       (p) => foldProductSearch(p.code) === foldProductSearch(q)
     );
@@ -290,8 +364,22 @@ export default function DeliveryLineItemsEntry({
     if (!product && filtered.length > 0 && highlight >= 0 && highlight < filtered.length) {
       product = filtered[highlight];
     }
+    return product;
+  }, [filtered, highlight, products, query]);
+
+  const tryAddFromQuery = useCallback(() => {
+    const q = query.trim();
+    if (!q) {
+      toast.error('Enter a product code or name');
+      return;
+    }
+    const product = resolveProductFromQuery();
     if (!product) {
       toast.error('No matching product. Pick from the list or refine your search.');
+      return;
+    }
+    if (selectThenQty) {
+      selectProductForQty(product);
       return;
     }
     const qty = parseTypedAddQty(product);
@@ -300,7 +388,14 @@ export default function DeliveryLineItemsEntry({
       return;
     }
     addProduct(product, qty);
-  }, [addProduct, filtered, highlight, parseTypedAddQty, products, query]);
+  }, [
+    addProduct,
+    parseTypedAddQty,
+    query,
+    resolveProductFromQuery,
+    selectProductForQty,
+    selectThenQty,
+  ]);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -422,7 +517,13 @@ export default function DeliveryLineItemsEntry({
   const resolvedSearchHint =
     searchHelperText !== undefined
       ? searchHelperText
-      : 'Use ↑/↓ and Enter to add. After add, quantity is selected to edit; Enter there returns to search.';
+      : selectThenQty
+        ? 'Search and press Enter to select an item — Qty focuses next. Enter on Qty (or Add) commits the line.'
+        : 'Use ↑/↓ and Enter to add. After add, quantity is selected to edit; Enter there returns to search.';
+
+  const pendingLabel = pendingProduct
+    ? `${pendingProduct.code} — ${pendingProduct.name}`
+    : null;
 
   return (
     <div className="space-y-4">
@@ -462,7 +563,7 @@ export default function DeliveryLineItemsEntry({
             </div>
           ) : null}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
               <div className="w-full min-w-0 max-w-[min(100%,20rem)] space-y-1">
                 {!hideSearchLabel ? (
                   <label
@@ -480,6 +581,10 @@ export default function DeliveryLineItemsEntry({
                   onChange={(e) => {
                     setQuery(e.target.value);
                     setOpenSuggest(true);
+                    if (selectThenQty) {
+                      setPendingProduct(null);
+                      setDuplicateProductId(null);
+                    }
                   }}
                   onFocus={(e) => {
                     setOpenSuggest(!!query.trim());
@@ -547,6 +652,10 @@ export default function DeliveryLineItemsEntry({
                           onMouseEnter={() => setHighlight(i)}
                           onMouseDown={(ev) => ev.preventDefault()}
                           onClick={() => {
+                            if (selectThenQty) {
+                              selectProductForQty(p);
+                              return;
+                            }
                             const qty = parseTypedAddQty(p);
                             if (qty == null) {
                               toast.error('Enter a valid quantity to add');
@@ -575,7 +684,91 @@ export default function DeliveryLineItemsEntry({
                   {resolvedSearchHint}
                 </p>
               ) : null}
+              {selectThenQty && pendingLabel ? (
+                <p className="text-xs font-medium leading-snug" style={{ color: primaryColor }}>
+                  Selected: {pendingLabel}
+                  {duplicateProductId ? ' (already in list — qty will update)' : ''}
+                </p>
+              ) : null}
             </div>
+
+            {selectThenQty ? (
+              <>
+                <div className="space-y-1">
+                  {!hideSearchLabel ? (
+                    <label
+                      className="text-xs font-medium sm:text-sm"
+                      style={{ color: 'var(--muted-foreground)' }}
+                    >
+                      Qty
+                    </label>
+                  ) : null}
+                  <div className="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm transition-colors disabled:opacity-40"
+                      style={{
+                        borderColor: 'var(--form-field-border)',
+                        backgroundColor: 'var(--muted)',
+                        color: 'var(--foreground)',
+                      }}
+                      title="Decrease quantity"
+                      onClick={() => bumpAddQty(-1)}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <input
+                      ref={addQtyInputRef}
+                      type="text"
+                      inputMode={pendingProduct?.allowDecimal ? 'decimal' : 'numeric'}
+                      value={addQtyInput}
+                      onChange={(e) => setAddQtyInput(e.target.value)}
+                      onFocus={(e) => e.currentTarget.select()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          confirmPendingAdd();
+                        } else if (e.key === 'Escape') {
+                          e.preventDefault();
+                          setPendingProduct(null);
+                          setDuplicateProductId(null);
+                          focusSearchInput();
+                        }
+                      }}
+                      className="h-10 w-[5.5rem] rounded-lg border-2 px-2 text-center text-sm tabular-nums outline-none"
+                      style={{
+                        borderColor: 'var(--form-field-border)',
+                        backgroundColor: 'var(--background)',
+                        color: 'var(--foreground)',
+                      }}
+                      aria-label="Quantity to add"
+                    />
+                    <button
+                      type="button"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm transition-colors"
+                      style={{
+                        borderColor: 'var(--form-field-border)',
+                        backgroundColor: 'var(--muted)',
+                        color: 'var(--foreground)',
+                      }}
+                      title="Increase quantity"
+                      onClick={() => bumpAddQty(1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="shrink-0 self-start sm:self-auto"
+                  onClick={() => confirmPendingAdd()}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add
+                </Button>
+              </>
+            ) : null}
           </div>
 
           {!accentToolbar && enableExcelImport ? (
@@ -674,10 +867,14 @@ export default function DeliveryLineItemsEntry({
                 return (
                   <tr
                     key={row.productId}
+                    id={`line-item-${row.productId}`}
                     className="border-t"
                     style={{
                       borderColor: 'var(--form-field-border)',
-                      backgroundColor: 'var(--card)',
+                      backgroundColor:
+                        duplicateProductId === row.productId
+                          ? 'color-mix(in srgb, #f59e0b 18%, var(--card))'
+                          : 'var(--card)',
                     }}
                   >
                     <td className="px-3 py-2 text-sm" style={{ color: 'var(--foreground)' }}>
@@ -1005,10 +1202,10 @@ export default function DeliveryLineItemsEntry({
                 value={yesNo(detailProduct.enableLabelPrint)}
                 labelColor={primaryColor}
               />
-              {detailProduct.enableLabelPrint ? (
+              {hasAssignedLabelTemplate(detailProduct) || detailProduct.enableLabelPrint ? (
                 <ItemDetailGridRow
                   label="Label Template"
-                  value={formatLabelTemplateDisplay(detailProduct)}
+                  value={formatAssignedLabelTemplate(detailProduct)}
                   labelColor={primaryColor}
                 />
               ) : null}
@@ -1023,6 +1220,9 @@ export default function DeliveryLineItemsEntry({
                 labelColor={primaryColor}
               />
             </dl>
+            {hasAssignedLabelTemplate(detailProduct) || detailProduct.labelTemplateId ? (
+              <ProductLabelTemplateView product={detailProduct} primaryColor={primaryColor} />
+            ) : null}
           </div>
         )}
         <ModalFooter>
@@ -1045,18 +1245,6 @@ export default function DeliveryLineItemsEntry({
 function formatExpiryNum(n: number | null | undefined): string {
   if (n != null && !Number.isNaN(Number(n))) return String(n);
   return '0';
-}
-
-function formatLabelTemplateDisplay(p: {
-  labelTemplateCode?: string | null;
-  labelTemplateName?: string | null;
-}): string {
-  const code = p.labelTemplateCode?.trim();
-  const name = p.labelTemplateName?.trim();
-  if (code && name) return `${code} — ${name}`;
-  if (name) return name;
-  if (code) return code;
-  return '—';
 }
 
 function ItemDetailGridRow({

@@ -14,7 +14,7 @@ import DeliveryLineItemsEntry from '@/components/operation/DeliveryLineItemsEntr
 import type { ItemManagementItem } from '@/components/operation/ItemManagementTable';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { DEFAULT_BRAND_COLOR, useThemeStore } from '@/lib/stores/theme-store';
-import { getDateBounds, todayISO } from '@/lib/date-restrictions';
+import { getDateBounds, yesterdayISO } from '@/lib/date-restrictions';
 import { usePermissions } from '@/hooks/usePermissions';
 import toast from 'react-hot-toast';
 import ProtectedPage from '@/components/auth/ProtectedPage';
@@ -46,7 +46,7 @@ function AddTransferPageContent() {
   const [transferItems, setTransferItems] = useState<ItemManagementItem[]>([]);
 
   const [formData, setFormData] = useState({
-    transferDate: todayISO(),
+    transferDate: yesterdayISO(),
     fromShowroomId: '',
     toShowroomId: '',
     notes: '',
@@ -189,7 +189,7 @@ function AddTransferPageContent() {
                 value={formData.toShowroomId}
                 onChange={(e) => setFormData({ ...formData, toShowroomId: e.target.value })}
                 options={outlets
-                  .filter((o) => o.id !== formData.fromShowroomId)
+                  .filter((o) => o.showInPos && o.id !== formData.fromShowroomId)
                   .map((o) => ({ value: o.id, label: `${o.code} - ${o.name}` }))}
                 placeholder="Select destination showroom"
                 fullWidth

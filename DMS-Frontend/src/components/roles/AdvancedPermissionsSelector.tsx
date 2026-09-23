@@ -77,7 +77,7 @@ export default function AdvancedPermissionsSelector({
       const sectionMapping: Record<string, string> = {
         'Dms': 'DMS',
         'Admin': 'Administrator',
-        'Showroom': 'Show Room',
+        'Showroom': 'Showrooms',
         'Unit-of-measure': 'Inventory',
         'Ingredients': 'Inventory',
         'Products': 'Inventory',

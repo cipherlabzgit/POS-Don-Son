@@ -3025,6 +3025,10 @@ namespace DMS_Backend.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("show_in_dashboard");
 
+                    b.Property<bool>("ShowInPos")
+                        .HasColumnType("boolean")
+                        .HasColumnName("show_in_pos");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 

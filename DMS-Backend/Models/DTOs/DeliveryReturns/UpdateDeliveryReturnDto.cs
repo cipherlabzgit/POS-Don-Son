@@ -3,8 +3,8 @@ namespace DMS_Backend.Models.DTOs.DeliveryReturns;
 public sealed class UpdateDeliveryReturnDto
 {
     public required DateTime ReturnDate { get; set; }
-    public required string DeliveryNo { get; set; }
-    public required DateTime DeliveredDate { get; set; }
+    public string? DeliveryNo { get; set; }
+    public DateTime? DeliveredDate { get; set; }
     public required Guid OutletId { get; set; }
     public required string Reason { get; set; }
     public List<UpdateDeliveryReturnItemDto> Items { get; set; } = new();

@@ -98,6 +98,10 @@ public sealed class ApplicationDbContext : DbContext
     // Phase 6: Operations entities
     public DbSet<Delivery> Deliveries => Set<Delivery>();
     public DbSet<DeliveryItem> DeliveryItems => Set<DeliveryItem>();
+    public DbSet<DnPrintJob> DnPrintJobs => Set<DnPrintJob>();
+    public DbSet<DnPrintAgent> DnPrintAgents => Set<DnPrintAgent>();
+    public DbSet<LabelPrintAgent> LabelPrintAgents => Set<LabelPrintAgent>();
+    public DbSet<PosDeviceAgent> PosDeviceAgents => Set<PosDeviceAgent>();
     public DbSet<Disposal> Disposals => Set<Disposal>();
     public DbSet<DisposalItem> DisposalItems => Set<DisposalItem>();
     public DbSet<Transfer> Transfers => Set<Transfer>();

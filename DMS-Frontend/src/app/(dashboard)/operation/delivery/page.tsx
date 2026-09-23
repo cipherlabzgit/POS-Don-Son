@@ -10,7 +10,8 @@ import Select from '@/components/ui/select';
 import { Plus, Search, Edit, Eye, EyeOff, Printer, CheckCircle, XCircle, Clock, Info, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { deliveriesApi, type Delivery } from '@/lib/api/deliveries';
-import { printDeliveries } from '@/lib/print-delivery-notes';
+import { printDeliveryNotesHybrid } from '@/lib/print-delivery-hybrid';
+import { DnPrintStatusBadge } from '@/components/operation/DnPrintStatusBadge';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { useThemeStore } from '@/lib/stores/theme-store';
 import { todayISO, isAdminUser } from '@/lib/date-restrictions';
@@ -196,8 +197,10 @@ function DeliveryPageContent() {
     try {
       const fullList = await Promise.all(selected.map((d) => deliveriesApi.getById(d.id)));
       toast.dismiss(tid);
-      if (!printDeliveries(fullList)) {
-        toast.error('Could not open print window. Allow pop-ups for this site.');
+      const result = await printDeliveryNotesHybrid(fullList);
+      if (result.mode === 'client') {
+        toast.success(`Queued ${result.jobCount} delivery note(s) for DN Print Client`);
+        setPrintModalOpen(false);
       } else {
         setPrintModalOpen(false);
       }
@@ -416,11 +419,12 @@ function DeliveryPageContent() {
             onClick={async () => {
               try {
                 const full = await deliveriesApi.getById(item.id);
-                if (!printDeliveries([full])) {
-                  toast.error('Could not open print window. Allow pop-ups for this site.');
+                const result = await printDeliveryNotesHybrid([full]);
+                if (result.mode === 'client') {
+                  toast.success('Queued for DN Print Client');
                 }
               } catch (error: any) {
-                toast.error(error.response?.data?.message || 'Failed to load delivery for printing');
+                toast.error(error.response?.data?.message || 'Failed to print delivery note');
               }
             }}
             className="rounded p-1.5 transition-colors"
@@ -456,6 +460,7 @@ function DeliveryPageContent() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <DnPrintStatusBadge />
           {!isAdmin && canViewPreviousRecords && (
             <Button
               variant={showPreviousRecords ? 'primary' : 'secondary'}
@@ -541,10 +546,15 @@ function DeliveryPageContent() {
                         </Button>
                         <Button
                           variant="secondary"
-                          onClick={() => {
+                          onClick={async () => {
                             if (!selectedDelivery) return;
-                            if (!printDeliveries([selectedDelivery])) {
-                              toast.error('Could not open print window. Allow pop-ups for this site.');
+                            try {
+                              const result = await printDeliveryNotesHybrid([selectedDelivery]);
+                              if (result.mode === 'client') {
+                                toast.success('Queued for DN Print Client');
+                              }
+                            } catch (error: any) {
+                              toast.error(error.response?.data?.message || 'Failed to print delivery note');
                             }
                           }}
                         >

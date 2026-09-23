@@ -107,8 +107,8 @@ public class DeliveryReturnService : IDeliveryReturnService
         {
             Id = Guid.NewGuid(),
             ReturnDate = DateTime.SpecifyKind(dto.ReturnDate, DateTimeKind.Utc),
-            DeliveryNo = dto.DeliveryNo,
-            DeliveredDate = DateTime.SpecifyKind(dto.DeliveredDate, DateTimeKind.Utc),
+            DeliveryNo = string.IsNullOrWhiteSpace(dto.DeliveryNo) ? string.Empty : dto.DeliveryNo.Trim(),
+            DeliveredDate = DateTime.SpecifyKind(dto.DeliveredDate ?? dto.ReturnDate, DateTimeKind.Utc),
             OutletId = dto.OutletId,
             Reason = dto.Reason,
             Status = shouldAutoApprove ? DeliveryReturnStatus.Approved : DeliveryReturnStatus.Pending,
@@ -204,8 +204,12 @@ public class DeliveryReturnService : IDeliveryReturnService
             throw new InvalidOperationException("Only pending delivery returns can be updated");
 
         deliveryReturn.ReturnDate = DateTime.SpecifyKind(dto.ReturnDate, DateTimeKind.Utc);
-        deliveryReturn.DeliveryNo = dto.DeliveryNo;
-        deliveryReturn.DeliveredDate = DateTime.SpecifyKind(dto.DeliveredDate, DateTimeKind.Utc);
+        deliveryReturn.DeliveryNo = string.IsNullOrWhiteSpace(dto.DeliveryNo)
+            ? deliveryReturn.DeliveryNo
+            : dto.DeliveryNo.Trim();
+        deliveryReturn.DeliveredDate = DateTime.SpecifyKind(
+            dto.DeliveredDate ?? deliveryReturn.DeliveredDate,
+            DateTimeKind.Utc);
         deliveryReturn.OutletId = dto.OutletId;
         deliveryReturn.Reason = dto.Reason;
         deliveryReturn.UpdatedById = userId;

@@ -30,7 +30,7 @@ export function NewTransferPage({ onBack }: Props) {
   const canCreate = hasPermission('operation:transfer:create')
   const businessDay = useSriLankaBusinessDay()
 
-  const [outlets, setOutlets]         = useState<{ id: string; code: string; name: string }[]>([])
+  const [outlets, setOutlets]         = useState<{ id: string; code: string; name: string; showInPos: boolean }[]>([])
   const [toOutletId, setToOutletId]   = useState('')
   const [nowClock, setNowClock]       = useState(() => new Date())
   const [notes, setNotes]             = useState('')
@@ -72,11 +72,15 @@ export function NewTransferPage({ onBack }: Props) {
     void (async () => {
       try {
         const data = await fetchOutletsPage(1, 200)
-        setOutlets((data.outlets as Record<string, unknown>[]).map((o) => ({
-          id: recordId(o),
-          code: String(o.code ?? o.Code ?? ''),
-          name: String(o.name ?? o.Name ?? ''),
-        })).filter((o) => o.id))
+        setOutlets((data.outlets as Record<string, unknown>[]).map((o) => {
+          const rawShowInPos = o.showInPos ?? o.ShowInPos
+          return {
+            id: recordId(o),
+            code: String(o.code ?? o.Code ?? ''),
+            name: String(o.name ?? o.Name ?? ''),
+            showInPos: rawShowInPos === undefined || rawShowInPos === null ? true : Boolean(rawShowInPos),
+          }
+        }).filter((o) => o.id))
       } catch { /* offline */ }
     })()
   }, [token])
@@ -94,7 +98,10 @@ export function NewTransferPage({ onBack }: Props) {
     setQty('1')
   }, [businessDay])
 
-  const toChoices = useMemo(() => outlets.filter((o) => o.id !== fromOutletId), [outlets, fromOutletId])
+  const toChoices = useMemo(
+    () => outlets.filter((o) => o.showInPos && o.id !== fromOutletId),
+    [outlets, fromOutletId],
+  )
 
   const filtered = useMemo(
     () => filterItemChoices(products, search, { limit: 20 }),

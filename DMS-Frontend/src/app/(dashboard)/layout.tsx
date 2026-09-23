@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { authApi } from '@/lib/api/auth';
 import Sidebar from '@/components/layout/sidebar';
 import Header from '@/components/layout/header';
 import { ThemeProvider } from '@/lib/theme/theme-context';
+import { IdleLogoutBanner } from '@/components/dms/idle-logout-banner';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated, accessToken, logout, setUser, _hasHydrated } = useAuthStore();
+  const { isAuthenticated, accessToken, refreshToken, logout, setUser, _hasHydrated } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
 
@@ -45,6 +46,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     validateSession();
   }, [_hasHydrated]);
+
+  const handleIdleLogout = useCallback(async () => {
+    try {
+      if (refreshToken) {
+        await authApi.logout(refreshToken);
+      }
+    } catch (error) {
+      console.error('Idle logout failed:', error);
+    } finally {
+      logout();
+      router.push('/login');
+    }
+  }, [refreshToken, logout, router]);
 
   if (isValidating || !isAuthenticated) {
     return (
@@ -86,6 +100,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </main>
         </div>
+
+        <IdleLogoutBanner idleTimeoutMinutes={15} onLogout={handleIdleLogout} />
       </div>
     </ThemeProvider>
   );

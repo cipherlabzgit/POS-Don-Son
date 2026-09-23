@@ -107,6 +107,12 @@ public class Outlet : BaseEntity
     [Column("show_in_dashboard")]
     public bool ShowInDashboard { get; set; } = true;
 
+    /// <summary>
+    /// Whether this outlet appears as a destination in the POS Transfer module.
+    /// </summary>
+    [Column("show_in_pos")]
+    public bool ShowInPos { get; set; } = true;
+
     // Navigation properties
     [ForeignKey("DefaultDeliveryTurnId")]
     public virtual DeliveryTurn? DefaultDeliveryTurn { get; set; }

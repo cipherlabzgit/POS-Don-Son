@@ -31,6 +31,7 @@ export interface Outlet {
   employeeCount: number;
   isActive: boolean;
   showInDashboard: boolean;
+  showInPos: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -54,6 +55,7 @@ export interface CreateOutletDto {
   notes?: string;
   isActive: boolean;
   showInDashboard?: boolean;
+  showInPos?: boolean;
 }
 
 export interface UpdateOutletDto {
@@ -75,6 +77,7 @@ export interface UpdateOutletDto {
   notes?: string;
   isActive: boolean;
   showInDashboard?: boolean;
+  showInPos?: boolean;
 }
 
 export interface OutletsResponse {
@@ -109,6 +112,7 @@ function normalizeOutlet(raw: any): Outlet {
     employeeCount: n('employeeCount') ?? 0,
     isActive: n('isActive') ?? true,
     showInDashboard: n('showInDashboard') ?? false,
+    showInPos: n('showInPos') ?? true,
     createdAt: n('createdAt') ?? '',
     updatedAt: n('updatedAt'),
   };

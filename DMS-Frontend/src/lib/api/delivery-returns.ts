@@ -52,7 +52,7 @@ export interface CreateDeliveryReturnItemDto {
 
 export interface CreateDeliveryReturnDto {
   returnDate: string;
-  deliveryNo: string;
+  deliveryNo?: string;
   deliveredDate?: string;
   outletId: string;
   reason: string;
@@ -67,7 +67,7 @@ export interface UpdateDeliveryReturnItemDto {
 
 export interface UpdateDeliveryReturnDto {
   returnDate: string;
-  deliveryNo: string;
+  deliveryNo?: string;
   deliveredDate?: string;
   outletId: string;
   reason: string;

@@ -168,7 +168,7 @@ export default function EditTransferPage() {
                 label={<span>To Showroom <span className="text-red-500">*</span></span>}
                 value={formData.toShowroomId}
                 onChange={(e) => setFormData({ ...formData, toShowroomId: e.target.value })}
-                options={outlets.filter(o => o.id !== formData.fromShowroomId).map(o => ({ value: o.id, label: `${o.code} - ${o.name}` }))}
+                options={outlets.filter(o => o.showInPos && o.id !== formData.fromShowroomId).map(o => ({ value: o.id, label: `${o.code} - ${o.name}` }))}
                 placeholder="Select destination showroom"
                 fullWidth
                 required

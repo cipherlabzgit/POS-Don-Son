@@ -11,11 +11,8 @@ public class CreateDeliveryReturnDtoValidator : AbstractValidator<CreateDelivery
             .NotEmpty().WithMessage("Return date is required");
 
         RuleFor(x => x.DeliveryNo)
-            .NotEmpty().WithMessage("Delivery number is required")
-            .MaximumLength(50).WithMessage("Delivery number must not exceed 50 characters");
-
-        RuleFor(x => x.DeliveredDate)
-            .NotEmpty().WithMessage("Delivered date is required");
+            .MaximumLength(50).WithMessage("Delivery number must not exceed 50 characters")
+            .When(x => !string.IsNullOrWhiteSpace(x.DeliveryNo));
 
         RuleFor(x => x.OutletId)
             .NotEmpty().WithMessage("Outlet is required");

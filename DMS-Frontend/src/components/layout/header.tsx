@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Search, LogOut, Menu, User, Settings as SettingsIcon, Wifi, WifiOff } from 'lucide-react';
+import { Bell, Search, LogOut, Menu, User, Settings as SettingsIcon, Wifi, WifiOff, Siren } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { authApi } from '@/lib/api/auth';
 import { useRouter } from 'next/navigation';
@@ -11,7 +11,7 @@ import { formatSlDate, formatSlTime } from '@/lib/sri-lanka-time';
 import { usePermissions } from '@/hooks/usePermissions';
 import { operationApprovalsApi } from '@/lib/api/operation-approvals';
 import { approvalsApi } from '@/lib/api/approvals';
-
+import { developerApi } from '@/lib/api/developer';
 interface HeaderProps {
   onMenuClick: () => void;
 }
@@ -24,6 +24,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
+  const [offlinePosCount, setOfflinePosCount] = useState(0);
 
   const canSeeApprovals = canAny([
     'approval:view',
@@ -52,6 +53,19 @@ export default function Header({ onMenuClick }: HeaderProps) {
     setPendingApprovalCount(count);
   }, [canSeeApprovals, isSuperAdmin]);
 
+  const loadOfflinePosCount = useCallback(async () => {
+    if (!isSuperAdmin) {
+      setOfflinePosCount(0);
+      return;
+    }
+    try {
+      const presence = await developerApi.getPosStatus();
+      setOfflinePosCount(Number(presence.offlineCount) || 0);
+    } catch {
+      setOfflinePosCount(0);
+    }
+  }, [isSuperAdmin]);
+
   useEffect(() => {
     void loadPendingApprovals();
     const id = window.setInterval(() => void loadPendingApprovals(), 45_000);
@@ -62,6 +76,17 @@ export default function Header({ onMenuClick }: HeaderProps) {
       window.removeEventListener('focus', onFocus);
     };
   }, [loadPendingApprovals]);
+
+  useEffect(() => {
+    void loadOfflinePosCount();
+    const id = window.setInterval(() => void loadOfflinePosCount(), 20_000);
+    const onFocus = () => void loadOfflinePosCount();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [loadOfflinePosCount]);
   
   // Mock news ticker data - will be replaced with real data later
   const [newsItems] = useState([
@@ -225,6 +250,31 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
           {/* Theme Toggle */}
           <ThemeToggle />
+
+          {/* Super Admin: siren when POS tills are offline */}
+          {isSuperAdmin && offlinePosCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => router.push('/administrator/developer')}
+              className="relative p-2 rounded-lg transition-colors"
+              style={{ color: '#ea580c' }}
+              title={`${offlinePosCount} POS device${offlinePosCount === 1 ? '' : 's'} offline`}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--muted)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <Siren className="w-5 h-5" />
+              <span
+                className="absolute -top-0.5 -right-0.5 min-w-[1.15rem] rounded-full px-1 py-0.5 text-center text-[10px] font-bold leading-none text-white"
+                style={{ backgroundColor: '#dc2626' }}
+              >
+                {offlinePosCount > 99 ? '99+' : offlinePosCount}
+              </span>
+            </button>
+          ) : null}
 
           {/* Notifications — only when pending approvals exist */}
           {pendingApprovalCount > 0 ? (

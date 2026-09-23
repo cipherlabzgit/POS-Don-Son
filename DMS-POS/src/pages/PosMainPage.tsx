@@ -13,7 +13,7 @@ import { useCartStore } from '../lib/cart-store'
 import { useFavoriteStore } from '../lib/favorite-store'
 import { useSettingsStore } from '../lib/settings-store'
 import { syncCatalogFromServer } from '../lib/catalog-sync'
-import { fetchOutletsPage, fetchPendingTransferCount, fetchPosSaleRecordsUnreadCount, postPosSale, resolveOutletByPosVerificationCode } from '../lib/api'
+import { fetchOutletsPage, fetchPendingTransferCount, fetchPosSaleRecordsUnreadCount, postPosSale, resolveOutletByPosVerificationCode, getOrCreatePosDeviceId, postPosDeviceHeartbeat } from '../lib/api'
 import { enqueueMutation, processPendingQueue } from '../lib/sync-queue'
 import { useOnlineStatus } from '../lib/use-online-status'
 import { isElectronPos, printReceiptHtml, type PrintReceiptOpts } from '../lib/print-receipt'
@@ -296,6 +296,39 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
       window.clearInterval(id)
     }
   }, [accessToken, online, canTransferView, outletId, businessDay])
+
+  // Fleet heartbeat for Super Admin Developer Mode / siren (every 30s)
+  useEffect(() => {
+    if (!accessToken || !online) return
+    let cancelled = false
+
+    const beat = async () => {
+      try {
+        const result = (await postPosDeviceHeartbeat({
+          deviceId: getOrCreatePosDeviceId(),
+          outletId: outletId || undefined,
+          outletName: outletLabel || undefined,
+          deviceName: outletLabel || undefined,
+          machineName: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 80) : undefined,
+          appVersion: 'pos-web',
+        })) as { pendingCommand?: string; PendingCommand?: string } | null
+
+        const cmd = result?.pendingCommand ?? result?.PendingCommand
+        if (cmd && String(cmd).toLowerCase() === 'refresh' && !cancelled) {
+          void loadData()
+        }
+      } catch {
+        /* ignore offline/permission */
+      }
+    }
+
+    void beat()
+    const id = window.setInterval(() => void beat(), 30_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [accessToken, online, outletId, outletLabel, loadData])
 
   useEffect(() => {
     if (!accessToken) {

@@ -20,4 +20,5 @@ public sealed class CreateOutletDto
     public string? Notes { get; set; }
     public bool IsActive { get; set; } = true;
     public bool ShowInDashboard { get; set; } = true;
+    public bool ShowInPos { get; set; } = true;
 }

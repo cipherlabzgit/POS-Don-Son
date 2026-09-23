@@ -23,6 +23,7 @@ public sealed class OutletDetailDto
     public int EmployeeCount { get; set; }
     public bool IsActive { get; set; }
     public bool ShowInDashboard { get; set; }
+    public bool ShowInPos { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }

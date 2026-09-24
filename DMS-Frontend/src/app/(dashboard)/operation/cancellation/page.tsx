@@ -79,7 +79,6 @@ function CancellationPageContent() {
     return cancellations.filter(c => {
       const matchesSearch =
         c.cancellationNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.deliveryNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.outletName || c.outlet?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRole =
         isAdmin ||
@@ -170,13 +169,6 @@ function CancellationPageContent() {
       label: 'Showroom',
       render: (item: Cancellation) => (
         <span className="font-medium">{item.outletName || item.outlet?.name || '-'}</span>
-      ),
-    },
-    {
-      key: 'deliveredDate',
-      label: 'Delivered Date',
-      render: (item: Cancellation) => (
-        <span className="text-sm">{item.deliveredDate ? formatSlDate(item.deliveredDate) : '-'}</span>
       ),
     },
     {
@@ -392,19 +384,9 @@ function CancellationPageContent() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted-foreground)' }}>Delivered Date</p>
-                        <p className="text-sm" style={{ color: 'var(--foreground)' }}>
-                          {c.deliveredDate ? formatSlDate(c.deliveredDate) : '-'}
-                        </p>
+                        <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted-foreground)' }}>Showroom</p>
+                        <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{c.outletName || c.outlet?.name || '-'}</p>
                       </div>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted-foreground)' }}>Delivery No</p>
-                      <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{c.deliveryNo}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted-foreground)' }}>Showroom</p>
-                      <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{c.outletName || c.outlet?.name || '-'}</p>
                     </div>
                     <div>
                       <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted-foreground)' }}>Reason</p>

@@ -29,14 +29,12 @@ export default function EditCancellationPage() {
   
   const [formData, setFormData] = useState({
     cancellationDate: '',
-    deliveryNo: '',
-    deliveredDate: '',
     showroomId: '',
     reason: '',
   });
 
   const isFormValid = () => {
-    return formData.cancellationDate && formData.deliveryNo && formData.deliveredDate &&
+    return formData.cancellationDate &&
            formData.showroomId && formData.reason && formData.reason.trim();
   };
 
@@ -57,12 +55,9 @@ export default function EditCancellationPage() {
   const fetchCancellation = async () => {
     try {
       setIsLoading(true);
-      const response = await cancellationsApi.getById(id);
-      const cancellation = response.data || response;
+      const cancellation = await cancellationsApi.getById(id);
       setFormData({
         cancellationDate: cancellation.cancellationDate,
-        deliveryNo: cancellation.deliveryNo,
-        deliveredDate: cancellation.deliveredDate || '',
         showroomId: cancellation.outletId,
         reason: cancellation.reason,
       });
@@ -81,8 +76,6 @@ export default function EditCancellationPage() {
       setIsSubmitting(true);
       await cancellationsApi.update(id, {
         cancellationDate: formData.cancellationDate,
-        deliveryNo: formData.deliveryNo,
-        deliveredDate: formData.deliveredDate,
         outletId: formData.showroomId,
         reason: formData.reason,
       });
@@ -140,35 +133,17 @@ export default function EditCancellationPage() {
                 fullWidth
                 required
               />
-              <Input
-                label="Delivered Date"
-                type="date"
-                value={formData.deliveredDate}
-                onChange={(e) => setFormData({ ...formData, deliveredDate: e.target.value })}
+              <Select
+                label="Showroom"
+                value={formData.showroomId}
+                onChange={(e) => setFormData({ ...formData, showroomId: e.target.value })}
+                options={outlets.map(o => ({ value: o.id, label: `${o.code} - ${o.name}` }))}
+                placeholder="Select showroom"
                 fullWidth
                 required
               />
             </div>
-            
-            <Input
-              label="Delivery No"
-              value={formData.deliveryNo}
-              onChange={(e) => setFormData({ ...formData, deliveryNo: e.target.value })}
-              placeholder="DN-2026-XXXXXX"
-              fullWidth
-              required
-            />
-            
-            <Select
-              label="Showroom"
-              value={formData.showroomId}
-              onChange={(e) => setFormData({ ...formData, showroomId: e.target.value })}
-              options={outlets.map(o => ({ value: o.id, label: `${o.code} - ${o.name}` }))}
-              placeholder="Select showroom"
-              fullWidth
-              required
-            />
-            
+
             <Input
               label="Reason"
               value={formData.reason}

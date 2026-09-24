@@ -195,6 +195,7 @@ export default function DeliveryLineItemsEntry({
       requestAnimationFrame(() => {
         const el = addQtyInputRef.current;
         if (!el) return;
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
         el.focus({ preventScroll: true });
         el.select();
       });
@@ -234,6 +235,7 @@ export default function DeliveryLineItemsEntry({
     const run = () => {
       const el = qtyInputRefs.current.get(id);
       if (!el) return;
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
       el.focus({ preventScroll: true });
       el.select();
     };

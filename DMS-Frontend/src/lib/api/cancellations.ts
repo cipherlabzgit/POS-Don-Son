@@ -4,7 +4,7 @@ export interface Cancellation {
   id: string;
   cancellationNo: string;
   cancellationDate: string;
-  deliveryNo: string;
+  deliveryNo?: string;
   deliveredDate?: string;
   outletId: string;
   outletName: string;
@@ -41,7 +41,7 @@ export interface Cancellation {
 
 export interface CreateCancellationDto {
   cancellationDate: string;
-  deliveryNo: string;
+  deliveryNo?: string;
   deliveredDate?: string;
   outletId: string;
   reason: string;
@@ -49,7 +49,7 @@ export interface CreateCancellationDto {
 
 export interface UpdateCancellationDto {
   cancellationDate: string;
-  deliveryNo: string;
+  deliveryNo?: string;
   deliveredDate?: string;
   outletId: string;
   reason: string;

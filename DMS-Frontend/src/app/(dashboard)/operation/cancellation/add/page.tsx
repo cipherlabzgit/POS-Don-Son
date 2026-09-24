@@ -11,7 +11,6 @@ import type { ItemManagementItem } from '@/components/operation/ItemManagementTa
 import { ArrowLeft, Loader2, Send } from 'lucide-react';
 import { cancellationsApi } from '@/lib/api/cancellations';
 import { outletsApi, type Outlet } from '@/lib/api/outlets';
-import { deliveriesApi, type Delivery } from '@/lib/api/deliveries';
 import { productsApi, type Product } from '@/lib/api/products';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { getDateBounds, yesterdayISO } from '@/lib/date-restrictions';
@@ -19,15 +18,6 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { DEFAULT_BRAND_COLOR, useThemeStore } from '@/lib/stores/theme-store';
 import toast from 'react-hot-toast';
 import ProtectedPage from '@/components/auth/ProtectedPage';
-
-function mapDeliveryItemsToLineItems(d: Delivery | null): ItemManagementItem[] {
-  if (!d?.items?.length) return [];
-  return d.items.map((li) => ({
-    productId: li.productId,
-    quantity: li.quantity,
-    unitPrice: li.unitPrice ?? 0,
-  }));
-}
 
 export default function AddCancellationPage() {
   return (
@@ -53,24 +43,17 @@ function AddCancellationPageContent() {
 
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [deliveryPreview, setDeliveryPreview] = useState<Delivery | null>(null);
   const [lineItems, setLineItems] = useState<ItemManagementItem[]>([]);
-  const [isLoadingDeliveries, setIsLoadingDeliveries] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     cancellationDate: yesterdayISO(),
-    deliveryNo: '',
-    deliveredDate: '',
     showroomId: '',
     reason: '',
   });
 
   const isFormValid =
     !!formData.cancellationDate &&
-    !!formData.deliveryNo &&
-    !!formData.deliveredDate &&
     !!formData.showroomId &&
     !!formData.reason?.trim();
 
@@ -100,88 +83,6 @@ function AddCancellationPageContent() {
     };
   }, [formData.cancellationDate]);
 
-  useEffect(() => {
-    if (!formData.deliveryNo) {
-      setDeliveryPreview(null);
-      return;
-    }
-    const fromList = deliveries.find((d) => d.deliveryNo === formData.deliveryNo);
-    if (!fromList) {
-      setDeliveryPreview(null);
-      return;
-    }
-    if (fromList.items && fromList.items.length > 0) {
-      setDeliveryPreview(fromList);
-      return;
-    }
-    let cancelled = false;
-    void deliveriesApi
-      .getById(fromList.id)
-      .then((d: Delivery) => {
-        if (!cancelled) setDeliveryPreview(d ?? fromList);
-      })
-      .catch(() => {
-        if (!cancelled) setDeliveryPreview(fromList);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [formData.deliveryNo, deliveries]);
-
-  useEffect(() => {
-    setLineItems(mapDeliveryItemsToLineItems(deliveryPreview));
-  }, [deliveryPreview]);
-
-  const fetchDeliveriesByDate = async (date: string) => {
-    if (!date) {
-      setDeliveries([]);
-      return;
-    }
-
-    try {
-      setIsLoadingDeliveries(true);
-      const startOfDay = new Date(`${date}T00:00:00Z`);
-      const endOfDay = new Date(`${date}T23:59:59.999Z`);
-
-      let response = await deliveriesApi.getAll(1, 100, {
-        startDate: startOfDay.toISOString(),
-        endDate: endOfDay.toISOString(),
-        status: 'Approved',
-      });
-
-      if (!response.deliveries || response.deliveries.length === 0) {
-        response = await deliveriesApi.getAll(1, 100, {
-          startDate: startOfDay.toISOString(),
-          endDate: endOfDay.toISOString(),
-        });
-
-        if (response.deliveries && response.deliveries.length > 0) {
-          toast(`Found ${response.deliveries.length} delivery(ies) (not all approved)`);
-        }
-      }
-
-      setDeliveries(response.deliveries || []);
-
-      if (response.deliveries?.length === 1) {
-        setFormData((prev) => ({
-          ...prev,
-          deliveryNo: response.deliveries![0].deliveryNo,
-          showroomId: response.deliveries![0].outletId,
-        }));
-        toast.success('Delivery auto-selected');
-      } else if (response.deliveries && response.deliveries.length > 1) {
-        toast.success(`${response.deliveries.length} deliveries found`);
-      } else {
-        toast('No deliveries found for this date');
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to load deliveries');
-      setDeliveries([]);
-    } finally {
-      setIsLoadingDeliveries(false);
-    }
-  };
-
   const handleSubmit = async () => {
     if (!canCreate) {
       toast.error('You do not have permission to create cancellations');
@@ -192,8 +93,6 @@ function AddCancellationPageContent() {
       setIsSubmitting(true);
       await cancellationsApi.create({
         cancellationDate: formData.cancellationDate,
-        deliveryNo: formData.deliveryNo,
-        deliveredDate: formData.deliveredDate,
         outletId: formData.showroomId,
         reason: formData.reason.trim(),
       });
@@ -297,55 +196,6 @@ function AddCancellationPageContent() {
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Input
-                label="Delivered Date"
-                type="date"
-                value={formData.deliveredDate}
-                onChange={(e) => {
-                  const newDate = e.target.value;
-                  setFormData({ ...formData, deliveredDate: newDate, deliveryNo: '', showroomId: '' });
-                  void fetchDeliveriesByDate(newDate);
-                }}
-                fullWidth
-                required
-                className="py-2 px-3"
-              />
-              <Select
-                label="Delivery No"
-                value={formData.deliveryNo}
-                onChange={(e) => {
-                  const selectedDelivery = deliveries.find((d) => d.deliveryNo === e.target.value);
-                  setFormData({
-                    ...formData,
-                    deliveryNo: e.target.value,
-                    showroomId: selectedDelivery?.outletId || formData.showroomId,
-                  });
-                }}
-                options={deliveries.map((d) => ({
-                  value: d.deliveryNo,
-                  label: `${d.deliveryNo} - ${d.outlet?.name || d.outletName || ''}`,
-                }))}
-                placeholder={
-                  isLoadingDeliveries
-                    ? 'Loading deliveries...'
-                    : formData.deliveredDate
-                      ? 'Select delivery'
-                      : 'Select delivered date first'
-                }
-                fullWidth
-                required
-                disabled={!formData.deliveredDate || isLoadingDeliveries}
-                className="py-2 px-3"
-              />
-            </div>
-            {formData.deliveredDate && !isLoadingDeliveries && (
-              <p className="text-[11px] leading-tight" style={{ color: 'var(--muted-foreground)' }}>
-                {deliveries.length > 0
-                  ? `${deliveries.length} approved ${deliveries.length === 1 ? 'delivery' : 'deliveries'} found for this date`
-                  : 'No approved deliveries found for this date'}
-              </p>
-            )}
           </div>
 
           <div className="border-t border-[var(--border)] pt-4">

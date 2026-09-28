@@ -306,6 +306,12 @@ using (var scope = app.Services.CreateScope())
         // transfers.received_by_id / received_at — POS New Transfer 500s if missing
         await context.EnsureTransferColumnsAsync();
 
+        // pos_device_agents — Super Admin header GET /api/pos-devices/status 500s if missing
+        await context.EnsurePosDeviceAgentsTableAsync();
+
+        // cancellations.delivery_no / delivered_date are optional (form no longer collects them)
+        await context.EnsureCancellationDeliveryFieldsOptionalAsync();
+
         // Seed permissions first
         await permissionSeeder.SeedAsync();
 

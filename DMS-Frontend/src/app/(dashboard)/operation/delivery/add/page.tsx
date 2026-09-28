@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import Select from '@/components/ui/select';
-import { ArrowLeft, Loader2, Printer, Send } from 'lucide-react';
+import { Loader2, Printer, Send } from 'lucide-react';
+import ClassicEntryForm from '@/components/operation/ClassicEntryForm';
 import { deliveriesApi } from '@/lib/api/deliveries';
 import { outletsApi, type Outlet } from '@/lib/api/outlets';
 import { productsApi, type Product } from '@/lib/api/products';
@@ -167,72 +167,38 @@ function AddDeliveryPageContent() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
-            Delivery Entry
-          </h1>
-          <p className="mt-1" style={{ color: 'var(--muted-foreground)' }}>
-            New delivery entry
-          </p>
-        </div>
-        <DnPrintStatusBadge />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <CardTitle>New Delivery</CardTitle>
-              <p className="mt-1 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                Delivery No: New Number
-              </p>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => router.push('/operation/delivery')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          <div
-            className="rounded-xl border-2 p-4 md:p-6 space-y-6"
-            style={{
-              borderColor: 'var(--form-field-border)',
-              backgroundColor: 'var(--muted)',
-            }}
-          >
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Input
-                label="Date & Time"
-                type="datetime-local"
-                value={formData.deliveryDateTime}
-                onChange={(e) =>
-                  setFormData((f) => ({ ...f, deliveryDateTime: e.target.value }))
-                }
-                min={dateBounds.lockToNow ? undefined : dateBounds.min ? `${dateBounds.min}T00:00` : undefined}
-                max={dateBounds.lockToNow ? undefined : dateBounds.max ? `${dateBounds.max}T23:59` : undefined}
-                readOnly={dateBounds.lockToNow}
-                helperText={dateBounds.helperText}
-                fullWidth
-                required
-              />
-              <Select
-                label="Showroom"
-                value={formData.showroomId}
-                onChange={(e) =>
-                  setFormData((f) => ({ ...f, showroomId: e.target.value }))
-                }
-                options={outlets.map((o) => ({
-                  value: o.id,
-                  label: `${o.code} - ${o.name}`,
-                }))}
-                placeholder="Select Showroom"
-                fullWidth
-                required
-              />
-            </div>
+    <ClassicEntryForm
+      title="New Delivery"
+      documentLabel="Delivery No#"
+      backHref="/operation/delivery"
+      extraHeader={<DnPrintStatusBadge />}
+      header={
+        <>
+          <Select
+            label="ShowRoom"
+            value={formData.showroomId}
+            onChange={(e) => setFormData((f) => ({ ...f, showroomId: e.target.value }))}
+            options={outlets.map((o) => ({
+              value: o.id,
+              label: `${o.code} - ${o.name}`,
+            }))}
+            placeholder="Select Showroom"
+            fullWidth
+            required
+          />
+          <Input
+            label="Date & Time"
+            type="datetime-local"
+            value={formData.deliveryDateTime}
+            onChange={(e) => setFormData((f) => ({ ...f, deliveryDateTime: e.target.value }))}
+            min={dateBounds.lockToNow ? undefined : dateBounds.min ? `${dateBounds.min}T00:00` : undefined}
+            max={dateBounds.lockToNow ? undefined : dateBounds.max ? `${dateBounds.max}T23:59` : undefined}
+            readOnly={dateBounds.lockToNow}
+            helperText={dateBounds.helperText}
+            fullWidth
+            required
+          />
+          <div className="sm:col-span-2">
             <Input
               label="Comment"
               value={formData.notes}
@@ -241,50 +207,39 @@ function AddDeliveryPageContent() {
               fullWidth
             />
           </div>
-
-          <div className="border-t pt-6">
-            <DeliveryLineItemsEntry
-              products={products}
-              items={deliveryItems}
-              onItemsChange={setDeliveryItems}
-              primaryColor={accent}
-            />
-          </div>
-
-          <div className="flex flex-wrap justify-end gap-3 border-t pt-6">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => router.push('/operation/delivery')}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              disabled={isSubmitting || !canCreate || !isFormValid}
-              onClick={() => submit(false)}
-            >
-              {isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="mr-2 h-4 w-4" />
-              )}
-              Submit
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={isSubmitting || !canCreate || !isFormValid}
-              onClick={() => submit(true)}
-            >
-              <Printer className="mr-2 h-4 w-4" />
-              Submit &amp; Print
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </>
+      }
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="primary"
+            disabled={isSubmitting || !canCreate || !isFormValid}
+            onClick={() => submit(false)}
+          >
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+            Submit
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={isSubmitting || !canCreate || !isFormValid}
+            onClick={() => submit(true)}
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            Submit &amp; Print
+          </Button>
+        </>
+      }
+    >
+      <DeliveryLineItemsEntry
+        products={products}
+        items={deliveryItems}
+        onItemsChange={setDeliveryItems}
+        primaryColor={accent}
+        hideSearchLabel
+        searchHelperText=""
+      />
+    </ClassicEntryForm>
   );
 }

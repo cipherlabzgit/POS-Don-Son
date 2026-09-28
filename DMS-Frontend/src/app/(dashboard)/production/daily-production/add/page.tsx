@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import Select from '@/components/ui/select';
-import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
+import ClassicEntryForm from '@/components/operation/ClassicEntryForm';
 import { dailyProductionsApi } from '@/lib/api/daily-productions';
 import { productsApi, type Product } from '@/lib/api/products';
 import { shiftsApi, type Shift } from '@/lib/api/shifts';
@@ -155,52 +155,33 @@ export default function AddDailyProductionPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
-            Add New Production
-          </h1>
-          <p className="mt-1" style={{ color: 'var(--muted-foreground)' }}>
-            Same date, shift, and notes for each product line — each line becomes its own pending
-            production entry
-          </p>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Production Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Production Date"
-                type="date"
-                value={formData.productionDate}
-                onChange={(e) => setFormData({ ...formData, productionDate: e.target.value })}
-                min={dateBounds.min}
-                max={dateBounds.max}
-                helperText={dateBounds.helperText}
-                fullWidth
-                required
-              />
-              <Select
-                label="Shift"
-                value={formData.shiftId}
-                onChange={(e) => setFormData({ ...formData, shiftId: e.target.value })}
-                options={shifts.map((s) => ({ value: s.id, label: s.name }))}
-                placeholder="Select shift"
-                fullWidth
-                required
-              />
-            </div>
-
+    <ClassicEntryForm
+      title="New Daily Production"
+      documentLabel="Production No#"
+      backHref="/production/daily-production"
+      header={
+        <>
+          <Select
+            label="Shift"
+            value={formData.shiftId}
+            onChange={(e) => setFormData({ ...formData, shiftId: e.target.value })}
+            options={shifts.map((s) => ({ value: s.id, label: s.name }))}
+            placeholder="Select shift"
+            fullWidth
+            required
+          />
+          <Input
+            label="Production Date"
+            type="date"
+            value={formData.productionDate}
+            onChange={(e) => setFormData({ ...formData, productionDate: e.target.value })}
+            min={dateBounds.min}
+            max={dateBounds.max}
+            helperText={dateBounds.helperText}
+            fullWidth
+            required
+          />
+          <div className="sm:col-span-2">
             <Input
               label="Notes"
               value={formData.notes}
@@ -208,73 +189,51 @@ export default function AddDailyProductionPage() {
               placeholder="Optional notes (applied to every line)"
               fullWidth
             />
-
-            <div className="border-t pt-4">
-              <ProductionLineItemsEntry
-                products={products.map((p): ProductionLineProduct => ({
-                  id: p.id,
-                  code: p.code,
-                  name: p.name,
-                  categoryName: p.categoryName,
-                  productionSectionId: p.productionSectionId,
-                  sectionAssignments: p.sectionAssignments?.map((a) => ({
-                    productionSectionId: a.productionSectionId,
-                    productionSectionName: a.productionSectionName,
-                  })),
-                  requiresOpenStock: p.requiresOpenStock,
-                  isActive: p.isActive,
-                  displayInPOS: p.displayInPOS,
-                  isFavorite: p.isFavorite,
-                  unitPrice: p.unitPrice,
-                  enableLabelPrint: p.enableLabelPrint,
-                  expiryDays: p.expiryDays,
-                  expiryHours: p.expiryHours,
-                }))}
-                productionSections={productionSections.map((s): ProdSection => ({ id: s.id, name: s.name }))}
-                items={lineItems}
-                onItemsChange={setLineItems}
-                primaryColor={pageTheme?.primaryColor}
-                enableExcelImport={true}
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => router.back()}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                disabled={isSubmitting || !isFormValid}
-                onClick={handleSubmit}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create production (
-                    {lineItems.filter((l) => l.productId && l.productionSectionId).length || 0}{' '}
-                    product
-                    {(lineItems.filter((l) => l.productId && l.productionSectionId).length || 0) === 1
-                      ? ''
-                      : 's'}
-                    )
-                  </>
-                )}
-              </Button>
-            </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </>
+      }
+      footer={
+        <Button type="button" variant="primary" disabled={isSubmitting || !isFormValid} onClick={handleSubmit}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Plus className="mr-2 h-4 w-4" />
+              Submit
+            </>
+          )}
+        </Button>
+      }
+    >
+      <ProductionLineItemsEntry
+        products={products.map((p): ProductionLineProduct => ({
+          id: p.id,
+          code: p.code,
+          name: p.name,
+          categoryName: p.categoryName,
+          productionSectionId: p.productionSectionId,
+          sectionAssignments: p.sectionAssignments?.map((a) => ({
+            productionSectionId: a.productionSectionId,
+            productionSectionName: a.productionSectionName,
+          })),
+          requiresOpenStock: p.requiresOpenStock,
+          isActive: p.isActive,
+          displayInPOS: p.displayInPOS,
+          isFavorite: p.isFavorite,
+          unitPrice: p.unitPrice,
+          enableLabelPrint: p.enableLabelPrint,
+          expiryDays: p.expiryDays,
+          expiryHours: p.expiryHours,
+        }))}
+        productionSections={productionSections.map((s): ProdSection => ({ id: s.id, name: s.name }))}
+        items={lineItems}
+        onItemsChange={setLineItems}
+        primaryColor={pageTheme?.primaryColor}
+        enableExcelImport={true}
+      />
+    </ClassicEntryForm>
   );
 }

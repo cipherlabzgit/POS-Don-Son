@@ -39,7 +39,18 @@ public sealed class PosDevicesController : ControllerBase
     {
         if (!IsSuperAdmin())
             return StatusCode(403, ApiResponse<PosDevicePresenceDto>.FailureResponse(Error.Forbidden("Super Admin only.")));
-        return Ok(ApiResponse<PosDevicePresenceDto>.SuccessResponse(await _agents.GetPresenceAsync(cancellationToken)));
+        try
+        {
+            return Ok(ApiResponse<PosDevicePresenceDto>.SuccessResponse(await _agents.GetPresenceAsync(cancellationToken)));
+        }
+        catch (Exception)
+        {
+            return Ok(ApiResponse<PosDevicePresenceDto>.SuccessResponse(new PosDevicePresenceDto
+            {
+                CheckedAt = DateTime.UtcNow,
+                OfflineSecondsThreshold = IPosDeviceAgentService.OfflineAfterSeconds,
+            }));
+        }
     }
 
     [HttpPost("{id:guid}/refresh")]

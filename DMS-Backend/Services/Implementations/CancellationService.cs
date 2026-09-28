@@ -98,10 +98,10 @@ public class CancellationService : ICancellationService
         {
             Id = Guid.NewGuid(),
             CancellationDate = DateTime.SpecifyKind(dto.CancellationDate, DateTimeKind.Utc),
-            DeliveryNo = dto.DeliveryNo ?? string.Empty,
+            DeliveryNo = string.IsNullOrWhiteSpace(dto.DeliveryNo) ? null : dto.DeliveryNo.Trim(),
             DeliveredDate = dto.DeliveredDate.HasValue
                 ? DateTime.SpecifyKind(dto.DeliveredDate.Value, DateTimeKind.Utc)
-                : DateTime.MinValue,
+                : null,
             OutletId = dto.OutletId,
             Reason = dto.Reason,
             Status = shouldAutoApprove ? CancellationStatus.Approved : CancellationStatus.Pending,
@@ -153,10 +153,10 @@ public class CancellationService : ICancellationService
             throw new InvalidOperationException("Only pending cancellations can be updated");
 
         cancellation.CancellationDate = DateTime.SpecifyKind(dto.CancellationDate, DateTimeKind.Utc);
-        cancellation.DeliveryNo = dto.DeliveryNo ?? string.Empty;
+        cancellation.DeliveryNo = string.IsNullOrWhiteSpace(dto.DeliveryNo) ? null : dto.DeliveryNo.Trim();
         cancellation.DeliveredDate = dto.DeliveredDate.HasValue
             ? DateTime.SpecifyKind(dto.DeliveredDate.Value, DateTimeKind.Utc)
-            : DateTime.MinValue;
+            : null;
         cancellation.OutletId = dto.OutletId;
         cancellation.Reason = dto.Reason;
         cancellation.UpdatedById = userId;

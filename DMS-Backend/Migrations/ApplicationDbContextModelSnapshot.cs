@@ -387,12 +387,11 @@ namespace DMS_Backend.Migrations
                     b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("DeliveredDate")
+                    b.Property<DateTime?>("DeliveredDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("delivered_date");
 
                     b.Property<string>("DeliveryNo")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("delivery_no");

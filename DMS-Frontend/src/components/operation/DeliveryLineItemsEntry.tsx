@@ -534,37 +534,33 @@ export default function DeliveryLineItemsEntry({
         className="flex flex-col overflow-hidden rounded-lg border-2 bg-[var(--card)]"
         style={{ borderColor: 'var(--form-field-border)' }}
       >
-        {accentToolbar ? (
-          <div
-            className="flex flex-col gap-2 border-b px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4"
-            style={{
-              borderColor: 'var(--form-field-border)',
-              backgroundColor: `color-mix(in srgb, ${primaryColor} 16%, var(--muted))`,
-            }}
-          >
-            <div className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-              Item details
-            </div>
-            {enableExcelImport ? (
-              <Button
-                type="button"
-                variant="secondary"
-                className="shrink-0 self-start sm:self-auto"
-                onClick={() => setImportOpen(true)}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Import Excel
-              </Button>
-            ) : null}
+        <div
+          className="flex flex-col gap-2 border-b px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4"
+          style={{
+            borderColor: 'var(--form-field-border)',
+            backgroundColor: accentToolbar
+              ? `color-mix(in srgb, ${primaryColor} 16%, var(--muted))`
+              : 'transparent',
+          }}
+        >
+          <div className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+            Item Details
           </div>
-        ) : null}
-        <div className="flex flex-col gap-4 p-3 sm:p-4">
-          {!accentToolbar ? (
-            <div className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-              Item details
-            </div>
+          {enableExcelImport ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="shrink-0 self-start sm:self-auto"
+              onClick={() => setImportOpen(true)}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Import Excel
+            </Button>
           ) : null}
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        </div>
+        <div className="flex flex-col gap-3 p-3 sm:p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
               <div className="w-full min-w-0 max-w-[min(100%,20rem)] space-y-1">
                 {!hideSearchLabel ? (
@@ -772,94 +768,81 @@ export default function DeliveryLineItemsEntry({
               </>
             ) : null}
           </div>
-
-          {!accentToolbar && enableExcelImport ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="shrink-0 self-start lg:self-auto"
-              onClick={() => setImportOpen(true)}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Import Excel
-            </Button>
-          ) : null}
-        </div>
+          </div>
         </div>
 
-      {items.length > 0 ? (
-        <div
-          className="overflow-x-auto border-t bg-[var(--background)]"
-          style={{ borderColor: 'var(--form-field-border)' }}
-        >
-          <table className="w-full">
-            <thead
-              className="border-b"
-              style={{
-                backgroundColor: accentTableHeader
-                  ? `color-mix(in srgb, ${primaryColor} 24%, var(--muted))`
-                  : 'color-mix(in srgb, var(--foreground) 6%, var(--muted))',
-                borderColor: 'var(--form-field-border)',
-              }}
-            >
-              <tr>
+      <div
+        className="overflow-x-auto border-t bg-[var(--background)]"
+        style={{ borderColor: 'var(--form-field-border)' }}
+      >
+        <table className="w-full">
+          <thead
+            className="border-b"
+            style={{
+              backgroundColor: accentTableHeader
+                ? `color-mix(in srgb, ${primaryColor} 24%, var(--muted))`
+                : 'color-mix(in srgb, var(--foreground) 6%, var(--muted))',
+              borderColor: 'var(--form-field-border)',
+            }}
+          >
+            <tr>
+              <th
+                className="px-3 py-2.5 text-left text-xs font-bold"
+                style={{ color: 'var(--foreground)' }}
+              >
+                #
+              </th>
+              <th
+                className="px-3 py-2.5 text-left text-xs font-bold"
+                style={{ color: 'var(--foreground)' }}
+              >
+                Item Code
+              </th>
+              <th
+                className="px-3 py-2.5 text-left text-xs font-bold"
+                style={{ color: 'var(--foreground)' }}
+              >
+                Item Name
+              </th>
+              {showReason ? (
                 <th
                   className="px-3 py-2.5 text-left text-xs font-bold"
                   style={{ color: 'var(--foreground)' }}
                 >
-                  #
+                  Reason
                 </th>
-                <th
-                  className="px-3 py-2.5 text-left text-xs font-bold"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Item Code
-                </th>
-                <th
-                  className="px-3 py-2.5 text-left text-xs font-bold"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Item Name
-                </th>
-                {showReason ? (
-                  <th
-                    className="px-3 py-2.5 text-left text-xs font-bold"
-                    style={{ color: 'var(--foreground)' }}
-                  >
-                    Reason
-                  </th>
-                ) : null}
-                {showPricing ? (
-                  <th
-                    className="px-3 py-2.5 text-right text-xs font-bold"
-                    style={{ color: 'var(--foreground)' }}
-                  >
-                    Price
-                  </th>
-                ) : null}
+              ) : null}
+              {showPricing ? (
                 <th
                   className="px-3 py-2.5 text-right text-xs font-bold"
                   style={{ color: 'var(--foreground)' }}
                 >
-                  Quantity
+                  Price
                 </th>
-                {showPricing ? (
-                  <th
-                    className="px-3 py-2.5 text-right text-xs font-bold"
-                    style={{ color: 'var(--foreground)' }}
-                  >
-                    Totals
-                  </th>
-                ) : null}
+              ) : null}
+              <th
+                className="px-3 py-2.5 text-right text-xs font-bold"
+                style={{ color: 'var(--foreground)' }}
+              >
+                Quantity
+              </th>
+              {showPricing ? (
                 <th
-                  className="px-3 py-2.5 text-center text-xs font-bold"
+                  className="px-3 py-2.5 text-right text-xs font-bold"
                   style={{ color: 'var(--foreground)' }}
                 >
-                  Action
+                  Totals
                 </th>
-              </tr>
-            </thead>
-            <tbody>
+              ) : null}
+              <th
+                className="px-3 py-2.5 text-center text-xs font-bold"
+                style={{ color: 'var(--foreground)' }}
+              >
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody>
               {items.map((row, index) => {
                 const product = products.find((p) => p.id === row.productId);
                 const lineTotal = row.quantity * (row.unitPrice ?? 0);
@@ -1025,21 +1008,20 @@ export default function DeliveryLineItemsEntry({
                   </tr>
                 );
               })}
+              {items.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={4 + (showReason ? 1 : 0) + (showPricing ? 2 : 0)}
+                    className="px-3 py-8 text-center text-sm"
+                    style={{ color: 'var(--muted-foreground)' }}
+                  >
+                    No items added.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
-      ) : (
-        <div
-          className="border-t py-10 text-center text-sm"
-          style={{
-            borderColor: 'var(--form-field-border)',
-            backgroundColor: 'var(--muted)',
-            color: 'var(--muted-foreground)',
-          }}
-        >
-          No items added.
-        </div>
-      )}
 
       <div
         className="flex justify-end border-t px-3 py-3 sm:px-4"

@@ -5,8 +5,8 @@ public sealed class CancellationListDto
     public Guid Id { get; set; }
     public string CancellationNo { get; set; } = string.Empty;
     public DateTime CancellationDate { get; set; }
-    public string DeliveryNo { get; set; } = string.Empty;
-    public DateTime DeliveredDate { get; set; }
+    public string? DeliveryNo { get; set; }
+    public DateTime? DeliveredDate { get; set; }
     public Guid OutletId { get; set; }
     public string OutletName { get; set; } = string.Empty;
     public string OutletCode { get; set; } = string.Empty;

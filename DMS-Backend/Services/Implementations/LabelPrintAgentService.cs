@@ -3,6 +3,7 @@ using DMS_Backend.Models.DTOs.DnPrint;
 using DMS_Backend.Models.Entities;
 using DMS_Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace DMS_Backend.Services.Implementations;
 
@@ -113,8 +114,13 @@ public sealed class LabelPrintAgentService : ILabelPrintAgentService
 public sealed class PosDeviceAgentService : IPosDeviceAgentService
 {
     private readonly ApplicationDbContext _context;
+    private readonly ILogger<PosDeviceAgentService> _logger;
 
-    public PosDeviceAgentService(ApplicationDbContext context) => _context = context;
+    public PosDeviceAgentService(ApplicationDbContext context, ILogger<PosDeviceAgentService> logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
 
     public async Task<PosDeviceStatusDto> HeartbeatAsync(
         PosDeviceHeartbeatDto dto,
@@ -167,22 +173,30 @@ public sealed class PosDeviceAgentService : IPosDeviceAgentService
     public async Task<PosDevicePresenceDto> GetPresenceAsync(CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
-        var agents = await _context.PosDeviceAgents.AsNoTracking()
-            .Where(a => a.IsActive)
-            .OrderBy(a => a.OutletName)
-            .ThenBy(a => a.DeviceName)
-            .ToListAsync(cancellationToken);
-
-        var devices = agents.Select(a => ToStatus(a, now)).ToList();
-        return new PosDevicePresenceDto
+        try
         {
-            OnlineCount = devices.Count(d => d.Status == "Online"),
-            OfflineCount = devices.Count(d => d.Status == "Offline"),
-            UnknownCount = devices.Count(d => d.Status == "Unknown"),
-            CheckedAt = now,
-            OfflineSecondsThreshold = IPosDeviceAgentService.OfflineAfterSeconds,
-            Devices = devices,
-        };
+            var agents = await _context.PosDeviceAgents.AsNoTracking()
+                .Where(a => a.IsActive)
+                .OrderBy(a => a.OutletName)
+                .ThenBy(a => a.DeviceName)
+                .ToListAsync(cancellationToken);
+
+            var devices = agents.Select(a => ToStatus(a, now)).ToList();
+            return new PosDevicePresenceDto
+            {
+                OnlineCount = devices.Count(d => d.Status == "Online"),
+                OfflineCount = devices.Count(d => d.Status == "Offline"),
+                UnknownCount = devices.Count(d => d.Status == "Unknown"),
+                CheckedAt = now,
+                OfflineSecondsThreshold = IPosDeviceAgentService.OfflineAfterSeconds,
+                Devices = devices,
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "POS device presence query failed; returning empty status.");
+            return EmptyPresence(now);
+        }
     }
 
     public async Task QueueRefreshAsync(Guid? deviceRowId, CancellationToken cancellationToken = default)
@@ -218,11 +232,21 @@ public sealed class PosDeviceAgentService : IPosDeviceAgentService
         await _context.SaveChangesAsync(cancellationToken);
     }
 
+    private static PosDevicePresenceDto EmptyPresence(DateTime now) => new()
+    {
+        OnlineCount = 0,
+        OfflineCount = 0,
+        UnknownCount = 0,
+        CheckedAt = now,
+        OfflineSecondsThreshold = IPosDeviceAgentService.OfflineAfterSeconds,
+        Devices = new List<PosDeviceStatusDto>(),
+    };
+
     private static PosDeviceStatusDto ToStatus(PosDeviceAgent agent, DateTime now)
     {
-        var seconds = (int)Math.Max(0, (now - agent.LastHeartbeatAt).TotalSeconds);
-        var online = seconds <= IPosDeviceAgentService.OfflineAfterSeconds;
-        var never = agent.LastHeartbeatAt == default;
+        var never = agent.LastHeartbeatAt == default || agent.LastHeartbeatAt.Year < 2;
+        var seconds = never ? int.MaxValue : SecondsSince(agent.LastHeartbeatAt, now);
+        var online = !never && seconds <= IPosDeviceAgentService.OfflineAfterSeconds;
         var status = never ? "Unknown" : online ? "Online" : "Offline";
         return new PosDeviceStatusDto
         {
@@ -232,11 +256,19 @@ public sealed class PosDeviceAgentService : IPosDeviceAgentService
             Showroom = agent.OutletName ?? "—",
             Device = agent.DeviceName ?? agent.MachineName ?? agent.DeviceId,
             Status = status,
-            IsOnline = online && !never,
+            IsOnline = online,
             LastHeartbeatAt = never ? null : agent.LastHeartbeatAt,
             PendingCommand = agent.PendingCommand == RemoteClientCommand.None ? null : agent.PendingCommand.ToString(),
             LastCheckedAt = agent.LastCheckedAt,
         };
+    }
+
+    private static int SecondsSince(DateTime last, DateTime now)
+    {
+        var total = (now - last).TotalSeconds;
+        if (total <= 0) return 0;
+        if (total >= int.MaxValue) return int.MaxValue;
+        return (int)total;
     }
 
     private static string? Trunc(string? v, int max) =>

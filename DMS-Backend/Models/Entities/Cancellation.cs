@@ -25,19 +25,17 @@ public class Cancellation : BaseEntity
     public DateTime CancellationDate { get; set; }
 
     /// <summary>
-    /// Reference to the delivery number being cancelled.
+    /// Optional reference to a delivery number. Cancellations no longer require one.
     /// </summary>
-    [Required]
     [MaxLength(50)]
     [Column("delivery_no")]
-    public string DeliveryNo { get; set; } = string.Empty;
+    public string? DeliveryNo { get; set; }
 
     /// <summary>
-    /// Original delivery date.
+    /// Optional original delivery date. Cancellations no longer require one.
     /// </summary>
-    [Required]
     [Column("delivered_date")]
-    public DateTime DeliveredDate { get; set; }
+    public DateTime? DeliveredDate { get; set; }
 
     /// <summary>
     /// The outlet for this cancellation.

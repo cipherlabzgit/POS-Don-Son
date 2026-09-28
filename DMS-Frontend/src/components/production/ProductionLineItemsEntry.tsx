@@ -355,7 +355,7 @@ export default function ProductionLineItemsEntry({
             <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-end">
               <div className="w-full min-w-0 max-w-[min(100%,20rem)] space-y-1">
                 <label
-                  className="text-xs font-medium sm:text-sm"
+                  className="sr-only"
                   style={{ color: 'var(--muted-foreground)' }}
                 >
                   Search by code or name
@@ -493,9 +493,6 @@ export default function ProductionLineItemsEntry({
                     </ul>
                   )}
                 </div>
-                <p className="text-xs leading-snug" style={{ color: 'var(--muted-foreground)' }}>
-                  Type to search, then press <strong>Enter</strong> to add to list. Use ↑/↓ to navigate suggestions. After adding, quantity is selected; press Enter again to return to search.
-                </p>
               </div>
             </div>
           </div>

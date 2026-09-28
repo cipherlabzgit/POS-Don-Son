@@ -2109,8 +2109,8 @@ public sealed class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.CancellationNo).HasMaxLength(50).IsRequired();
             entity.Property(e => e.CancellationDate).IsRequired();
-            entity.Property(e => e.DeliveryNo).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.DeliveredDate).IsRequired();
+            entity.Property(e => e.DeliveryNo).HasMaxLength(50);
+            entity.Property(e => e.DeliveredDate);
             entity.Property(e => e.Reason).HasMaxLength(500).IsRequired();
             entity.Property(e => e.Status).HasConversion<string>().IsRequired();
             entity.Property(e => e.IsActive).HasDefaultValue(true);

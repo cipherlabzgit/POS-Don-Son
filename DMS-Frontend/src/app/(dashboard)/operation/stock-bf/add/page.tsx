@@ -2,14 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
-import { Loader2, Send } from 'lucide-react';
-import {
-  DmsEntryScreen,
-  DmsHeaderRow,
-  DmsInlineField,
-  dmsControlClass,
-} from '@/components/operation/DmsEntryScreen';
+import Input from '@/components/ui/input';
+import Select from '@/components/ui/select';
+import { ArrowLeft, Loader2, Send } from 'lucide-react';
 import { stockBfApi } from '@/lib/api/stock-bf';
 import { outletsApi, type Outlet } from '@/lib/api/outlets';
 import { productsApi, type Product } from '@/lib/api/products';
@@ -190,80 +187,110 @@ function AddStockBFPageContent() {
   };
 
   return (
-    <DmsEntryScreen
-      title="New Stock B/F"
-      documentNo="Stock B/F No# New Number"
-      onBack={() => router.push('/operation/stock-bf')}
-    >
-      <DmsHeaderRow>
-        <DmsInlineField label="ShowRoom :">
-          <select
-            className={dmsControlClass}
-            value={formData.showroomId}
-            onChange={(e) => setFormData({ ...formData, showroomId: e.target.value })}
-            required
-          >
-            <option value="">Select Showroom</option>
-            {outlets.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.code}
-              </option>
-            ))}
-          </select>
-        </DmsInlineField>
-        <DmsInlineField label="BF Date/Time:">
-          <input
-            type="date"
-            className={dmsControlClass}
-            value={formData.bfDate}
-            min={dateBounds.min}
-            max={dateBounds.max}
-            onChange={(e) => setFormData({ ...formData, bfDate: e.target.value })}
-            required
-          />
-        </DmsInlineField>
-      </DmsHeaderRow>
-      {dateBounds.helperText ? (
-        <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-          {dateBounds.helperText}
-        </p>
-      ) : null}
-      {entryLocked ? (
-        <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
-          Opening stock for this showroom and date is already submitted. It can be entered again only if DMS rejects it.
-        </p>
-      ) : null}
-
-      <fieldset disabled={entryLocked || lockChecking} className={entryLocked ? 'pointer-events-none opacity-70' : undefined}>
-        <DeliveryLineItemsEntry
-          products={products}
-          items={stockBfItems}
-          onItemsChange={setStockBfItems}
-          primaryColor={accent}
-          showPricing
-          enableExcelImport
-        />
-      </fieldset>
-
-      <div className="flex flex-wrap justify-end gap-2 border-t pt-3" style={{ borderColor: '#e5e7eb' }}>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => router.push('/operation/stock-bf')}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          disabled={isSubmitting || !canCreate || !isFormValid || entryLocked || lockChecking}
-          onClick={() => void handleSubmit()}
-        >
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-          Submit
-        </Button>
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
+            Stock BF Entry
+          </h1>
+          <p className="mt-1" style={{ color: 'var(--muted-foreground)' }}>
+            New stock BF entry
+          </p>
+        </div>
       </div>
-    </DmsEntryScreen>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>New Stock BF</CardTitle>
+              <p className="mt-1 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                BF No: New Number — product list is limited to items displayed in POS.
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => router.push('/operation/stock-bf')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          <div
+            className="rounded-xl border-2 p-4 md:p-6 space-y-6"
+            style={{
+              borderColor: 'var(--form-field-border)',
+              backgroundColor: 'var(--muted)',
+            }}
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Input
+                label="BF date"
+                type="date"
+                value={formData.bfDate}
+                onChange={(e) => setFormData({ ...formData, bfDate: e.target.value })}
+                min={dateBounds.min}
+                max={dateBounds.max}
+                helperText={dateBounds.helperText}
+                fullWidth
+                required
+              />
+              <Select
+                label="Showroom"
+                value={formData.showroomId}
+                onChange={(e) => setFormData({ ...formData, showroomId: e.target.value })}
+                options={outlets.map((o) => ({ value: o.id, label: `${o.code} - ${o.name}` }))}
+                placeholder="Select Showroom"
+                fullWidth
+                required
+              />
+            </div>
+            {entryLocked ? (
+              <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+                Opening stock for this showroom and date is already submitted. It can be entered again only if DMS rejects it.
+              </p>
+            ) : null}
+          </div>
+
+          <fieldset disabled={entryLocked || lockChecking} className={entryLocked ? 'pointer-events-none' : undefined}>
+          <div className="border-t pt-6">
+            <DeliveryLineItemsEntry
+              products={products}
+              items={stockBfItems}
+              onItemsChange={setStockBfItems}
+              primaryColor={accent}
+              showPricing={false}
+              selectThenQty
+              enableExcelImport={false}
+              searchHelperText="Search item, press Enter — Qty focuses. Enter qty then Enter / Add to commit."
+            />
+          </div>
+          </fieldset>
+
+          <div className="flex flex-wrap justify-end gap-3 border-t pt-6">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => router.push('/operation/stock-bf')}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={isSubmitting || !canCreate || !isFormValid || entryLocked || lockChecking}
+              onClick={() => void handleSubmit()}
+            >
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Submit
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

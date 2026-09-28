@@ -2,18 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
-import { Loader2, Send } from 'lucide-react';
-import {
-  DmsEntryScreen,
-  DmsHeaderRow,
-  DmsInlineField,
-  dmsControlClass,
-} from '@/components/operation/DmsEntryScreen';
+import Input from '@/components/ui/input';
+import Select from '@/components/ui/select';
+import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
 import { stockAdjustmentsApi } from '@/lib/api/stock-adjustments';
 import { productsApi, type Product } from '@/lib/api/products';
-import DeliveryLineItemsEntry from '@/components/operation/DeliveryLineItemsEntry';
-import type { ItemManagementItem } from '@/components/operation/ItemManagementTable';
+import ItemManagementTable, { type ItemManagementItem } from '@/components/operation/ItemManagementTable';
 import { useThemeStore } from '@/lib/stores/theme-store';
 import { todayISO } from '@/lib/date-restrictions';
 import toast from 'react-hot-toast';
@@ -56,7 +52,8 @@ export default function AddStockAdjustmentPage() {
     adjustmentItems.length > 0 &&
     adjustmentItems.every((i) => i.productId && i.quantity > 0);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
     if (!formData.reason?.trim()) {
       toast.error('Please enter a reason for this adjustment');
@@ -104,68 +101,101 @@ export default function AddStockAdjustmentPage() {
   };
 
   return (
-    <DmsEntryScreen
-      title="New Stock Adjustment"
-      documentNo="Adjustment No# New Number"
-      onBack={() => router.push('/production/stock-adjustment')}
-    >
-      <DmsHeaderRow>
-        <DmsInlineField label="Adjustment Date:">
-          <input
-            type="date"
-            className={dmsControlClass}
-            value={formData.adjustmentDate}
-            onChange={(e) => setFormData({ ...formData, adjustmentDate: e.target.value })}
-            required
-          />
-        </DmsInlineField>
-        <DmsInlineField label="Type :">
-          <select
-            className={dmsControlClass}
-            value={formData.adjustmentType}
-            onChange={(e) => setFormData({ ...formData, adjustmentType: e.target.value as 'Increase' | 'Decrease' })}
-            required
-          >
-            <option value="Increase">Increase</option>
-            <option value="Decrease">Decrease</option>
-          </select>
-        </DmsInlineField>
-      </DmsHeaderRow>
-      <DmsInlineField label="Reason :">
-        <input
-          className={`${dmsControlClass} min-w-[16rem] flex-1`}
-          value={formData.reason}
-          placeholder="Reason for adjustment (required)"
-          onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-          required
-        />
-      </DmsInlineField>
-      <DmsInlineField label="Comment :">
-        <input
-          className={`${dmsControlClass} min-w-[16rem] flex-1`}
-          value={formData.notes}
-          placeholder="Optional notes"
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-        />
-      </DmsInlineField>
-
-      <DeliveryLineItemsEntry
-        products={products}
-        items={adjustmentItems}
-        onItemsChange={setAdjustmentItems}
-        primaryColor={pageTheme?.primaryColor}
-        showPricing
-      />
-
-      <div className="flex flex-wrap justify-end gap-2 border-t pt-3" style={{ borderColor: '#e5e7eb' }}>
-        <Button type="button" variant="ghost" onClick={() => router.push('/production/stock-adjustment')} disabled={isSubmitting}>
-          Cancel
+    <div className="p-6 space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
         </Button>
-        <Button type="button" variant="primary" disabled={isSubmitting || !isFormValid()} onClick={() => void handleSubmit()}>
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-          Submit
-        </Button>
+        <div>
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
+            Add Stock Adjustment
+          </h1>
+          <p className="mt-1" style={{ color: 'var(--muted-foreground)' }}>
+            Add one or more products — same date, adjustment type, reason, and notes apply to every line
+          </p>
+        </div>
       </div>
-    </DmsEntryScreen>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Stock Adjustment Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Adjustment Date"
+              type="date"
+              value={formData.adjustmentDate}
+              onChange={(e) => setFormData({ ...formData, adjustmentDate: e.target.value })}
+              fullWidth
+              required
+            />
+            <Select
+              label="Adjustment Type"
+              value={formData.adjustmentType}
+              onChange={(e) =>
+                setFormData({ ...formData, adjustmentType: e.target.value as 'Increase' | 'Decrease' })
+              }
+              options={[
+                { value: 'Increase', label: 'Increase Stock' },
+                { value: 'Decrease', label: 'Decrease Stock' },
+              ]}
+              fullWidth
+              required
+            />
+            <Input
+              label="Reason"
+              value={formData.reason}
+              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+              placeholder="Reason for adjustment (applies to all lines)"
+              fullWidth
+              required
+            />
+            <Input
+              label="Notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Optional notes (applies to all lines)"
+              fullWidth
+            />
+
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-medium mb-3">Products</h3>
+              <ItemManagementTable
+                products={products.map((p) => ({ id: p.id, code: p.code, name: p.name }))}
+                items={adjustmentItems}
+                onItemsChange={setAdjustmentItems}
+                showUnitPrice={false}
+                showReason={false}
+                showTotal={true}
+                primaryColor={pageTheme?.primaryColor}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={isSubmitting || !isFormValid()}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create adjustment{adjustmentItems.length > 1 ? 's' : ''} (
+                    {adjustmentItems.filter((i) => i.productId && i.quantity > 0).length || 0} product
+                    {(adjustmentItems.filter((i) => i.productId && i.quantity > 0).length || 0) === 1 ? '' : 's'})
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

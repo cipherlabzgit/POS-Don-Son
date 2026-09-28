@@ -2,14 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
-import { Loader2, Send } from 'lucide-react';
-import {
-  DmsEntryScreen,
-  DmsHeaderRow,
-  DmsInlineField,
-  dmsControlClass,
-} from '@/components/operation/DmsEntryScreen';
+import Input from '@/components/ui/input';
+import Select from '@/components/ui/select';
+import { ArrowLeft, Loader2, Send } from 'lucide-react';
 import { transfersApi } from '@/lib/api/transfers';
 import { outletsApi, type Outlet } from '@/lib/api/outlets';
 import { productsApi, type Product } from '@/lib/api/products';
@@ -129,81 +126,120 @@ function AddTransferPageContent() {
   };
 
   return (
-    <DmsEntryScreen
-      title="New Transfer"
-      documentNo="Transfer No# New Number"
-      onBack={() => router.push('/operation/transfer')}
-    >
-      <DmsHeaderRow>
-        <DmsInlineField label="From ShowRoom :">
-          <select
-            className={dmsControlClass}
-            value={formData.fromShowroomId}
-            onChange={(e) => setFormData({ ...formData, fromShowroomId: e.target.value })}
-            required
-          >
-            <option value="">Select source</option>
-            {outlets.filter((o) => o.id !== formData.toShowroomId).map((o) => (
-              <option key={o.id} value={o.id}>{o.code}</option>
-            ))}
-          </select>
-        </DmsInlineField>
-        <DmsInlineField label="To ShowRoom :">
-          <select
-            className={dmsControlClass}
-            value={formData.toShowroomId}
-            onChange={(e) => setFormData({ ...formData, toShowroomId: e.target.value })}
-            required
-          >
-            <option value="">Select destination</option>
-            {outlets.filter((o) => o.showInPos && o.id !== formData.fromShowroomId).map((o) => (
-              <option key={o.id} value={o.id}>{o.code}</option>
-            ))}
-          </select>
-        </DmsInlineField>
-      </DmsHeaderRow>
-      <DmsHeaderRow>
-        <DmsInlineField label="Transfer Date:">
-          <input
-            type="date"
-            className={dmsControlClass}
-            value={formData.transferDate}
-            min={dateBounds.min}
-            max={dateBounds.max}
-            onChange={(e) => setFormData({ ...formData, transferDate: e.target.value })}
-            required
-          />
-        </DmsInlineField>
-        <DmsInlineField label="Comment :">
-          <input
-            className={`${dmsControlClass} min-w-[16rem] flex-1`}
-            value={formData.notes}
-            placeholder="Optional notes"
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          />
-        </DmsInlineField>
-      </DmsHeaderRow>
-      {dateBounds.helperText ? (
-        <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{dateBounds.helperText}</p>
-      ) : null}
-
-      <DeliveryLineItemsEntry
-        products={products}
-        items={transferItems}
-        onItemsChange={setTransferItems}
-        primaryColor={accent}
-        showPricing
-      />
-
-      <div className="flex flex-wrap justify-end gap-2 border-t pt-3" style={{ borderColor: '#e5e7eb' }}>
-        <Button type="button" variant="ghost" onClick={() => router.push('/operation/transfer')} disabled={isSubmitting}>
-          Cancel
-        </Button>
-        <Button type="button" variant="primary" disabled={isSubmitting || !canCreate || !isFormValid} onClick={() => void handleSubmit()}>
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-          Submit
-        </Button>
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
+            Transfer Entry
+          </h1>
+          <p className="mt-1" style={{ color: 'var(--muted-foreground)' }}>
+            New transfer entry
+          </p>
+        </div>
       </div>
-    </DmsEntryScreen>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>New Transfer</CardTitle>
+              <p className="mt-1 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                Transfer No: New Number
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => router.push('/operation/transfer')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          <div
+            className="rounded-xl border-2 p-4 md:p-6 space-y-6"
+            style={{
+              borderColor: 'var(--form-field-border)',
+              backgroundColor: 'var(--muted)',
+            }}
+          >
+            <Input
+              label="Transfer date"
+              type="date"
+              value={formData.transferDate}
+              onChange={(e) => setFormData({ ...formData, transferDate: e.target.value })}
+              min={dateBounds.min}
+              max={dateBounds.max}
+              helperText={dateBounds.helperText}
+              fullWidth
+              required
+            />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Select
+                label="From showroom"
+                value={formData.fromShowroomId}
+                onChange={(e) => setFormData({ ...formData, fromShowroomId: e.target.value })}
+                options={outlets
+                  .filter((o) => o.id !== formData.toShowroomId)
+                  .map((o) => ({ value: o.id, label: `${o.code} - ${o.name}` }))}
+                placeholder="Select source showroom"
+                fullWidth
+                required
+              />
+              <Select
+                label="To showroom"
+                value={formData.toShowroomId}
+                onChange={(e) => setFormData({ ...formData, toShowroomId: e.target.value })}
+                options={outlets
+                  .filter((o) => o.showInPos && o.id !== formData.fromShowroomId)
+                  .map((o) => ({ value: o.id, label: `${o.code} - ${o.name}` }))}
+                placeholder="Select destination showroom"
+                fullWidth
+                required
+              />
+            </div>
+            <Input
+              label="Comment"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Optional notes"
+              fullWidth
+            />
+          </div>
+
+          <div className="border-t pt-6">
+            <DeliveryLineItemsEntry
+              products={products}
+              items={transferItems}
+              onItemsChange={setTransferItems}
+              primaryColor={accent}
+              showPricing={false}
+            />
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-3 border-t pt-6">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => router.push('/operation/transfer')}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={isSubmitting || !canCreate || !isFormValid}
+              onClick={() => void handleSubmit()}
+            >
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Submit
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

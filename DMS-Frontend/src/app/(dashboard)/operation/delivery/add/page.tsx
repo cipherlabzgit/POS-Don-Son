@@ -2,14 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
-import { Loader2, Printer, Send } from 'lucide-react';
-import {
-  DmsEntryScreen,
-  DmsHeaderRow,
-  DmsInlineField,
-  dmsControlClass,
-} from '@/components/operation/DmsEntryScreen';
+import Input from '@/components/ui/input';
+import Select from '@/components/ui/select';
+import { ArrowLeft, Loader2, Printer, Send } from 'lucide-react';
 import { deliveriesApi } from '@/lib/api/deliveries';
 import { outletsApi, type Outlet } from '@/lib/api/outlets';
 import { productsApi, type Product } from '@/lib/api/products';
@@ -170,75 +167,124 @@ function AddDeliveryPageContent() {
   };
 
   return (
-    <DmsEntryScreen
-      title="New Delivery"
-      documentNo="Delivery No# New Number"
-      onBack={() => router.push('/operation/delivery')}
-      toolbar={<DnPrintStatusBadge />}
-    >
-      <DmsHeaderRow>
-        <DmsInlineField label="ShowRoom :">
-          <select
-            className={dmsControlClass}
-            value={formData.showroomId}
-            onChange={(e) => setFormData((f) => ({ ...f, showroomId: e.target.value }))}
-            required
-          >
-            <option value="">Select Showroom</option>
-            {outlets.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.code}
-              </option>
-            ))}
-          </select>
-        </DmsInlineField>
-        <DmsInlineField label="Date/Time:">
-          <input
-            type="datetime-local"
-            className={dmsControlClass}
-            value={formData.deliveryDateTime}
-            min={dateBounds.lockToNow ? undefined : dateBounds.min ? `${dateBounds.min}T00:00` : undefined}
-            max={dateBounds.lockToNow ? undefined : dateBounds.max ? `${dateBounds.max}T23:59` : undefined}
-            readOnly={dateBounds.lockToNow}
-            onChange={(e) => setFormData((f) => ({ ...f, deliveryDateTime: e.target.value }))}
-            required
-          />
-        </DmsInlineField>
-      </DmsHeaderRow>
-      <DmsInlineField label="Comment :">
-        <input
-          className={`${dmsControlClass} min-w-[16rem] flex-1`}
-          value={formData.notes}
-          placeholder="Optional notes"
-          onChange={(e) => setFormData((f) => ({ ...f, notes: e.target.value }))}
-        />
-      </DmsInlineField>
-      {dateBounds.helperText ? (
-        <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-          {dateBounds.helperText}
-        </p>
-      ) : null}
-
-      <DeliveryLineItemsEntry
-        products={products}
-        items={deliveryItems}
-        onItemsChange={setDeliveryItems}
-        primaryColor={accent}
-      />
-
-      <div className="flex flex-wrap justify-end gap-2 border-t pt-3" style={{ borderColor: '#e5e7eb' }}>
-        <Button type="button" variant="ghost" onClick={() => router.push('/operation/delivery')} disabled={isSubmitting}>
-          Cancel
-        </Button>
-        <Button type="button" variant="primary" disabled={isSubmitting || !canCreate || !isFormValid} onClick={() => submit(false)}>
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-          Submit
-        </Button>
-        <Button type="button" variant="secondary" disabled={isSubmitting || !canCreate || !isFormValid} onClick={() => submit(true)}>
-          <Printer className="mr-2 h-4 w-4" />
-          Submit &amp; Print
-        </Button>
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
+            Delivery Entry
+          </h1>
+          <p className="mt-1" style={{ color: 'var(--muted-foreground)' }}>
+            New delivery entry
+          </p>
+        </div>
+        <DnPrintStatusBadge />
       </div>
-    </DmsEntryScreen>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>New Delivery</CardTitle>
+              <p className="mt-1 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                Delivery No: New Number
+              </p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => router.push('/operation/delivery')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          <div
+            className="rounded-xl border-2 p-4 md:p-6 space-y-6"
+            style={{
+              borderColor: 'var(--form-field-border)',
+              backgroundColor: 'var(--muted)',
+            }}
+          >
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Input
+                label="Date & Time"
+                type="datetime-local"
+                value={formData.deliveryDateTime}
+                onChange={(e) =>
+                  setFormData((f) => ({ ...f, deliveryDateTime: e.target.value }))
+                }
+                min={dateBounds.lockToNow ? undefined : dateBounds.min ? `${dateBounds.min}T00:00` : undefined}
+                max={dateBounds.lockToNow ? undefined : dateBounds.max ? `${dateBounds.max}T23:59` : undefined}
+                readOnly={dateBounds.lockToNow}
+                helperText={dateBounds.helperText}
+                fullWidth
+                required
+              />
+              <Select
+                label="Showroom"
+                value={formData.showroomId}
+                onChange={(e) =>
+                  setFormData((f) => ({ ...f, showroomId: e.target.value }))
+                }
+                options={outlets.map((o) => ({
+                  value: o.id,
+                  label: `${o.code} - ${o.name}`,
+                }))}
+                placeholder="Select Showroom"
+                fullWidth
+                required
+              />
+            </div>
+            <Input
+              label="Comment"
+              value={formData.notes}
+              onChange={(e) => setFormData((f) => ({ ...f, notes: e.target.value }))}
+              placeholder="Optional notes"
+              fullWidth
+            />
+          </div>
+
+          <div className="border-t pt-6">
+            <DeliveryLineItemsEntry
+              products={products}
+              items={deliveryItems}
+              onItemsChange={setDeliveryItems}
+              primaryColor={accent}
+            />
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-3 border-t pt-6">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => router.push('/operation/delivery')}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={isSubmitting || !canCreate || !isFormValid}
+              onClick={() => submit(false)}
+            >
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Submit
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isSubmitting || !canCreate || !isFormValid}
+              onClick={() => submit(true)}
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Submit &amp; Print
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

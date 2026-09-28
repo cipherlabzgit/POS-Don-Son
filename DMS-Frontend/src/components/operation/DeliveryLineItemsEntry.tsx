@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import Button from '@/components/ui/button';
 import { Modal, ModalFooter } from '@/components/ui/modal';
-import { FileSpreadsheet, Minus, Plus } from 'lucide-react';
+import { Upload, FileSpreadsheet, Minus, Plus, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Product } from '@/lib/api/products';
 import { productsApi } from '@/lib/api/products';
@@ -132,7 +132,7 @@ export default function DeliveryLineItemsEntry({
   showReason = false,
   reasonPlaceholder = 'Reason (required)',
   accentToolbar = false,
-  hideSearchLabel = true,
+  hideSearchLabel = false,
   searchHelperText,
   accentTableHeader = false,
   selectThenQty = false,
@@ -516,7 +516,12 @@ export default function DeliveryLineItemsEntry({
     }
   };
 
-  const resolvedSearchHint = searchHelperText?.trim() ? searchHelperText : '';
+  const resolvedSearchHint =
+    searchHelperText !== undefined
+      ? searchHelperText
+      : selectThenQty
+        ? 'Search and press Enter to select an item — Qty focuses next. Enter on Qty (or Add) commits the line.'
+        : 'Use ↑/↓ and Enter to add. After add, quantity is selected to edit; Enter there returns to search.';
 
   const pendingLabel = pendingProduct
     ? `${pendingProduct.code} — ${pendingProduct.name}`
@@ -526,7 +531,8 @@ export default function DeliveryLineItemsEntry({
     <div className="space-y-4">
       <div
         ref={wrapRef}
-        className="flex flex-col"
+        className="flex flex-col overflow-hidden rounded-lg border-2 bg-[var(--card)]"
+        style={{ borderColor: 'var(--form-field-border)' }}
       >
         {accentToolbar ? (
           <div
@@ -537,7 +543,7 @@ export default function DeliveryLineItemsEntry({
             }}
           >
             <div className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-              Item Details
+              Item details
             </div>
             {enableExcelImport ? (
               <Button
@@ -546,31 +552,16 @@ export default function DeliveryLineItemsEntry({
                 className="shrink-0 self-start sm:self-auto"
                 onClick={() => setImportOpen(true)}
               >
-                <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] leading-none">+</span>
-                ImportExcel
+                <Upload className="mr-2 h-4 w-4" />
+                Import Excel
               </Button>
             ) : null}
           </div>
         ) : null}
-        <div className="flex flex-col gap-3 p-3 sm:p-4">
+        <div className="flex flex-col gap-4 p-3 sm:p-4">
           {!accentToolbar ? (
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                Item Details
-              </div>
-              {enableExcelImport ? (
-                <button
-                  type="button"
-                  className="inline-flex items-center text-sm font-medium"
-                  style={{ color: '#0369a1' }}
-                  onClick={() => setImportOpen(true)}
-                >
-                  <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] leading-none">
-                    +
-                  </span>
-                  ImportExcel
-                </button>
-              ) : null}
+            <div className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+              Item details
             </div>
           ) : null}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -781,11 +772,27 @@ export default function DeliveryLineItemsEntry({
               </>
             ) : null}
           </div>
+
+          {!accentToolbar && enableExcelImport ? (
+            <Button
+              type="button"
+              variant="secondary"
+              className="shrink-0 self-start lg:self-auto"
+              onClick={() => setImportOpen(true)}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Import Excel
+            </Button>
+          ) : null}
         </div>
         </div>
 
-      <div className="overflow-x-auto bg-[var(--background)]">
-          <table className="w-full border-collapse text-sm [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-[#f3f4f6] [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-sm [&_th]:font-semibold">
+      {items.length > 0 ? (
+        <div
+          className="overflow-x-auto border-t bg-[var(--background)]"
+          style={{ borderColor: 'var(--form-field-border)' }}
+        >
+          <table className="w-full">
             <thead
               className="border-b"
               style={{
@@ -848,22 +855,11 @@ export default function DeliveryLineItemsEntry({
                   className="px-3 py-2.5 text-center text-xs font-bold"
                   style={{ color: 'var(--foreground)' }}
                 >
-                  <span className="sr-only">Remove</span>
+                  Action
                 </th>
               </tr>
             </thead>
             <tbody>
-              {items.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={4 + (showReason ? 1 : 0) + (showPricing ? 2 : 0) + 1}
-                    className="py-8 text-center text-sm"
-                    style={{ color: 'var(--muted-foreground)' }}
-                  >
-                    No items added. Enter a product code above.
-                  </td>
-                </tr>
-              ) : null}
               {items.map((row, index) => {
                 const product = products.find((p) => p.id === row.productId);
                 const lineTotal = row.quantity * (row.unitPrice ?? 0);
@@ -929,9 +925,7 @@ export default function DeliveryLineItemsEntry({
                         className="px-3 py-2 text-right text-sm tabular-nums"
                         style={{ color: 'var(--foreground)' }}
                       >
-                        {Number.isInteger(row.unitPrice ?? 0)
-                          ? String(row.unitPrice ?? 0)
-                          : (row.unitPrice ?? 0).toFixed(2)}
+                        {(row.unitPrice ?? 0).toFixed(2)}
                       </td>
                     ) : null}
                     <td className="px-3 py-2 text-right">
@@ -1015,7 +1009,7 @@ export default function DeliveryLineItemsEntry({
                         className="px-3 py-2 text-right text-sm font-semibold tabular-nums"
                         style={{ color: 'var(--foreground)' }}
                       >
-                        Rs {lineTotal.toFixed(2)}
+                        Rs.{lineTotal.toFixed(2)}
                       </td>
                     ) : null}
                     <td className="px-3 py-2 text-center">
@@ -1025,35 +1019,44 @@ export default function DeliveryLineItemsEntry({
                         title="Remove"
                         onClick={() => removeRow(row.productId)}
                       >
-                        <span className="text-base font-bold leading-none">×</span>
+                        <XCircle className="h-4 w-4" />
                       </button>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
-            <tfoot>
-              <tr>
-                <td
-                  colSpan={3 + (showReason ? 1 : 0) + (showPricing ? 1 : 0)}
-                  className="text-right text-sm font-semibold"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  {showPricing ? '' : 'Total'}
-                </td>
-                <td className="text-right text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                  {showPricing ? 'Total' : totalQty.toLocaleString(undefined, { maximumFractionDigits: 4 })}
-                </td>
-                {showPricing ? (
-                  <td className="text-right text-sm font-semibold tabular-nums" style={{ color: 'var(--foreground)' }}>
-                    Rs.{totalValue.toFixed(2)}
-                  </td>
-                ) : null}
-                <td />
-              </tr>
-            </tfoot>
           </table>
         </div>
+      ) : (
+        <div
+          className="border-t py-10 text-center text-sm"
+          style={{
+            borderColor: 'var(--form-field-border)',
+            backgroundColor: 'var(--muted)',
+            color: 'var(--muted-foreground)',
+          }}
+        >
+          No items added.
+        </div>
+      )}
+
+      <div
+        className="flex justify-end border-t px-3 py-3 sm:px-4"
+        style={{ borderColor: 'var(--form-field-border)' }}
+      >
+        {showPricing ? (
+          <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+            Total Rs.{totalValue.toFixed(2)}
+          </span>
+        ) : (
+          <span className="text-sm font-semibold tabular-nums" style={{ color: 'var(--foreground)' }}>
+            {items.length} line{items.length === 1 ? '' : 's'} · Total qty {totalQty.toLocaleString(undefined, {
+              maximumFractionDigits: 4,
+            })}
+          </span>
+        )}
+      </div>
       </div>
 
       {enableExcelImport ? (

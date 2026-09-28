@@ -1,12 +1,9 @@
-using DMS_Backend.Data;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace DMS_Backend.Migrations;
 
-[DbContext(typeof(ApplicationDbContext))]
 [Migration("20260923090000_AddRemoteClientAgents")]
 public partial class AddRemoteClientAgents : Migration
 {

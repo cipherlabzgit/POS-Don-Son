@@ -306,6 +306,9 @@ using (var scope = app.Services.CreateScope())
         // transfers.received_by_id / received_at — POS New Transfer 500s if missing
         await context.EnsureTransferColumnsAsync();
 
+        // pos_device_agents — header GET /api/pos-devices/status 500s if the table is missing
+        await context.EnsurePosDeviceTablesAsync();
+
         // Seed permissions first
         await permissionSeeder.SeedAsync();
 

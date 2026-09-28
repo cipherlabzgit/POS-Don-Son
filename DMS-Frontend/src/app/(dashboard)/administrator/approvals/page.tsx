@@ -1586,7 +1586,6 @@ function CancellationDetailsView({ cancellation }: { cancellation: Cancellation 
         <InfoField label="Outlet" value={cancellation.outletName || cancellation.outlet?.name || '-'} />
       </InfoGrid>
       </DetailSectionTint>
-      <InfoField label="Delivery No" value={cancellation.deliveryNo} />
       <InfoField label="Requested By" value={`${cancellation.createdByName} • ${formatSlDateTime(cancellation.createdAt)}`} />
       <InfoField label="Reason" value={cancellation.reason || '-'} />
       </div>

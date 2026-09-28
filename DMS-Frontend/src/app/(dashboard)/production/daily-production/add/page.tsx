@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
-import Input from '@/components/ui/input';
-import Select from '@/components/ui/select';
-import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
+import {
+  DmsEntryScreen,
+  DmsHeaderRow,
+  DmsInlineField,
+  dmsControlClass,
+} from '@/components/operation/DmsEntryScreen';
 import { dailyProductionsApi } from '@/lib/api/daily-productions';
 import { productsApi, type Product } from '@/lib/api/products';
 import { shiftsApi, type Shift } from '@/lib/api/shifts';
@@ -155,126 +158,85 @@ export default function AddDailyProductionPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+    <DmsEntryScreen
+      title="New Daily Production"
+      documentNo="Production No# New Number"
+      onBack={() => router.push('/production/daily-production')}
+    >
+      <DmsHeaderRow>
+        <DmsInlineField label="Production Date:">
+          <input
+            type="date"
+            className={dmsControlClass}
+            value={formData.productionDate}
+            min={dateBounds.min}
+            max={dateBounds.max}
+            onChange={(e) => setFormData({ ...formData, productionDate: e.target.value })}
+            required
+          />
+        </DmsInlineField>
+        <DmsInlineField label="Shift :">
+          <select
+            className={dmsControlClass}
+            value={formData.shiftId}
+            onChange={(e) => setFormData({ ...formData, shiftId: e.target.value })}
+            required
+          >
+            <option value="">Select shift</option>
+            {shifts.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </DmsInlineField>
+      </DmsHeaderRow>
+      <DmsInlineField label="Comment :">
+        <input
+          className={`${dmsControlClass} min-w-[16rem] flex-1`}
+          value={formData.notes}
+          placeholder="Optional notes"
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+        />
+      </DmsInlineField>
+      {dateBounds.helperText ? (
+        <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{dateBounds.helperText}</p>
+      ) : null}
+
+      <ProductionLineItemsEntry
+        products={products.map((p): ProductionLineProduct => ({
+          id: p.id,
+          code: p.code,
+          name: p.name,
+          categoryName: p.categoryName,
+          productionSectionId: p.productionSectionId,
+          sectionAssignments: p.sectionAssignments?.map((a) => ({
+            productionSectionId: a.productionSectionId,
+            productionSectionName: a.productionSectionName,
+          })),
+          requiresOpenStock: p.requiresOpenStock,
+          isActive: p.isActive,
+          displayInPOS: p.displayInPOS,
+          isFavorite: p.isFavorite,
+          unitPrice: p.unitPrice,
+          enableLabelPrint: p.enableLabelPrint,
+          expiryDays: p.expiryDays,
+          expiryHours: p.expiryHours,
+        }))}
+        productionSections={productionSections.map((s): ProdSection => ({ id: s.id, name: s.name }))}
+        items={lineItems}
+        onItemsChange={setLineItems}
+        primaryColor={pageTheme?.primaryColor}
+        enableExcelImport
+      />
+
+      <div className="flex flex-wrap justify-end gap-2 border-t pt-3" style={{ borderColor: '#e5e7eb' }}>
+        <Button type="button" variant="ghost" onClick={() => router.push('/production/daily-production')} disabled={isSubmitting}>
+          Cancel
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
-            Add New Production
-          </h1>
-          <p className="mt-1" style={{ color: 'var(--muted-foreground)' }}>
-            Same date, shift, and notes for each product line — each line becomes its own pending
-            production entry
-          </p>
-        </div>
+        <Button type="button" variant="primary" disabled={isSubmitting || !isFormValid} onClick={() => void handleSubmit()}>
+          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+          Submit
+        </Button>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Production Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Production Date"
-                type="date"
-                value={formData.productionDate}
-                onChange={(e) => setFormData({ ...formData, productionDate: e.target.value })}
-                min={dateBounds.min}
-                max={dateBounds.max}
-                helperText={dateBounds.helperText}
-                fullWidth
-                required
-              />
-              <Select
-                label="Shift"
-                value={formData.shiftId}
-                onChange={(e) => setFormData({ ...formData, shiftId: e.target.value })}
-                options={shifts.map((s) => ({ value: s.id, label: s.name }))}
-                placeholder="Select shift"
-                fullWidth
-                required
-              />
-            </div>
-
-            <Input
-              label="Notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Optional notes (applied to every line)"
-              fullWidth
-            />
-
-            <div className="border-t pt-4">
-              <ProductionLineItemsEntry
-                products={products.map((p): ProductionLineProduct => ({
-                  id: p.id,
-                  code: p.code,
-                  name: p.name,
-                  categoryName: p.categoryName,
-                  productionSectionId: p.productionSectionId,
-                  sectionAssignments: p.sectionAssignments?.map((a) => ({
-                    productionSectionId: a.productionSectionId,
-                    productionSectionName: a.productionSectionName,
-                  })),
-                  requiresOpenStock: p.requiresOpenStock,
-                  isActive: p.isActive,
-                  displayInPOS: p.displayInPOS,
-                  isFavorite: p.isFavorite,
-                  unitPrice: p.unitPrice,
-                  enableLabelPrint: p.enableLabelPrint,
-                  expiryDays: p.expiryDays,
-                  expiryHours: p.expiryHours,
-                }))}
-                productionSections={productionSections.map((s): ProdSection => ({ id: s.id, name: s.name }))}
-                items={lineItems}
-                onItemsChange={setLineItems}
-                primaryColor={pageTheme?.primaryColor}
-                enableExcelImport={true}
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => router.back()}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                disabled={isSubmitting || !isFormValid}
-                onClick={handleSubmit}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create production (
-                    {lineItems.filter((l) => l.productId && l.productionSectionId).length || 0}{' '}
-                    product
-                    {(lineItems.filter((l) => l.productId && l.productionSectionId).length || 0) === 1
-                      ? ''
-                      : 's'}
-                    )
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    </DmsEntryScreen>
   );
 }

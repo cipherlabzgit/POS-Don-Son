@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Button from '@/components/ui/button';
 import { Modal, ModalFooter } from '@/components/ui/modal';
-import { Upload, FileSpreadsheet, Minus, Plus, XCircle } from 'lucide-react';
+import { FileSpreadsheet, Minus, Plus, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { DEFAULT_BRAND_COLOR } from '@/lib/stores/theme-store';
 import { filterByCodeOrName, foldProductSearch } from '@/lib/product-search';
@@ -329,13 +329,12 @@ export default function ProductionLineItemsEntry({
     <div className="space-y-4">
       <div
         ref={wrapRef}
-        className="flex flex-col overflow-hidden rounded-lg border-2 bg-[var(--card)]"
-        style={{ borderColor: 'var(--form-field-border)' }}
+        className="flex flex-col"
       >
         <div className="flex flex-col gap-4 p-3 sm:p-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-              Item details
+              Item Details
             </div>
             {enableExcelImport && (
               <Button
@@ -345,8 +344,8 @@ export default function ProductionLineItemsEntry({
                 className="shrink-0 self-start sm:self-auto"
                 onClick={() => setImportOpen(true)}
               >
-                <Upload className="mr-2 h-4 w-4" />
-                Import Excel
+                <span className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full border text-[10px] leading-none">+</span>
+                ImportExcel
               </Button>
             )}
           </div>
@@ -354,12 +353,7 @@ export default function ProductionLineItemsEntry({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-end">
               <div className="w-full min-w-0 max-w-[min(100%,20rem)] space-y-1">
-                <label
-                  className="text-xs font-medium sm:text-sm"
-                  style={{ color: 'var(--muted-foreground)' }}
-                >
-                  Search by code or name
-                </label>
+                <label className="sr-only">Enter Product Code</label>
                 <div className="relative">
                   <input
                     ref={inputRef}
@@ -493,9 +487,6 @@ export default function ProductionLineItemsEntry({
                     </ul>
                   )}
                 </div>
-                <p className="text-xs leading-snug" style={{ color: 'var(--muted-foreground)' }}>
-                  Type to search, then press <strong>Enter</strong> to add to list. Use ↑/↓ to navigate suggestions. After adding, quantity is selected; press Enter again to return to search.
-                </p>
               </div>
             </div>
           </div>
@@ -506,7 +497,7 @@ export default function ProductionLineItemsEntry({
             className="overflow-x-auto border-t bg-[var(--background)]"
             style={{ borderColor: 'var(--form-field-border)' }}
           >
-            <table className="w-full">
+            <table className="w-full border-collapse text-sm [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-[#f3f4f6] [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-sm [&_th]:font-semibold">
               <thead
                 className="border-b"
                 style={{

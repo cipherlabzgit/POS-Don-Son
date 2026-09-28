@@ -1,14 +1,17 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import Button from '@/components/ui/button';
-import Input from '@/components/ui/input';
-import Select from '@/components/ui/select';
+import {
+  DmsEntryScreen,
+  DmsHeaderRow,
+  DmsInlineField,
+  dmsControlClass,
+} from '@/components/operation/DmsEntryScreen';
 import DeliveryLineItemsEntry from '@/components/operation/DeliveryLineItemsEntry';
 import type { ItemManagementItem } from '@/components/operation/ItemManagementTable';
-import { ArrowLeft, Loader2, Send } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import { cancellationsApi } from '@/lib/api/cancellations';
 import { outletsApi, type Outlet } from '@/lib/api/outlets';
 import { productsApi, type Product } from '@/lib/api/products';
@@ -106,134 +109,66 @@ function AddCancellationPageContent() {
   };
 
   return (
-    <div className="space-y-4 p-4 sm:p-5">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
-            Delivery Cancellation Entry
-          </h1>
-          <p className="mt-0.5 text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            New delivery cancellation entry
-          </p>
-        </div>
-      </div>
-
-      <Card padding="sm">
-        <CardHeader className="mb-3 !pb-3 pt-0">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <CardTitle className="text-lg">New Delivery Cancellation</CardTitle>
-              <p className="mt-0.5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                Cancellation No: New Number
-              </p>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => router.push('/operation/cancellation')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4 pb-5 pt-0">
-          <div
-            className="space-y-3 rounded-lg border p-3 sm:p-4"
-            style={{
-              borderColor: 'var(--form-field-border)',
-              backgroundColor: 'var(--muted)',
-            }}
+    <DmsEntryScreen
+      title="New Delivery Cancellation"
+      documentNo="Cancellation No# New Number"
+      onBack={() => router.push('/operation/cancellation')}
+    >
+      <DmsHeaderRow>
+        <DmsInlineField label="ShowRoom :">
+          <select
+            className={dmsControlClass}
+            value={formData.showroomId}
+            onChange={(e) => setFormData({ ...formData, showroomId: e.target.value })}
+            required
           >
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Input
-                label="Cancellation Date"
-                type="date"
-                value={formData.cancellationDate}
-                onChange={(e) => setFormData({ ...formData, cancellationDate: e.target.value })}
-                min={dateBounds.min}
-                max={dateBounds.max}
-                helperText={dateBounds.helperText}
-                fullWidth
-                required
-                className="py-2 px-3"
-              />
-              <Select
-                label="Showroom"
-                value={formData.showroomId}
-                onChange={(e) => setFormData({ ...formData, showroomId: e.target.value })}
-                options={outlets.map((o) => ({ value: o.id, label: `${o.code} - ${o.name}` }))}
-                placeholder="Select Showroom"
-                fullWidth
-                required
-                className="py-2 px-3"
-              />
-            </div>
+            <option value="">Select Showroom</option>
+            {outlets.map((o) => (
+              <option key={o.id} value={o.id}>{o.code}</option>
+            ))}
+          </select>
+        </DmsInlineField>
+        <DmsInlineField label="Cancellation Date:">
+          <input
+            type="date"
+            className={dmsControlClass}
+            value={formData.cancellationDate}
+            min={dateBounds.min}
+            max={dateBounds.max}
+            onChange={(e) => setFormData({ ...formData, cancellationDate: e.target.value })}
+            required
+          />
+        </DmsInlineField>
+      </DmsHeaderRow>
+      <DmsInlineField label="Comment :">
+        <input
+          className={`${dmsControlClass} min-w-[16rem] flex-1`}
+          value={formData.reason}
+          placeholder="Reason for cancellation (required)"
+          onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+          required
+        />
+      </DmsInlineField>
+      {dateBounds.helperText ? (
+        <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{dateBounds.helperText}</p>
+      ) : null}
 
-            <div className="w-full">
-              <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--foreground)' }}>
-                Comment
-              </label>
-              <textarea
-                value={formData.reason}
-                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                rows={4}
-                placeholder="Reason for cancellation (required)"
-                required
-                className="block w-full resize-y rounded-lg px-3 py-2 text-sm transition-[border-color,outline,box-shadow] focus:outline-none"
-                style={{
-                  border: '1px solid var(--form-field-border)',
-                  backgroundColor: 'var(--background)',
-                  color: 'var(--foreground)',
-                  boxShadow: 'inset 0 1px 2px rgba(15, 23, 42, 0.04)',
-                  minHeight: '5.5rem',
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--form-focus-ring)';
-                  e.currentTarget.style.outline = '2px solid var(--form-focus-ring)';
-                  e.currentTarget.style.outlineOffset = '2px';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--form-field-border)';
-                  e.currentTarget.style.outline = 'none';
-                }}
-              />
-            </div>
+      <DeliveryLineItemsEntry
+        products={products}
+        items={lineItems}
+        onItemsChange={setLineItems}
+        primaryColor={accent}
+      />
 
-          </div>
-
-          <div className="border-t border-[var(--border)] pt-4">
-            <DeliveryLineItemsEntry
-              products={products}
-              items={lineItems}
-              onItemsChange={setLineItems}
-              primaryColor={accent}
-              hideSearchLabel
-              searchHelperText="Use ↑/↓ and Enter to select an item."
-            />
-          </div>
-
-          <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--border)] pt-4">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => router.push('/operation/cancellation')}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              disabled={isSubmitting || !canCreate || !isFormValid}
-              onClick={() => void handleSubmit()}
-            >
-              {isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="mr-2 h-4 w-4" />
-              )}
-              Submit
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      <div className="flex flex-wrap justify-end gap-2 border-t pt-3" style={{ borderColor: '#e5e7eb' }}>
+        <Button type="button" variant="ghost" onClick={() => router.push('/operation/cancellation')} disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button type="button" variant="primary" disabled={isSubmitting || !canCreate || !isFormValid} onClick={() => void handleSubmit()}>
+          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+          Submit
+        </Button>
+      </div>
+    </DmsEntryScreen>
   );
 }

@@ -81,6 +81,21 @@
   --badge-online-text: #ffffff;
   --badge-offline-bg:  #d97706;
   --badge-offline-text:#ffffff;
+
+  /* Touch-friendly scrollbars (bill list + product grid) */
+  --pos-scrollbar-size: 26px;
+  --pos-scrollbar-thumb: #111827;
+  --pos-scrollbar-thumb-hover: #000000;
+  --pos-scrollbar-track: #d1d5db;
+  --pos-scrollbar-thumb-inverse: #ffffff;
+  --pos-scrollbar-track-inverse: color-mix(in srgb, var(--pos-catalog-surface) 55%, #9ca3af);
+
+  /* Category row + product tiles (touch POS layout) */
+  --pos-category-height: 7.75rem;
+  --pos-category-nav-width: 3rem;
+  --pos-tile-min: 172px;
+  --pos-tile-font: 0.95rem;
+  --pos-tile-gap: 0.65rem;
 }
 
 /* ─── Reset / base ─── */
@@ -118,27 +133,42 @@ html.pos-osk-open #root {
 .pos-scroll-light::-webkit-scrollbar-thumb { background: var(--neutral-200); border-radius: 3px; }
 .pos-scroll-light::-webkit-scrollbar-thumb:hover { background: var(--brand-primary); }
 
-/* Always-visible vertical bars (bill list + product grid) */
+/* Always-visible vertical bars (bill list + product grid) — thick touch scrollbars */
 .pos-scroll-visible {
   overflow-y: scroll;
   scrollbar-gutter: stable;
   scrollbar-width: auto;
-  scrollbar-color: var(--brand-primary) var(--neutral-200);
+  scrollbar-color: var(--pos-scrollbar-thumb) var(--pos-scrollbar-track);
 }
 .pos-scroll-visible::-webkit-scrollbar {
-  width: 14px;
+  width: var(--pos-scrollbar-size);
 }
 .pos-scroll-visible::-webkit-scrollbar-track {
-  background: var(--neutral-200);
-  border-left: 1px solid var(--border);
+  background: var(--pos-scrollbar-track);
 }
 .pos-scroll-visible::-webkit-scrollbar-thumb {
-  background: var(--brand-primary);
-  border-radius: 8px;
-  border: 3px solid var(--neutral-200);
+  background: var(--pos-scrollbar-thumb);
+  border-radius: 9999px;
+  border: 5px solid var(--pos-scrollbar-track);
+  min-height: 3.5rem;
 }
 .pos-scroll-visible::-webkit-scrollbar-thumb:hover {
-  background: var(--brand-primary-dark);
+  background: var(--pos-scrollbar-thumb-hover);
+}
+
+/* Product grid on tinted catalog panel — light thumb like legacy POS */
+.pos-scroll-visible.pos-scroll-visible--inverse {
+  scrollbar-color: var(--pos-scrollbar-thumb-inverse) var(--pos-scrollbar-track-inverse);
+}
+.pos-scroll-visible.pos-scroll-visible--inverse::-webkit-scrollbar-track {
+  background: var(--pos-scrollbar-track-inverse);
+}
+.pos-scroll-visible.pos-scroll-visible--inverse::-webkit-scrollbar-thumb {
+  background: var(--pos-scrollbar-thumb-inverse);
+  border-color: var(--pos-scrollbar-track-inverse);
+}
+.pos-scroll-visible.pos-scroll-visible--inverse::-webkit-scrollbar-thumb:hover {
+  background: #f3f4f6;
 }
 
 /* Always-visible horizontal bar (category chips) */
@@ -146,22 +176,22 @@ html.pos-osk-open #root {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: auto;
-  scrollbar-color: var(--brand-primary) var(--neutral-200);
+  scrollbar-color: var(--pos-scrollbar-thumb) var(--pos-scrollbar-track);
 }
 .pos-scroll-x::-webkit-scrollbar {
-  height: 12px;
+  height: 20px;
 }
 .pos-scroll-x::-webkit-scrollbar-track {
-  background: var(--neutral-200);
-  border-radius: 8px;
+  background: var(--pos-scrollbar-track);
+  border-radius: 9999px;
 }
 .pos-scroll-x::-webkit-scrollbar-thumb {
-  background: var(--brand-primary);
-  border-radius: 8px;
-  border: 2px solid var(--neutral-200);
+  background: var(--pos-scrollbar-thumb);
+  border-radius: 9999px;
+  border: 4px solid var(--pos-scrollbar-track);
 }
 .pos-scroll-x::-webkit-scrollbar-thumb:hover {
-  background: var(--brand-primary-dark);
+  background: var(--pos-scrollbar-thumb-hover);
 }
 
 /* ─── Typography — titles / brand lines (same family as UI, tighter tracking) ─── */
@@ -180,15 +210,24 @@ html.pos-osk-open #root {
   cursor: pointer;
 }
 
+/* ─── Category pills (top row) ─── */
+.pos-category-nav {
+  width: var(--pos-category-nav-width);
+  height: var(--pos-category-height);
+  min-height: var(--pos-category-height);
+}
+.pos-category-btn {
+  height: var(--pos-category-height);
+  min-height: var(--pos-category-height);
+}
+
 /* ─── Product tile press feedback ─── */
 .product-tile {
   transition: transform 100ms ease, box-shadow 100ms ease;
-  /* Width from grid; height is 25% shorter than the previous 3:4 tile. */
-  aspect-ratio: 1 / 0.75;
+  aspect-ratio: 1 / 1;
   width: 100%;
-  min-height: calc(var(--pos-tile-min, 140px) * 0.75);
-  max-height: calc(var(--pos-tile-min, 140px) * 1.45 * 0.75);
-  font-size: var(--pos-tile-font, 0.875rem);
+  min-height: var(--pos-tile-min, 172px);
+  font-size: var(--pos-tile-font, 0.95rem);
 }
 .product-tile:active { transform: scale(0.95); }
 .product-tile h3 {
@@ -200,10 +239,10 @@ html.pos-osk-open #root {
 
 /* Responsive product grid: equal cell widths; column min width = product button size */
 .pos-product-grid {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--pos-tile-min, 140px)), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--pos-tile-min, 172px)), 1fr));
   align-content: start;
   grid-auto-rows: minmax(min-content, max-content);
-  gap: var(--pos-tile-gap, 0.75rem);
+  gap: var(--pos-tile-gap, 0.65rem);
   max-width: 100%;
 }
 

@@ -50,7 +50,7 @@ export const useSettingsStore = create<SettingsState>()(
       assignedShowroomCode: '',
       assignedShowroomPublicCode: '',
       zoomPercent: 100,
-      productTilePercent: 100,
+      productTilePercent: 110,
       cacheUpdatedAt: null,
       themeColors: null,
 

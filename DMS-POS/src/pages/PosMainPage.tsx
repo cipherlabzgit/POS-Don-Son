@@ -133,7 +133,8 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   const [catPage, setCatPage] = useState(0)
   const [saleRecordUnread, setSaleRecordUnread] = useState(0)
   const [pendingTransferCount, setPendingTransferCount] = useState(0)
-  const CATS_PER_PAGE = 6
+  const CATS_PER_PAGE = 4
+  const POS_TILE_BASE_PX = 172
 
   const catalogScrollRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -1054,22 +1055,26 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                 type="button"
                 disabled={catsExpanded || catPage <= 0}
                 onClick={() => setCatPage((p) => Math.max(0, p - 1))}
-                className="pos-tap flex h-20 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
+                className="pos-tap pos-category-nav shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-white disabled:opacity-35"
                 aria-label="Previous categories"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-6 w-6" />
               </button>
               <div
-                className="grid min-w-0 flex-1 gap-2"
-                style={{ gridTemplateColumns: `repeat(${CATS_PER_PAGE}, minmax(0, 1fr))` }}
+                className="grid min-w-0 flex-1 gap-2.5"
+                style={{
+                  gridTemplateColumns: catsExpanded
+                    ? 'repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr))'
+                    : `repeat(${CATS_PER_PAGE}, minmax(0, 1fr))`,
+                }}
               >
                 {visibleCats.map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => selectCategory(c.id)}
-                    className={`flex h-20 min-w-0 items-center justify-center rounded-lg px-2 text-center text-sm font-bold leading-tight shadow ${c.colour} ${
-                      categoryId === c.id ? 'ring-2 ring-[var(--brand-accent)] ring-offset-1' : ''
+                    className={`pos-category-btn flex min-w-0 items-center justify-center rounded-xl px-3 text-center text-base font-bold leading-snug shadow-md ${c.colour} ${
+                      categoryId === c.id ? 'ring-2 ring-[var(--brand-accent)] ring-offset-2' : ''
                     }`}
                   >
                     <span className="line-clamp-2 break-words">{c.name.replace('★ ', '')}</span>
@@ -1080,19 +1085,19 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                 type="button"
                 disabled={catsExpanded || catPage >= catPageCount - 1}
                 onClick={() => setCatPage((p) => Math.min(catPageCount - 1, p + 1))}
-                className="pos-tap flex h-20 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white disabled:opacity-35"
+                className="pos-tap pos-category-nav shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-white disabled:opacity-35"
                 aria-label="Next categories"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-6 w-6" />
               </button>
               <button
                 type="button"
-                className="pos-tap flex h-20 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--brand-primary)] text-white"
+                className="pos-tap pos-category-nav shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-white"
                 onClick={() => setCatsExpanded((open) => !open)}
                 aria-label={catsExpanded ? 'Collapse categories' : 'Show all categories'}
                 aria-expanded={catsExpanded}
               >
-                {catsExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                {catsExpanded ? <ChevronUp className="h-6 w-6" /> : <ChevronDown className="h-6 w-6" />}
               </button>
             </div>
             {!catsExpanded && catPageCount > 1 ? (
@@ -1122,11 +1127,11 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
 
           <div
             ref={catalogScrollRef}
-            className="pos-scroll-visible pos-product-grid grid min-h-0 min-w-0 w-full flex-1 overflow-x-hidden p-0.5"
+            className="pos-scroll-visible pos-scroll-visible--inverse pos-product-grid grid min-h-0 min-w-0 w-full flex-1 overflow-x-hidden p-0.5"
             style={{
-              ['--pos-tile-min' as string]: `${Math.round(128 * (productTilePercent / 100))}px`,
-              ['--pos-tile-font' as string]: `${(0.8 * (productTilePercent / 100)).toFixed(3)}rem`,
-              ['--pos-tile-gap' as string]: `${Math.max(0.35, 0.55 * (productTilePercent / 100)).toFixed(2)}rem`,
+              ['--pos-tile-min' as string]: `${Math.round(POS_TILE_BASE_PX * (productTilePercent / 100))}px`,
+              ['--pos-tile-font' as string]: `${(0.95 * (productTilePercent / 100)).toFixed(3)}rem`,
+              ['--pos-tile-gap' as string]: `${Math.max(0.45, 0.65 * (productTilePercent / 100)).toFixed(2)}rem`,
             }}
           >
             {filteredProducts.length === 0 ? (
@@ -1160,7 +1165,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                       longPressTimerRef.current = null
                     }
                   }}
-                  className="product-tile group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-[var(--pos-product-tile-border)] bg-[var(--pos-product-tile)] p-2 text-center text-stone-900 shadow-sm hover:border-[var(--brand-primary)]"
+                  className="product-tile group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-[var(--pos-product-tile-border)] bg-[var(--pos-product-tile)] p-3 text-center text-stone-900 shadow-md hover:border-[var(--brand-primary)]"
                 >
                   <button
                     type="button"
@@ -1177,10 +1182,10 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                       {lines.find((l) => l.productId === p.id)?.qty}
                     </span>
                   ) : null}
-                  <h3 className="line-clamp-3 px-1 text-sm font-semibold leading-tight">
+                  <h3 className="line-clamp-3 px-1 font-semibold leading-tight">
                     {p.name}
                   </h3>
-                  <span className="mt-1 text-sm font-bold tabular-nums">
+                  <span className="mt-1.5 font-bold tabular-nums">
                     Rs {p.unitPrice.toFixed(2)}
                   </span>
                 </div>

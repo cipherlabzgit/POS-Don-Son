@@ -9,6 +9,7 @@ type Props = {
   disabled?: boolean
   compact?: boolean
   onEnter?: () => void
+  onBlur?: () => void
   ariaLabel?: string
 }
 
@@ -26,6 +27,7 @@ export function QtyStepper({
   disabled = false,
   compact = false,
   onEnter,
+  onBlur,
   ariaLabel = 'Quantity',
 }: Props) {
   function bump(delta: number) {
@@ -44,6 +46,7 @@ export function QtyStepper({
         onChange={(e) => onChange(e.target.value)}
         onFocus={(e) => e.currentTarget.select()}
         onClick={(e) => e.currentTarget.select()}
+        onBlur={() => onBlur?.()}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault()

@@ -10,7 +10,8 @@ import type { ProductRow } from '../lib/types'
 import { fetchStockBfRecords, postStockBfBulk } from '../lib/api'
 import { enqueueMutation } from '../lib/sync-queue'
 import { useOnlineStatus } from '../lib/use-online-status'
-import { printStockBfHtml } from '../lib/print-stock-bf'
+import { extractBfNoFromBulkResponse, printStockBfHtml } from '../lib/print-stock-bf'
+import { formatStockBfQty, normalizeStockBfQtyInput, parseStockBfQty } from '../lib/stock-bf-qty'
 import { toast } from '../lib/toast-store'
 import { formatSubmitError, isConflictStatus, isUnreachableNetworkError, isAlreadyRecordedError } from '../lib/api-errors'
 import { todayCalendarISO } from '../lib/calendar-date'
@@ -77,6 +78,7 @@ export function StockBfPage({ onBack }: Props) {
   const [kbField, setKbField] = useState<'search' | null>(null)
   const [pendingProduct, setPendingProduct] = useState<ProductRow | null>(null)
   const [duplicateId, setDuplicateId] = useState<string | null>(null)
+  const [bfNo, setBfNo] = useState('')
   const businessDay = useSriLankaBusinessDay()
 
   useEffect(() => {
@@ -129,6 +131,7 @@ export function StockBfPage({ onBack }: Props) {
             setPendingProduct(null)
             setSearch('')
             setLockStatus(String(blockingRaw[0]?.status ?? blockingRaw[0]?.Status ?? 'Pending'))
+            setBfNo(String(blockingRaw[0]?.bfNo ?? blockingRaw[0]?.BFNo ?? ''))
           } else if (!submittingRef.current) {
             const localForDay = (await offlineDb.stockBf.toArray()).filter(
               (r) => r.outletId === outletId && r.processDate === today,
@@ -139,6 +142,7 @@ export function StockBfPage({ onBack }: Props) {
             setFormLocked(false)
             setLockStatus('')
             setRows([])
+            setBfNo('')
           }
           return
         }
@@ -172,7 +176,7 @@ export function StockBfPage({ onBack }: Props) {
   )
 
   function focusQtySelected() {
-    setQty('1')
+    setQty('01.00')
     window.setTimeout(() => {
       const el = qtyRef.current
       if (!el) return
@@ -224,8 +228,8 @@ export function StockBfPage({ onBack }: Props) {
       toast('This product is not displayed in POS — it cannot be added to Stock BF.', 'error')
       return
     }
-    const qn = parseFloat(qty.replace(',', '.'))
-    if (!Number.isFinite(qn) || qn <= 0) { toast('Enter a valid quantity.', 'error'); return }
+    const qn = parseStockBfQty(normalizeStockBfQtyInput(qty))
+    if (qn == null) { toast('Enter a valid quantity.', 'error'); return }
     setRows((prev) => {
       const existing = prev.find((x) => x.productId === target.id)
       if (existing) return prev.map((x) => x.productId === target.id ? { ...x, qty: qn } : x)
@@ -234,7 +238,7 @@ export function StockBfPage({ onBack }: Props) {
     setPendingProduct(null)
     setDuplicateId(null)
     setSearch('')
-    setQty('1')
+    setQty('01.00')
     setShowDrop(false)
     setKbField(null)
     focusSearch()
@@ -247,9 +251,13 @@ export function StockBfPage({ onBack }: Props) {
 
   function updateRowQty(productId: string, value: string) {
     if (formLocked) return
-    const qn = parseFloat(value.replace(',', '.'))
-    if (!Number.isFinite(qn) || qn <= 0) return
+    const qn = parseStockBfQty(normalizeStockBfQtyInput(value))
+    if (qn == null) return
     setRows((prev) => prev.map((r) => r.productId === productId ? { ...r, qty: qn } : r))
+  }
+
+  function normalizeAddQtyField() {
+    setQty((current) => normalizeStockBfQtyInput(current))
   }
 
   async function submit(andPrint = false) {
@@ -272,9 +280,11 @@ export function StockBfPage({ onBack }: Props) {
     submittingRef.current = true
     setSubmitting(true)
     try {
+      let printedBfNo = ''
       if (online) {
         try {
-          await postStockBfBulk(payload)
+          const created = await postStockBfBulk(payload)
+          printedBfNo = extractBfNoFromBulkResponse(created)
         } catch (firstErr) {
           const msg = formatSubmitError(firstErr).toLowerCase()
           if (msg.includes('already submitted')) throw firstErr
@@ -300,12 +310,15 @@ export function StockBfPage({ onBack }: Props) {
         })
       }
 
+      if (printedBfNo) setBfNo(printedBfNo)
+
       if (andPrint) {
         try {
           const printed = await printStockBfHtml({
             showroom: outletLabel || 'Showroom',
-            cashier: cashier === '—' ? '' : cashier,
-            submittedAt: new Date().toLocaleString(),
+            user: cashier === '—' ? '' : cashier,
+            dateLabel: today,
+            bfNo: printedBfNo,
             lines: snapshot.map((r) => ({ code: r.code, name: r.name, qty: r.qty })),
           })
           if (!printed) toast('Opening stock saved. Printing failed — reprint if needed.', 'info')
@@ -320,7 +333,7 @@ export function StockBfPage({ onBack }: Props) {
       setLockStatus(online ? 'Pending' : 'Queued')
       setPendingProduct(null)
       setSearch('')
-      setQty('1')
+      setQty('01.00')
       setReloadNonce((n) => n + 1)
       toast(online ? 'Opening stock saved.' : 'Queued — will sync when online.', 'success')
       if (andPrint) onBack()
@@ -388,9 +401,10 @@ export function StockBfPage({ onBack }: Props) {
           </div>
         ) : null}
 
-        <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-5 py-4 text-sm sm:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 rounded-xl border border-[var(--border)] bg-[var(--neutral-50)] px-5 py-4 text-sm sm:grid-cols-5">
           <InfoField label="Showroom" value={outletLabel || '—'} />
           <InfoField label="Date" value={today} />
+          <InfoField label="BF No" value={bfNo || '—'} />
           <InfoField label="Cashier" value={cashier} />
           <InfoField label="Status" value={statusLabel} />
         </div>
@@ -417,7 +431,11 @@ export function StockBfPage({ onBack }: Props) {
                 value={qty}
                 onChange={setQty}
                 inputRef={qtyRef}
-                onEnter={() => addRow()}
+                onBlur={normalizeAddQtyField}
+                onEnter={() => {
+                  normalizeAddQtyField()
+                  addRow()
+                }}
               />
             </div>
 
@@ -457,13 +475,15 @@ export function StockBfPage({ onBack }: Props) {
                     <td className="px-4 py-3 font-medium text-[var(--foreground)]">{r.name}</td>
                     <td className="px-4 py-3 text-right">
                       {formLocked ? (
-                        <span className="tabular-nums font-semibold text-[var(--foreground)]">{r.qty}</span>
+                        <span className="tabular-nums font-semibold text-[var(--foreground)]">{formatStockBfQty(r.qty)}</span>
                       ) : (
                         <div className="flex justify-end">
                           <QtyStepper
                             compact
-                            value={r.qty}
+                            value={formatStockBfQty(r.qty)}
                             onChange={(next) => updateRowQty(r.productId, next)}
+                            onBlur={() => updateRowQty(r.productId, formatStockBfQty(r.qty))}
+                            ariaLabel={`Quantity for ${r.name}`}
                           />
                         </div>
                       )}

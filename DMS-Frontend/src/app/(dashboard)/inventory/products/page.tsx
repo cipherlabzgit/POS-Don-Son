@@ -18,6 +18,7 @@ import { ProtectedPage, PermissionButton } from '@/components/auth';
 import { usePermissions } from '@/hooks/usePermissions';
 import CsvBulkUploadBar from '@/components/dms/CsvBulkUploadBar';
 import type { CsvRowRecord } from '@/lib/csv-utils';
+import { parseBool, parseDecimal, parseIntField, parseIntList, req } from '@/lib/bulk-csv-field-parsers';
 import { useInitialListLoading } from '@/hooks/use-initial-list-loading';
 
 function formatLoadProductsError(err: unknown): string {
@@ -93,14 +94,16 @@ function ProductsPageContent() {
           productionSectionsApi.getAll(1, 500, undefined, undefined).catch(() => ({ productionSections: [] })),
         ]);
         const categories = new Map(
-          cRes.categories.map((c) => [c.code.trim().toUpperCase(), c.id] as const),
+          (cRes.categories ?? []).map((c) => [c.code.trim().toUpperCase(), c.id] as const),
         );
-        const uoms = new Map(uRes.unitOfMeasures.map((u) => [u.code.trim().toUpperCase(), u.id] as const));
+        const uoms = new Map(
+          (uRes.unitOfMeasures ?? []).map((u) => [u.code.trim().toUpperCase(), u.id] as const),
+        );
         const labelTemplates = new Map(
-          ltRes.labelTemplates.map((lt) => [lt.code.trim().toUpperCase(), lt.id] as const),
+          (ltRes.labelTemplates ?? []).map((lt) => [lt.code.trim().toUpperCase(), lt.id] as const),
         );
         const productionSections = new Map(
-          psRes.productionSections.map((ps) => [ps.code.trim().toUpperCase(), ps.id] as const),
+          (psRes.productionSections ?? []).map((ps) => [ps.code.trim().toUpperCase(), ps.id] as const),
         );
         return { categories, uoms, labelTemplates, productionSections };
       })();

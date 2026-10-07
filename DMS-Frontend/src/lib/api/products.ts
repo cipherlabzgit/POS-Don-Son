@@ -211,8 +211,6 @@ function normalizeProduct(raw: any): Product {
     standardQuantity: n('standardQuantity'),
     showInPos: n('showInPos') ?? n('showInPOS') ?? n('ShowInPos'),
     favorite: n('favorite') ?? n('isFavorite') ?? n('Favorite'),
-    expiryDays: n('expiryDays') ?? n('ExpiryDays'),
-    expiryHours: n('expiryHours') ?? n('ExpiryHours'),
   };
 }
 

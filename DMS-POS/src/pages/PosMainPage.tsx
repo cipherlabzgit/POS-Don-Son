@@ -38,13 +38,13 @@ import type { Screen } from '../screen-types'
 // ─── Category pill colours (cycles through palette) ──────────────────────────
 const CAT_COLOURS = [
   'bg-[var(--cat-0)] text-neutral-900',    // gold (accent)
-  'bg-[var(--cat-1)] text-white',          // red (primary)
-  'bg-[var(--cat-2)] text-white',          // green
-  'bg-[var(--cat-3)] text-white',          // blue
-  'bg-[var(--cat-4)] text-white',          // purple
-  'bg-[var(--cat-5)] text-white',          // orange
-  'bg-[var(--cat-6)] text-white',          // pink
-  'bg-[var(--cat-7)] text-white',          // teal
+  'bg-[var(--cat-1)] text-neutral-900',    // red (primary)
+  'bg-[var(--cat-2)] text-neutral-900',    // green
+  'bg-[var(--cat-3)] text-neutral-900',    // blue
+  'bg-[var(--cat-4)] text-neutral-900',    // purple
+  'bg-[var(--cat-5)] text-neutral-900',    // orange
+  'bg-[var(--cat-6)] text-neutral-900',    // pink
+  'bg-[var(--cat-7)] text-neutral-900',    // teal
 ]
 
 type NumpadTarget = { productId: string; name: string; currentQty: number }
@@ -405,7 +405,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
   // ── Category row ────────────────────────────────────────────────────────────
   const catRow = useMemo(() => {
     const cols: { id: string; name: string; colour: string }[] = [
-      { id: 'all', name: 'All', colour: 'bg-slate-700 text-white' },
+      { id: 'all', name: 'All', colour: 'bg-neutral-300 text-neutral-900' },
       { id: 'fav', name: '★ Favourites', colour: CAT_COLOURS[0] },
     ]
     const sorted = [...categories].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name))
@@ -1055,10 +1055,10 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                 type="button"
                 disabled={catsExpanded || catPage <= 0}
                 onClick={() => setCatPage((p) => Math.max(0, p - 1))}
-                className="pos-tap pos-category-nav shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-white disabled:opacity-35"
+                className="pos-tap pos-category-nav pos-category-nav--arrow shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-white disabled:opacity-35"
                 aria-label="Previous categories"
               >
-                <ChevronLeft className="h-6 w-6" />
+                <ChevronLeft className="h-6 w-6" aria-hidden />
               </button>
               <div
                 className="grid min-w-0 flex-1 gap-2.5"
@@ -1085,10 +1085,10 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                 type="button"
                 disabled={catsExpanded || catPage >= catPageCount - 1}
                 onClick={() => setCatPage((p) => Math.min(catPageCount - 1, p + 1))}
-                className="pos-tap pos-category-nav shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-white disabled:opacity-35"
+                className="pos-tap pos-category-nav pos-category-nav--arrow shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-white disabled:opacity-35"
                 aria-label="Next categories"
               >
-                <ChevronRight className="h-6 w-6" />
+                <ChevronRight className="h-6 w-6" aria-hidden />
               </button>
               <button
                 type="button"
@@ -1185,7 +1185,7 @@ export function PosMainPage({ onOpenScreen }: PosMainPageProps) {
                   <h3 className="line-clamp-3 px-1 font-semibold leading-tight">
                     {p.name}
                   </h3>
-                  <span className="mt-1.5 font-bold tabular-nums">
+                  <span className="product-tile-price mt-1.5 font-bold tabular-nums">
                     Rs {p.unitPrice.toFixed(2)}
                   </span>
                 </div>

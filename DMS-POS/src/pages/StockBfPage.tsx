@@ -17,7 +17,7 @@ import { formatSubmitError, isConflictStatus, isUnreachableNetworkError, isAlrea
 import { todayCalendarISO } from '../lib/calendar-date'
 import { useSriLankaBusinessDay } from '../lib/use-sri-lanka-business-day'
 import { SearchKeyboard } from '../components/SearchKeyboard'
-import { ItemSearchField, filterItemChoices } from '../components/ItemSearchField'
+import { ItemSearchField, filterItemChoices, formatSelectedItemSearchLabel } from '../components/ItemSearchField'
 import { QtyStepper } from '../components/QtyStepper'
 
 type Props = { onBack: () => void }
@@ -204,7 +204,7 @@ export function StockBfPage({ onBack }: Props) {
       return
     }
     setPendingProduct(p)
-    setSearch('')
+    setSearch(formatSelectedItemSearchLabel(p))
     setShowDrop(false)
     setKbField(null)
     const already = rows.some((r) => r.productId === p.id)

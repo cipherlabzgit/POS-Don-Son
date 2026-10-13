@@ -16,6 +16,14 @@ type Props = {
   placeholder?: string
 }
 
+/** Text shown in the item field after the user picks a product from the list. */
+export function formatSelectedItemSearchLabel(p: Pick<ProductRow, 'code' | 'name'>): string {
+  const code = p.code?.trim() ?? ''
+  const name = p.name?.trim() ?? ''
+  if (code && name) return `${code} ${name}`
+  return code || name
+}
+
 export function filterItemChoices(
   products: ProductRow[],
   search: string,

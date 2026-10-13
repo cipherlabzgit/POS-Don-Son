@@ -93,6 +93,8 @@
   /* Category row + product tiles (touch POS layout) */
   --pos-category-height: 7.75rem;
   --pos-category-nav-width: 3rem;
+  --pos-category-arrow-width: 3.75rem; /* prev/next: +25% vs 3rem */
+  --pos-category-arrow-icon: 1.875rem; /* 24px → 30px (+25%) */
   --pos-tile-min: 172px;
   --pos-tile-font: 0.95rem;
   --pos-tile-gap: 0.65rem;
@@ -216,9 +218,18 @@ html.pos-osk-open #root {
   height: var(--pos-category-height);
   min-height: var(--pos-category-height);
 }
+.pos-category-nav--arrow {
+  width: var(--pos-category-arrow-width);
+  min-width: var(--pos-category-arrow-width);
+}
+.pos-category-nav--arrow svg {
+  width: var(--pos-category-arrow-icon);
+  height: var(--pos-category-arrow-icon);
+}
 .pos-category-btn {
   height: var(--pos-category-height);
   min-height: var(--pos-category-height);
+  color: var(--neutral-900, #171717);
 }
 
 /* ─── Product tile press feedback ─── */
@@ -231,10 +242,10 @@ html.pos-osk-open #root {
 }
 .product-tile:active { transform: scale(0.95); }
 .product-tile h3 {
-  font-size: inherit;
+  font-size: calc(var(--pos-tile-font, 0.95rem) * 1.75);
 }
 .product-tile .product-tile-price {
-  font-size: calc(var(--pos-tile-font, 0.875rem) * 1.15);
+  font-size: calc(var(--pos-tile-font, 0.95rem) * 1.3);
 }
 
 /* Responsive product grid: equal cell widths; column min width = product button size */

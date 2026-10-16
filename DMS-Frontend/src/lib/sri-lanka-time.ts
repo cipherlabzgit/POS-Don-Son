@@ -39,6 +39,26 @@ export function formatSlDate(
   return d.toLocaleDateString('en-LK', { ...options, timeZone: DISPLAY_TIME_ZONE });
 }
 
+const SL_MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
+/** dd/Mon/yyyy in Sri Lanka (Price Manager effective date column). */
+export function formatSlDateSlashMon(input: string | number | Date | null | undefined): string {
+  const cal = formatCalendarDateInZone(input ?? '');
+  if (!cal) return '—';
+  const [y, m, d] = cal.split('-');
+  const mon = SL_MONTH_SHORT[Number(m) - 1];
+  if (!mon || !d || !y) return cal;
+  return `${d}/${mon}/${y}`;
+}
+
+/** yyyy-MM-dd for date inputs from an API instant (Sri Lanka calendar day). */
+export function toDateInputValueInZone(
+  input: string | number | Date | null | undefined,
+  timeZone: string = DISPLAY_TIME_ZONE,
+): string {
+  return formatCalendarDateInZone(input ?? '', timeZone);
+}
+
 export function formatSlDateTime(
   input: string | number | Date | null | undefined,
   options: Intl.DateTimeFormatOptions = {

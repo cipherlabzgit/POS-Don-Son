@@ -14,19 +14,13 @@ import { priceListsApi, type PriceList } from '@/lib/api/price-lists';
 import { productsApi, type Product } from '@/lib/api/products';
 import CsvBulkUploadBar from '@/components/dms/CsvBulkUploadBar';
 import { foldProductSearch } from '@/lib/product-search';
-import { formatCalendarDateInZone } from '@/lib/sri-lanka-time';
+import { formatCalendarDateInZone, formatSlDateSlashMon } from '@/lib/sri-lanka-time';
 
 const PAGE_SIZES = [10, 25, 50];
 
-/** Format date as dd/Mon/yyyy (e.g. 01/Jan/2015) matching the screenshot */
 function fmtEffectiveFrom(iso: string): string {
   if (!iso) return '-';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  const mon = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
-  const yr = d.getUTCFullYear();
-  return `${day}/${mon}/${yr}`;
+  return formatSlDateSlashMon(iso);
 }
 
 /** Format edit date as M/D/YYYY H:MM:SS AM/PM */

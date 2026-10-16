@@ -10,6 +10,7 @@ import { priceListsApi, type UpdatePriceListDto } from '@/lib/api/price-lists';
 import { productsApi, type Product } from '@/lib/api/products';
 import { PriceChangeLinesEditor, type PriceChangeLine } from '@/components/administrator/PriceChangeLinesEditor';
 import toast from 'react-hot-toast';
+import { toDateInputValueInZone } from '@/lib/sri-lanka-time';
 
 async function loadAllProducts(): Promise<Product[]> {
   const pageSize = 200;
@@ -52,7 +53,7 @@ export default function EditPriceRecordPage() {
       }
       setProducts(productList);
       setCode(pl.code);
-      setEffectiveFrom(pl.effectiveFrom.split('T')[0] ?? '');
+      setEffectiveFrom(toDateInputValueInZone(pl.effectiveFrom));
       setComment(pl.description || pl.name);
       setIsActive(pl.isActive);
       setLines(
